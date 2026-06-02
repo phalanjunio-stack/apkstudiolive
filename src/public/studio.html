@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SeteLagoas Studio</title>
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="stylesheet" href="/css/studio.css" />
+  <link rel="stylesheet" href="/css/fx.css" />
+  <link rel="stylesheet" href="/css/graphics.css" />
+  <link rel="stylesheet" href="/css/skin.css" />
+  <link rel="stylesheet" href="/css/mixer.css" />
+  <script src="/js/theme.js"></script>
+</head>
+<body class="studio-body">
+  <div class="dash">
+
+    <!-- ===================== TOPO ===================== -->
+    <header class="dtop">
+      <div class="brand">
+        <span class="logo-badge">S</span>
+        <span>SeteLagoas <em>Studio</em><span class="brand-sub">LIVE CONTROL</span></span>
+      </div>
+      <div class="tstats">
+        <div class="tstat"><div><span class="k">CPU</span><span class="v" id="cpu">&mdash;</span></div><canvas id="cpuSpark" width="46" height="22"></canvas></div>
+        <div class="tstat"><div><span class="k">GPU</span><span class="v" id="gpu">&mdash;</span></div></div>
+        <div class="tsep"></div>
+        <div class="tstat"><div><span class="k">FPS</span><span class="v" id="fps">&mdash;</span></div><canvas id="fpsSpark" width="46" height="22"></canvas></div>
+        <div class="tsep"></div>
+        <div class="tstat"><span class="dot rec" id="recDot"></span><div><span class="k">RECORD</span><span class="v" id="recTime">OFFLINE</span></div></div>
+        <div class="tstat"><span class="dot stream" id="streamDot"></span><div><span class="k">STREAM</span><span class="v" id="streamTime">OFFLINE</span></div></div>
+      </div>
+      <div class="dtop-right">
+        <div class="net">
+          <div class="label"><b id="netLabel">&mdash;</b><span>NETWORK</span></div>
+          <div class="bars" id="netBars"><i></i><i></i><i></i><i></i></div>
+        </div>
+        <button class="icon-btn" title="Configuracoes">&#9881;</button>
+        <button class="icon-btn" title="Ajuda">?</button>
+        <button class="icon-btn" title="Perfil">&#9711;</button>
+      </div>
+    </header>
+
+    <!-- ===================== NAV ===================== -->
+    <nav class="nav">
+      <a class="nav-link active" data-route="dashboard"><span class="ico">&#9636;</span> Dashboard</a>
+      <a class="nav-link" data-route="producao"><span class="ico">&#9654;</span> Producao</a>
+      <a class="nav-link" data-route="fontes"><span class="ico">&#9635;</span> Fontes</a>
+      <a class="nav-link" data-route="audio"><span class="ico">&#9685;</span> Audio</a>
+      <a class="nav-link" data-route="graficos"><span class="ico">&#9650;</span> Graficos</a>
+      <a class="nav-link" data-route="transicoes"><span class="ico">&#8644;</span> Transicoes</a>
+      <a class="nav-link" data-route="multiview"><span class="ico">&#9638;</span> Multiview</a>
+      <a class="nav-link" data-route="gravacoes"><span class="ico">&#9210;</span> Gravacoes</a>
+      <a class="nav-link" data-route="stream"><span class="ico">&#9758;</span> Stream</a>
+      <a class="nav-link" data-route="dispositivos"><span class="ico">&#9707;</span> Dispositivos</a>
+      <a class="nav-link" data-route="configuracoes"><span class="ico">&#9881;</span> Configuracoes</a>
+      <div class="nav-foot">
+        <span class="logo-badge">S</span>
+        <div style="font-weight:700">SeteLagoas<span style="color:var(--accent2)">.com.br</span></div>
+        <p>Tecnologia que conecta. Resultados que aparecem.</p>
+      </div>
+    </nav>
+
+    <!-- ===================== CENTRO ===================== -->
+    <main class="main">
+      <div class="monitors">
+        <section class="mon preview" id="previewMon">
+          <div class="mon-top"><span class="mon-tag">PREVIEW <span id="previewName">&mdash;</span></span><button class="crop-btn" id="cropBtn" title="Cortar bordas do vídeo">&#9986;</button></div>
+          <video id="previewVideo" autoplay playsinline muted></video>
+          <div class="mon-bottom"><span class="badge" id="previewRes">&mdash;</span><span class="badge">16:9</span><span class="badge">WebRTC</span><span class="meter"></span></div>
+          <div class="mon-empty" id="previewEmpty">Clique numa fonte abaixo</div>
+          <div class="crop-ui" id="cropUI">
+            <div class="crop-h crop-t" data-edge="t"></div>
+            <div class="crop-h crop-b" data-edge="b"></div>
+            <div class="crop-h crop-l" data-edge="l"></div>
+            <div class="crop-h crop-r" data-edge="r"></div>
+            <div class="crop-hint">Ponha o FORMATO igual ao vídeo &middot; arraste as bordas &middot; 2 cliques = resetar</div>
+          </div>
+        </section>
+
+        <div class="switch">
+          <button id="takeBtn" class="take smoke-glow" disabled>TAKE &rsaquo;</button>
+          <div class="tbar"><i></i></div>
+          <button id="cutBtn" class="cut" disabled>CUT</button>
+          <div class="switch-hint">PREVIEW &rarr; PROGRAM</div>
+        </div>
+
+        <section class="mon program" id="programMon">
+          <div class="mon-top"><span class="mon-tag">PROGRAM <span class="dot-live" id="liveDot"></span></span></div>
+          <video id="programVideo" autoplay playsinline muted></video>
+          <video id="programVideoB" class="pgm-fade" autoplay playsinline muted></video>
+          <div class="pgm-overlay" id="pgmOverlay"></div>
+          <div class="pgm-black" id="programBlack"></div>
+          <div class="mon-bottom"><span class="badge" id="programRes">&mdash;</span><span class="badge">16:9</span><span class="badge" id="programOnair">OFFLINE</span><span class="meter"></span></div>
+          <div class="mon-empty" id="programEmpty">No ar: nada ainda</div>
+        </section>
+      </div>
+
+      <div class="media-bar is-hidden" id="mediaBar">
+        <button id="mPlay" class="mb-btn">&#9654;</button>
+        <input type="range" id="mSeek" min="0" max="1000" value="0" class="mb-seek">
+        <span id="mTime" class="mb-time">0:00 / 0:00</span>
+        <button id="mMute" class="mb-btn">&#128266;</button>
+        <button id="mLoop" class="mb-btn">Loop</button>
+        <span id="mName" class="mb-name"></span>
+      </div>
+
+      <div class="fontes">
+        <div class="sec-head">FONTES <span class="kbd-hint">teclas 1&ndash;9 cortam &middot; &larr; &rarr; preview &middot; Enter = TAKE</span></div>
+        <div class="fontes-grid" id="fontesGrid"></div>
+      </div>
+
+      <div class="lower">
+        <div class="panelbox">
+          <div class="sec-head">AUDIO MIXER <span class="mixer-add" id="mixerAdd"></span></div>
+          <div class="mixer" id="mixer"></div>
+        </div>
+        <div class="panelbox">
+          <div class="sec-head">MULTIVIEW</div>
+          <div class="mv" id="mv"></div>
+        </div>
+        <div class="panelbox">
+          <div class="sec-head">STREAM &amp; GRAVACAO <span class="soon-badge">em breve</span></div>
+          <div class="srrow"><div><div class="lab">Transmissao (RTMP)</div><div class="big" id="srStream">OFFLINE</div></div></div>
+          <div class="srrow"><div><div class="lab">Gravacao (MP4)</div><div class="big" id="srRec">OFFLINE</div></div></div>
+          <div class="lab" style="margin-top:10px">DESTINOS</div>
+          <div class="dest"><i>&#9654;</i><i>f</i><i>in</i><i>+</i></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===================== DIREITA ===================== -->
+    <aside class="rightcol">
+      <div class="rpanel">
+        <h3>FORMATO DA LIVE</h3>
+        <div class="fmt-seg" id="fmtSeg">
+          <button data-fmt="16:9" class="active">16:9</button>
+          <button data-fmt="9:16">9:16</button>
+          <button data-fmt="1:1">1:1</button>
+          <button data-fmt="4:5">4:5</button>
+        </div>
+        <div class="fmt-hint" id="fmtHint">Horizontal &mdash; YouTube, Facebook (padrao)</div>
+      </div>
+
+      <div class="rpanel">
+        <h3>CONTROLES</h3>
+        <div class="ctrl-row">
+          <div class="ctrl-grid">
+            <button id="cutBtn2" class="ctrl primary" disabled>CUT</button>
+            <button id="fadeBtn" class="ctrl" disabled>FADE</button>
+            <button id="autoBtn" class="ctrl" disabled>AUTO</button>
+            <button id="ftbBtn" class="ctrl">FTB</button>
+          </div>
+          <div class="master"><div class="master-fader"><i></i></div><span class="master-lbl">MASTER</span></div>
+        </div>
+      </div>
+
+      <div class="rpanel live-panel">
+        <button class="bigbtn rec" disabled><span class="d"></span> RECORD <small>em breve</small></button>
+        <button class="bigbtn live" disabled>&#9673; GO LIVE</button>
+        <button class="bigbtn safe" disabled>&#128737; SAFE MODE</button>
+      </div>
+
+      <div class="rpanel">
+        <h3>DISPOSITIVOS MOVEIS</h3>
+        <div id="devices"><div class="dev-empty">Nenhum dispositivo conectado.</div></div>
+      </div>
+    </aside>
+    <section class="main-page is-hidden" id="viewPage"></section>
+
+    <!-- ===================== PERFORMANCE ===================== -->
+    <footer class="perfbar">
+      <div class="perf"><span class="k">PERFORMANCE</span><span class="v ok" id="pPerf">&mdash;</span></div>
+      <div class="perf"><span class="k">REDE</span><span class="v ok" id="pNet">&mdash;</span></div>
+      <div class="perf"><span class="k">QUADROS PERDIDOS</span><span class="v" id="pFrames">0</span></div>
+      <div class="perf"><span class="k">LATENCIA</span><span class="v" id="pLat">&mdash;</span></div>
+      <div class="perf"><span class="k">UPLINK</span><span class="v" id="pUp">&mdash;</span></div>
+      <div class="perf"><span class="k">DROPOUT</span><span class="v" id="pDrop">&mdash;</span></div>
+      <div class="ver">SeteLagoas Live Control &middot; v0.2 (Fatia 2)</div>
+    </footer>
+
+  </div>
+
+  <div class="modal-overlay" id="connectModal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" id="connectClose" aria-label="Fechar">&times;</button>
+      <h2>Conectar celular ao servidor</h2>
+      <p class="hint">Escaneie com a camera do celular (mesma rede WiFi). Cada celular vira uma camera (ate 6).</p>
+      <img id="qrBig" class="qr qr-big" alt="QR de conexao" />
+      <a id="phoneUrlBig" class="phone-url" target="_blank" rel="noopener"></a>
+      <div class="hint">Aceite o aviso de seguranca e permita a camera.</div>
+    </div>
+  </div>
+
+  <script src="/js/studio.js"></script>
+  <script src="/js/sfx.js"></script>
+  <script src="/js/fx.js"></script>
+  <script src="/js/graphics.js"></script>
+  <script src="/js/mixer.js"></script>
+  <script src="/js/media.js"></script>
+  <script src="/js/ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+/* ===== Base / tema (compartilhado por todas as paginas) ===== */
+:root{
+  /* superficies — TEMA ESCURO (padrao) */
+  --bg:#070b14; --panel:#0d1422; --panel2:#0a1322; --inset:#0a0f1a;
+  --line:#1b2740; --chrome:#0a1120; --chrome2:#0c1424;
+  /* texto */
+  --txt:#e6eefc; --muted:#7e8db0;
+  /* marca / status (iguais nos dois temas) */
+  --accent:#1a8cff; --accent2:#36d1ff;
+  --ok:#2ecc71; --warn:#f1c40f; --bad:#ff4d4f;
+  /* easing padrao (app nativo) */
+  --ease-out:cubic-bezier(0.22,1,0.36,1);
+  --t-fast:150ms;
+  /* gradientes / glow estilo sitelocal (Contourline) */
+  --grad-brand:linear-gradient(180deg,#1F8BFF,#0566D1);
+  --grad-danger:linear-gradient(180deg,#ff5a5a,#c0392b);
+  --glow-brand:0 4px 18px rgba(31,139,255,.32);
+  --glow-danger:0 4px 18px rgba(239,68,68,.28);
+  --grad-card:linear-gradient(180deg,rgba(31,139,255,.025),rgba(31,139,255,0));
+}
+/* TEMA CLARO */
+html[data-theme="light"]{
+  --bg:#eef2f8; --panel:#ffffff; --panel2:#f4f7fc; --inset:#e7edf6;
+  --line:#d6deec; --chrome:#ffffff; --chrome2:#f7faff;
+  --txt:#0e1f38; --muted:#5b6b85;
+}
+/* AUTO — segue o sistema */
+@media (prefers-color-scheme: light){
+  html[data-theme="auto"]{
+    --bg:#eef2f8; --panel:#ffffff; --panel2:#f4f7fc; --inset:#e7edf6;
+    --line:#d6deec; --chrome:#ffffff; --chrome2:#f7faff;
+    --txt:#0e1f38; --muted:#5b6b85;
+  }
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+  font-family:Inter,"Segoe UI",system-ui,Arial,sans-serif}
+a{color:var(--accent2)}
+
+/* transicao suave ao trocar de tema */
+html,body,.dtop,.nav,.nav-foot,.rightcol,.perfbar,.panelbox,.fontes,.rpanel,
+.mon,.fcard,.mvcell,.device,.icon-btn{
+  transition:background-color 240ms ease,color 240ms ease,border-color 240ms ease}
+
+.brand{font-size:18px;font-weight:700;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+.brand em{color:var(--accent2);font-style:normal;font-weight:500}
+.brand .logo{color:var(--accent)}
+.cam-name{color:var(--accent2);font-weight:600}
+
+.qr{width:100%;max-width:230px;background:#fff;border-radius:10px;align-self:center;padding:8px}
+.phone-url{font-size:12px;word-break:break-all}
+.hint{font-size:12px;color:var(--muted)}
+
+/* ===== Landing ===== */
+.landing{max-width:760px;margin:0 auto;padding:40px 20px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h3{margin:0 0 6px}
+.btn{display:inline-block;margin-top:10px;padding:12px 16px;border-radius:10px;
+  background:linear-gradient(180deg,#1a8cff,#0a6ad8);color:#fff;text-decoration:none;font-weight:600}
+
+/* ===== Celular (camera) — sempre escuro ===== */
+.phone{height:100%;display:flex;flex-direction:column;background:#000}
+.phone .brand{padding:12px 16px}
+.phone video{flex:1;width:100%;object-fit:cover;background:#000;min-height:0}
+.phone .status{padding:10px 16px;color:var(--muted);font-size:14px;text-align:center}
+.controls{display:flex;gap:10px;padding:14px 16px calc(14px + env(safe-area-inset-bottom))}
+.controls button{flex:1;padding:14px;border-radius:12px;border:1px solid var(--line);
+  font-size:15px;font-weight:600;color:#e6eefc;background:#0d1422}
+.controls .primary{background:linear-gradient(180deg,#1a8cff,#0a6ad8);border-color:#0a6ad8}
+.controls button:disabled{opacity:.4}
+
+@media(max-width:720px){ .cards{grid-template-columns:1fr} }

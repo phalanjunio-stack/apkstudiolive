@@ -1,0 +1,16 @@
+{
+  "appId": "com.setelagoas.camera",
+  "appName": "SeteLagoas Câmera",
+  "webDir": "mobile/www",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "*.trycloudflare.com",
+      "*.ngrok-free.app",
+      "*.loca.lt"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

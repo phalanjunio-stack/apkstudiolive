@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SeteLagoas Live</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <div class="landing">
+    <div class="brand" style="font-size:26px"><span class="logo">&#9670;</span> SeteLagoas <em>Live</em></div>
+    <p style="color:var(--muted)">Motor proprio de transmissao ao vivo &mdash; Fatia 1: camera do celular por WebRTC.</p>
+    <div class="cards">
+      <div class="card">
+        <h3>1 &middot; Abrir o Studio (no PC)</h3>
+        <p style="color:var(--muted)">A tela de monitor onde a camera aparece.</p>
+        <a class="btn" href="/studio">Abrir Studio</a>
+      </div>
+      <div class="card">
+        <h3>2 &middot; Conectar a camera (no celular)</h3>
+        <p style="color:var(--muted)">Escaneie na mesma rede WiFi:</p>
+        <img id="qr" class="qr" alt="QR de conexao" />
+        <a id="phoneUrl" class="phone-url" target="_blank" rel="noopener"></a>
+      </div>
+    </div>
+  </div>
+  <script>
+    fetch('/api/info').then(r => r.json()).then(info => {
+      document.getElementById('qr').src = '/qr?text=' + encodeURIComponent(info.phoneUrl);
+      const a = document.getElementById('phoneUrl');
+      a.textContent = info.phoneUrl; a.href = info.phoneUrl;
+    }).catch(() => {});
+  </script>
+</body>
+</html>

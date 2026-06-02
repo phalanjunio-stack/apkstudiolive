@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#05080f" />
+  <title>SeteLagoas Câmera</title>
+  <link rel="stylesheet" href="/css/phone.css" />
+</head>
+<body class="pa">
+  <!-- TOP BAR -->
+  <header class="pa-top">
+    <button class="pa-icon" id="backBtn" aria-label="Voltar">&#8249;</button>
+    <div class="pa-brand"><span class="pa-logo">S</span> SeteLagoas<em>.com.br</em></div>
+    <button class="pa-icon" id="gearBtn" data-go="config" aria-label="Configurações">&#9881;</button>
+  </header>
+
+  <main class="pa-body">
+    <!-- ===== CÂMERA ===== -->
+    <section class="scr" id="scr-camera">
+      <div class="cam">
+        <video id="preview" autoplay playsinline muted></video>
+        <div class="grid-ov" id="gridOv" data-grid="3x3"></div>
+        <div class="cam-empty" id="camEmpty">
+          <div class="ce-ic">&#128247;</div>
+          <p>Toque no botão pra entrar ao vivo<br>e virar câmera do Studio.</p>
+        </div>
+        <div class="cam-top">
+          <span class="rec" id="recBadge" hidden>&#9679; REC</span>
+          <span class="live-badge" id="liveBadge" hidden>TRANSMITINDO</span>
+          <span class="timer" id="timer" hidden>00:00:00</span>
+        </div>
+        <div class="cam-ctrls">
+          <button class="cc" id="flipBtn"><span class="cc-ic">&#10226;</span><small>Câmera</small></button>
+          <button class="cc cc-rec" id="startStop"><span class="cc-dot"></span></button>
+          <button class="cc" id="micBtn2"><span class="cc-ic">&#127908;</span><small>Microfone</small></button>
+        </div>
+        <div class="cam-stats">
+          <div><label>RESOLUÇÃO</label><b id="sRes">—</b></div>
+          <div><label>FPS</label><b id="sFps">—</b></div>
+          <div><label>BITRATE</label><b id="sBitrate">—</b></div>
+          <div><label>SINAL</label><b id="sSignal" class="sig">—</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CONFIGURAÇÕES ===== -->
+    <section class="scr pad" id="scr-config" hidden>
+      <h2 class="scr-h"><span class="num">3</span> Configurações</h2>
+
+      <div class="lbl">QUALIDADE DE VÍDEO</div>
+      <div class="seg" id="qualitySeg">
+        <button data-q="hd"><b>HD</b><small>1280×720</small></button>
+        <button data-q="fhd" class="on"><b>FULL HD</b><small>1920×1080</small></button>
+        <button data-q="4k"><b>4K</b><small>3840×2160</small></button>
+      </div>
+
+      <div class="lbl">GRADE</div>
+      <div class="seg seg4" id="gridSeg">
+        <button data-grid="off"><span class="gic">&#8856;</span><small>Desativada</small></button>
+        <button data-grid="3x3" class="on"><span class="gic">&#9638;</span><small>3x3</small></button>
+        <button data-grid="4x4"><span class="gic">&#9638;</span><small>4x4</small></button>
+        <button data-grid="center"><span class="gic">&#10010;</span><small>Centro</small></button>
+      </div>
+
+      <div class="lbl">OUTRAS OPÇÕES</div>
+      <div class="row" id="camRow"><span class="ri">&#128247;</span><span class="rt">Câmera</span><span class="rv" id="camVal">Traseira ⌄</span></div>
+      <div class="row"><span class="ri">&#9889;</span><span class="rt">Flash</span><label class="sw"><input type="checkbox" id="flashSw"><span></span></label></div>
+      <div class="row"><span class="ri">&#127908;</span><span class="rt">Microfone</span><label class="sw"><input type="checkbox" id="micSw" checked><span></span></label></div>
+      <div class="row"><span class="ri">&#9673;</span><span class="rt">Estabilização (EIS)</span><label class="sw"><input type="checkbox" id="stabSw" checked><span></span></label></div>
+
+      <button class="big-btn danger" id="endBtn"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="3" fill="currentColor"/></svg> ENCERRAR TRANSMISSÃO</button>
+    </section>
+
+    <!-- ===== STATUS ===== -->
+    <section class="scr pad" id="scr-status" hidden>
+      <h2 class="scr-h"><span class="num">4</span> Status da Transmissão</h2>
+      <div class="st-card" id="stCard">
+        <div class="st-ico">&#10003;</div>
+        <div><b id="stTitle">Aguardando…</b><span id="stSub">Studio: —</span></div>
+        <div class="st-wifi" id="stWifi">&#128246;</div>
+      </div>
+      <div class="lbl">INFORMAÇÕES</div>
+      <div class="info"><span class="ii">&#9201;</span>Duração<b id="iDur">00:00:00</b></div>
+      <div class="info"><span class="ii">&#9633;</span>Resolução<b id="iRes">—</b></div>
+      <div class="info"><span class="ii">&#9651;</span>FPS<b id="iFps">—</b></div>
+      <div class="info"><span class="ii">&#128202;</span>Bitrate<b id="iBitrate">—</b></div>
+      <div class="info"><span class="ii">&#9881;</span>Codec<b id="iCodec">—</b></div>
+      <div class="info"><span class="ii">&#128246;</span>Sinal<b id="iSignal" class="sig">—</b></div>
+      <div class="info"><span class="ii">&#128267;</span>Bateria<b id="iBat">—</b></div>
+      <div class="lbl">ENQUADRAMENTO</div>
+      <div class="frame-tip"><div class="ft-phone"><div class="ft-person"></div></div><p>Mantenha o celular na <b>horizontal</b> para melhor enquadramento.</p></div>
+    </section>
+
+    <!-- ===== CONEXÃO ===== -->
+    <section class="scr pad" id="scr-conexao" hidden>
+      <h2 class="scr-h"><span class="num">1</span> Conexão</h2>
+      <div class="st-card ok" id="connCard">
+        <div class="st-ico">&#9679;</div>
+        <div><b id="connTitle">Conectando…</b><span id="connSub">—</span></div>
+      </div>
+      <div class="lbl">DADOS</div>
+      <div class="info"><span class="ii">&#9783;</span>Studio (IP)<b id="cIp">—</b></div>
+      <div class="info"><span class="ii">&#128247;</span>Câmera<b id="cCam">—</b></div>
+      <button class="big-btn ghost" id="reconBtn">Reconectar</button>
+      <p class="muted" style="margin-top:14px">Você abriu pelo QR Code do Studio — já está pareado com esta sala.</p>
+    </section>
+  </main>
+
+  <!-- TAB BAR -->
+  <nav class="pa-tabs">
+    <button class="tab active" data-go="camera"><span class="ti">&#9673;</span>Câmera</button>
+    <button class="tab" data-go="status"><span class="ti">&#9201;</span>Status</button>
+    <button class="tab" data-go="conexao"><span class="ti">&#128279;</span>Conexão</button>
+    <button class="tab" data-go="config"><span class="ti">&#9881;</span>Config</button>
+  </nav>
+
+  <script src="/js/phone.js"></script>
+</body>
+</html>

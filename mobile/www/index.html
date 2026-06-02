@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#04060c" />
+  <title>SeteLagoas Câmera</title>
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;height:100%}
+    body{color:#eef3fb;font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;height:100dvh;
+      display:flex;flex-direction:column;
+      background:radial-gradient(110% 60% at 50% -8%,rgba(43,139,255,.22),transparent 60%),linear-gradient(180deg,#070b14,#04060c 60%)}
+    .top{display:flex;align-items:center;gap:10px;padding:calc(16px + env(safe-area-inset-top)) 18px 8px}
+    .logo{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;
+      color:#fff;font-size:19px;background:radial-gradient(130% 130% at 28% 18%,#5ed6ff,#1a7bf0 55%,#0846a8);
+      box-shadow:0 4px 16px rgba(26,123,240,.55),inset 0 1px 0 rgba(255,255,255,.4)}
+    .brand{font-weight:800;font-size:18px}.brand em{font-style:normal;color:#46d3ff;font-weight:600;font-size:13px}
+    .wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 22px;gap:18px;overflow:auto}
+    h1{font-size:24px;margin:0;font-weight:800}
+    .sub{color:#8597b4;font-size:14px;line-height:1.55;margin:0}
+    .scanbox{position:relative;width:100%;aspect-ratio:1;border-radius:22px;overflow:hidden;background:#000;
+      border:1px solid rgba(255,255,255,.1);box-shadow:0 18px 50px rgba(0,0,0,.5);display:none}
+    .scanbox.on{display:block}
+    .scanbox video{width:100%;height:100%;object-fit:cover}
+    .scanframe{position:absolute;inset:18%;border:3px solid rgba(70,211,255,.9);border-radius:18px;
+      box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+    .btn{width:100%;padding:16px;border-radius:15px;font-weight:800;font-size:15px;border:0;color:#fff;
+      background:linear-gradient(180deg,#2b93ff,#0a63db);box-shadow:0 10px 26px rgba(43,139,255,.45);
+      display:flex;align-items:center;justify-content:center;gap:9px;transition:transform .15s}
+    .btn:active{transform:scale(.98)}
+    .btn.ghost{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);box-shadow:none}
+    .or{display:flex;align-items:center;gap:12px;color:#5d6b85;font-size:12px}
+    .or::before,.or::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1)}
+    .field{display:flex;gap:10px}
+    .field input{flex:1;padding:14px;border-radius:13px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+      color:#eef3fb;font-size:15px;outline:none}
+    .field input:focus{border-color:#2b8bff}
+    .status{color:#8597b4;font-size:13px;text-align:center;min-height:18px}
+    .feat{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+    .feat div{display:flex;align-items:center;gap:11px;color:#cdd9ec;font-size:14px}
+    .feat .fi{width:34px;height:34px;border-radius:10px;background:rgba(43,139,255,.14);display:flex;align-items:center;
+      justify-content:center;color:#46d3ff;font-size:16px;flex:none}
+  </style>
+</head>
+<body>
+  <div class="top">
+    <span class="logo">S</span>
+    <span class="brand">SeteLagoas <em>Câmera</em></span>
+  </div>
+  <div class="wrap">
+    <div>
+      <h1>Conectar ao Studio</h1>
+      <p class="sub">Escaneie o <b>QR Code</b> que aparece no Studio — ou digite o endereço.</p>
+    </div>
+
+    <div class="scanbox" id="scanbox">
+      <video id="scanvid" autoplay playsinline muted></video>
+      <div class="scanframe"></div>
+    </div>
+
+    <button class="btn" id="scanBtn">&#9636;&nbsp; Escanear QR do Studio</button>
+
+    <div class="or">ou</div>
+    <div class="field">
+      <input id="hostInput" placeholder="ex: abcd-xyz.trycloudflare.com" autocapitalize="off" autocorrect="off" />
+      <button class="btn" id="goBtn" style="width:auto;padding:14px 18px">Conectar</button>
+    </div>
+    <div class="status" id="status"></div>
+
+    <div class="feat">
+      <div><span class="fi">&#128246;</span> Conexão rápida via QR Code</div>
+      <div><span class="fi">&#127909;</span> Vídeo e áudio ao vivo</div>
+      <div><span class="fi">&#9881;</span> Qualidade HD, Full HD ou 4K</div>
+    </div>
+  </div>
+
+  <script src="launcher.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+/* ===== AUDIO MIXER — mesa de som (dB + fader proprio + VU ladder + S/M/fone) ===== */
+.mixer-add{display:inline-flex;gap:6px;margin-left:auto}
+.mixbtn{font-size:10px;font-weight:700;padding:5px 9px;border-radius:7px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);cursor:pointer;transition:all .15s var(--ease-out)}
+.mixbtn:hover{border-color:var(--accent);filter:brightness(1.07)}
+
+.mixer{display:flex;gap:8px;overflow-x:auto;min-height:222px;align-items:stretch;padding-bottom:4px}
+.mixer-empty{color:var(--muted);font-size:12px;padding:14px;margin:auto;text-align:center}
+
+/* strip sempre escuro, como mesa real */
+.ch{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:66px;
+  background:#0b1220;border:1px solid #1b2740;border-radius:9px;padding:8px 7px 9px}
+.ch-master{background:linear-gradient(180deg,#1a1f2b,#0b1220);border-color:#3a4150}
+.ch-top{display:flex;align-items:center;gap:2px;width:100%}
+.ch-name{flex:1;font-size:10px;font-weight:700;color:#e6eefc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.ch-x{width:13px;height:13px;border:0;background:transparent;color:#7e8db0;cursor:pointer;font-size:13px;line-height:1;padding:0}
+.ch-x:hover{color:#ff4d4f}
+.ch-db{font-size:10px;font-weight:700;color:#cfe0ff;font-variant-numeric:tabular-nums}
+
+.ch-body{display:flex;gap:5px;align-items:stretch;height:150px;justify-content:center}
+.ch-scale{display:flex;flex-direction:column;justify-content:space-between;font-size:7px;color:#5a6b85;padding:3px 0;min-width:11px;text-align:right}
+
+/* fader proprio: trilho + preenchimento azul + cap arrastavel */
+.ch-fader{position:relative;width:28px;height:150px;cursor:pointer;touch-action:none}
+.ch-fader::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:5px;transform:translateX(-50%);
+  background:#0a1322;border:1px solid #1b2740;border-radius:3px}
+.ch-fill{position:absolute;left:50%;bottom:0;width:5px;transform:translateX(-50%);
+  background:linear-gradient(0deg,#1a8cff,#0a3d8f);border-radius:3px}
+.ch-cap{position:absolute;left:50%;top:0;width:30px;height:14px;transform:translateX(-50%);border-radius:3px;
+  background:linear-gradient(180deg,#46506a,#222a3b);border:1px solid #5a667f;
+  box-shadow:0 2px 5px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18);cursor:grab}
+.ch-cap:active{cursor:grabbing}
+
+/* VU ladder verde->amarelo->vermelho, segmentado */
+.ch-meter{position:relative;width:9px;background:#05080d;border:1px solid #1b2740;border-radius:2px;overflow:hidden;display:flex;align-items:flex-end}
+.ch-meter i{width:100%;height:0;background:linear-gradient(0deg,#19c37d 0%,#2ecc71 50%,#f1c40f 76%,#ff4d4f 100%);transition:height .05s linear}
+.ch-meter::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(5,8,13,.9) 0 1px,transparent 1px 4px)}
+
+/* S / M / fone */
+.ch-btns{display:flex;gap:4px}
+.cb{width:21px;height:21px;border-radius:5px;border:1px solid #1b2740;background:#0f1622;color:#7e8db0;
+  font-size:10px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .13s var(--ease-out)}
+.cb:hover{border-color:var(--accent)}
+.cb.s.on{background:#2ecc71;color:#04210f;border-color:#2ecc71}
+.cb.m.on{background:#ff4d4f;color:#2a0708;border-color:#ff4d4f}
+.cb.fone.on{background:#1a8cff;color:#fff;border-color:#1a8cff;box-shadow:0 0 10px rgba(26,140,255,.6)}

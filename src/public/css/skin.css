@@ -1,0 +1,49 @@
+/* ============================================
+   SKIN sitelocal (Contourline) — botões, cards, inputs.
+   Carregada por último: alinha o visual do streaming ao design do sitelocal.
+   ============================================ */
+
+/* ---- transição tátil em todos os botões ---- */
+.ctrl, .bigbtn, .icon-btn, .btn-soft, .switch .take, .switch .cut, .fmt-seg button,
+.seg-row button, .theme-switcher-btn, .topbar-btn-connect, .sfx-toggle-btn, .modal-close, .fcard-x, .sb-ctrl button {
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out),
+              box-shadow var(--t-fast) var(--ease-out), transform var(--t-fast) var(--ease-out),
+              filter var(--t-fast) var(--ease-out);
+}
+.ctrl:not(:disabled):active, .bigbtn:not(:disabled):active, .btn-soft:active,
+.switch .take:not(:disabled):active, .switch .cut:not(:disabled):active, .icon-btn:active,
+.fmt-seg button:active, .sb-ctrl button:active { transform: scale(.95); }
+
+/* ---- primários (CUT, TAKE) — gradiente da marca + glow ---- */
+.ctrl.primary, .switch .take {
+  background: var(--grad-brand); color: #fff; border: 1px solid transparent; box-shadow: var(--glow-brand);
+}
+.ctrl.primary:not(:disabled):hover, .switch .take:not(:disabled):hover { filter: brightness(1.09); transform: translateY(-1px); }
+.fmt-seg button.active { background: var(--grad-brand); box-shadow: var(--glow-brand); }
+
+/* ---- ghost / secundários ---- */
+.ctrl:not(.primary), .switch .cut, .btn-soft, .icon-btn, .seg-row button {
+  background: var(--panel2); border: 1px solid var(--line); color: var(--txt);
+}
+.ctrl:not(.primary):not(:disabled):hover, .btn-soft:hover, .icon-btn:hover,
+.seg-row button:hover, .switch .cut:not(:disabled):hover { border-color: var(--accent); filter: brightness(1.07); }
+
+/* ---- GO LIVE / RECORD / SAFE MODE ---- */
+.bigbtn.live { background: var(--grad-danger); box-shadow: var(--glow-danger); color: #fff; }
+.bigbtn:not(:disabled).live:hover { filter: brightness(1.09); transform: translateY(-1px); }
+.bigbtn.rec { background: var(--panel2); }
+.bigbtn.safe { background: linear-gradient(180deg, #14385f, #0c2542); }
+
+/* ---- cards / painéis — cantos suaves + leve brilho azul ---- */
+.rpanel, .panelbox, .fontes, .page-card, .gfx-dock, .card, .add-menu, .theme-switcher-menu, .modal-card {
+  border-radius: 16px; background-image: var(--grad-card); box-shadow: 0 2px 12px rgba(0,0,0,.2);
+}
+.mon { border-radius: 14px; }
+
+/* ---- inputs / selects / sliders ---- */
+.set-row select, .set-row input, .ov-ctrl input { transition: border-color var(--t-fast) var(--ease-out); }
+.set-row select:focus, .set-row input:focus, .ov-ctrl input:focus { border-color: var(--accent); outline: none; }
+input[type=range] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 999px; background: var(--inset); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: #1F8BFF; box-shadow: var(--glow-brand); cursor: pointer; border: 2px solid rgba(255,255,255,.18); }
+input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%; background: #1F8BFF; cursor: pointer; }

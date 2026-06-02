@@ -1,0 +1,206 @@
+/* ===== Efeitos: smoke-glow, ripple, theme switcher, modal QR =====
+   Portado do design system do Contourline (sitelocal). */
+
+/* ──────────────────────────────────────────────
+   SMOKE-GLOW — apagado por padrao; acende no hover
+   com aura difusa + halo + 4 faiscas orbitando.
+   Cor via vars: --glow-r --glow-g --glow-b --glow-spark
+   ────────────────────────────────────────────── */
+.smoke-glow{position:relative;overflow:visible;
+  transition:color 240ms ease,background 240ms ease,border-color 240ms ease,
+             box-shadow 280ms ease,transform 280ms cubic-bezier(0.34,1.56,0.64,1)}
+
+.smoke-glow .sg-aura{position:absolute;inset:-14px;border-radius:inherit;
+  background:radial-gradient(circle at 50% 50%,
+    rgba(var(--glow-r,43),var(--glow-g,131),var(--glow-b,255),0.55) 0%,
+    rgba(var(--glow-r,43),var(--glow-g,131),var(--glow-b,255),0.22) 25%,
+    rgba(var(--glow-r,43),var(--glow-g,131),var(--glow-b,255),0.08) 50%,
+    transparent 75%);
+  filter:blur(6px);opacity:0;transition:opacity 320ms ease,transform 600ms ease;
+  pointer-events:none;z-index:-1}
+
+.smoke-glow .sg-halo{position:absolute;inset:-3px;border-radius:inherit;
+  background:radial-gradient(circle,transparent 58%,
+    rgba(var(--glow-r,43),var(--glow-g,131),var(--glow-b,255),0.55) 65%,transparent 80%);
+  opacity:0;transition:opacity 320ms ease;pointer-events:none}
+
+.smoke-glow .sg-spark{position:absolute;width:4px;height:4px;border-radius:50%;
+  background:radial-gradient(circle,
+    var(--glow-spark,#BCE0FF) 0%,
+    rgba(var(--glow-r,43),var(--glow-g,131),var(--glow-b,255),0.85) 45%,transparent 100%);
+  box-shadow:0 0 8px var(--glow-spark,#7CC4FF),
+             0 0 14px rgba(var(--glow-r,43),var(--glow-g,131),var(--glow-b,255),0.6);
+  left:50%;top:50%;transform:translate(-50%,-50%);opacity:0;
+  transition:opacity 250ms ease;pointer-events:none}
+
+.smoke-glow:hover .sg-aura{opacity:1;animation:sg-aura-pulse 2.6s ease-in-out infinite}
+.smoke-glow:hover .sg-halo{opacity:1;animation:sg-halo-spin 4.5s linear infinite}
+.smoke-glow:hover .sg-spark{opacity:1;animation:sg-spark-orbit var(--d,2s) ease-in-out var(--del,0s) infinite}
+
+@keyframes sg-aura-pulse{0%,100%{transform:scale(1);opacity:.95}50%{transform:scale(1.12);opacity:.65}}
+@keyframes sg-halo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes sg-spark-orbit{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(var(--ang)) translateY(-12px) rotate(calc(var(--ang)*-1)) scale(.4)}
+  20%{opacity:1}
+  60%{opacity:1;transform:translate(-50%,-50%) rotate(calc(var(--ang) + 100deg)) translateY(-26px) rotate(calc((var(--ang)+100deg)*-1)) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(calc(var(--ang) + 200deg)) translateY(-34px) rotate(calc((var(--ang)+200deg)*-1)) scale(.2)}
+}
+
+/* ── Conectar QR — azul ── */
+.topbar-btn-connect.smoke-glow{--glow-r:43;--glow-g:131;--glow-b:255;--glow-spark:#BCE0FF}
+.topbar-btn-connect.smoke-glow:hover{color:#fff;border-color:rgba(124,196,255,.8);
+  background:radial-gradient(circle at 35% 30%,#2B83FF 0%,#1565D8 55%,#0A3D8F 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 0 14px rgba(124,196,255,.35),
+    0 0 0 3px rgba(43,131,255,.18),0 0 22px rgba(43,131,255,.65);transform:scale(1.05)}
+.topbar-btn-connect.smoke-glow:hover svg{transform:scale(1.1)}
+.topbar-btn-connect.smoke-glow svg{transition:transform 220ms var(--ease-out)}
+.topbar-btn-connect.tb-rippling{--ripple-color:rgba(124,196,255,.85)}
+
+/* ── Theme switcher — ambar/dourado ── */
+.theme-switcher-btn.smoke-glow{--glow-r:245;--glow-g:158;--glow-b:11;--glow-spark:#FFE6B0}
+.theme-switcher-btn.smoke-glow:hover{color:#FFEAB0;border-color:rgba(255,213,128,.85);
+  background:radial-gradient(circle at 35% 30%,#B45309 0%,#92400E 55%,#5C2C0A 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 14px rgba(255,213,128,.4),
+    0 0 0 3px rgba(245,158,11,.2),0 0 24px rgba(245,158,11,.75);transform:scale(1.06)}
+.theme-switcher-btn.smoke-glow:hover svg{filter:drop-shadow(0 0 4px rgba(255,213,128,.9))}
+.theme-switcher-btn.smoke-glow svg{transition:filter 220ms var(--ease-out)}
+.theme-switcher-btn.tb-rippling{--ripple-color:rgba(255,213,128,.9)}
+
+/* ── TAKE — hero azul ── */
+.take.smoke-glow{--glow-r:43;--glow-g:131;--glow-b:255;--glow-spark:#BCE0FF}
+.take.smoke-glow:hover{box-shadow:0 0 0 3px rgba(43,131,255,.18),0 0 24px rgba(43,131,255,.6);transform:scale(1.03)}
+.take.tb-rippling{--ripple-color:rgba(124,196,255,.85)}
+
+/* ── Onda no clique ── */
+.tb-ripple{position:absolute;inset:-2px;border-radius:inherit;
+  border:1.5px solid var(--ripple-color,rgba(124,196,255,.85));pointer-events:none;opacity:1;
+  animation:tb-ripple-out 420ms cubic-bezier(0.22,1,0.36,1) forwards;z-index:5}
+@keyframes tb-ripple-out{0%{transform:scale(1);opacity:.9}25%{opacity:.3}100%{transform:scale(1.55);opacity:0}}
+
+/* ──────────────────────────────────────────────
+   THEME SWITCHER (botao + menu dropdown)
+   ────────────────────────────────────────────── */
+.theme-switcher{position:relative;display:inline-flex}
+.theme-switcher-btn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--muted);
+  cursor:pointer;transition:all 160ms var(--ease-out)}
+.theme-switcher-btn:hover{color:var(--txt)}
+.theme-switcher-btn svg{width:16px;height:16px}
+.theme-switcher-menu{position:absolute;top:calc(100% + 8px);right:0;min-width:180px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 14px 40px rgba(0,0,0,.4);padding:6px;z-index:100;
+  opacity:0;transform:translateY(-4px);pointer-events:none;transition:all 160ms var(--ease-out)}
+.theme-switcher.open .theme-switcher-menu{opacity:1;transform:translateY(0);pointer-events:auto}
+.theme-option{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;
+  background:transparent;border:0;color:var(--txt);font-size:13px;font-weight:600;
+  border-radius:6px;cursor:pointer;text-align:left;transition:background 160ms var(--ease-out)}
+.theme-option:hover{background:var(--panel2)}
+.theme-option.active{color:var(--accent)}
+.theme-option svg{width:16px;height:16px}
+.theme-option-check{margin-left:auto;color:var(--accent)}
+.theme-option:not(.active) .theme-option-check{display:none}
+
+/* sound toggle herda .icon-btn */
+.sfx-toggle-btn:hover{color:var(--accent)}
+
+/* ──────────────────────────────────────────────
+   MODAL — Conectar celular ao servidor (QR)
+   ────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:rgba(2,8,18,.62);backdrop-filter:blur(4px);
+  animation:modal-fade 180ms ease both}
+.modal-overlay[hidden]{display:none}
+.modal-card{position:relative;width:min(380px,92vw);background:var(--panel);
+  border:1px solid var(--line);border-radius:16px;padding:24px;text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);animation:modal-pop 240ms var(--ease-out) both}
+.modal-card h2{margin:0 0 6px;font-size:18px}
+.modal-card .qr-big{max-width:240px;margin:14px auto}
+.modal-close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:8px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;font-size:15px}
+.modal-close:hover{color:var(--txt)}
+@keyframes modal-fade{from{opacity:0}to{opacity:1}}
+@keyframes modal-pop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+
+@media (prefers-reduced-motion: reduce){
+  .smoke-glow:hover .sg-aura,.smoke-glow:hover .sg-halo,.smoke-glow:hover .sg-spark{animation:none}
+  .modal-overlay,.modal-card{animation:none}
+}
+
+/* ===== Paginas / Configuracoes / audio (router) ===== */
+.page-head h1{margin:0 0 14px;font-size:22px}
+.page-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;
+  max-width:680px;display:flex;flex-direction:column;gap:14px;align-items:flex-start;
+  animation:modal-pop .4s var(--ease-out) both}
+.page-card>.qr{align-self:center}
+.soon-pill{display:inline-block;background:var(--accent2);color:#0a1120;font-weight:700;font-size:11px;
+  padding:4px 10px;border-radius:20px;letter-spacing:.04em}
+.set-block{width:100%;border-top:1px solid var(--line);padding-top:14px}
+.set-block:first-child{border-top:0;padding-top:0}
+.set-title{font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:10px;text-transform:uppercase}
+.set-row{display:flex;align-items:center;gap:12px;width:100%}
+.set-row label{font-size:13px;min-width:88px;color:var(--muted)}
+.set-row select,.set-row input[type=range]{flex:1}
+.set-row select{padding:9px;border-radius:8px;background:var(--inset);color:var(--txt);border:1px solid var(--line)}
+.set-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.btn-soft{padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--txt);font-weight:600;cursor:pointer;font-size:13px}
+.btn-soft:hover{border-color:var(--accent)}
+.seg-row{display:flex;gap:8px}
+.seg-row button{padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--txt);font-weight:600;cursor:pointer}
+.seg-row button:hover{border-color:var(--accent)}
+.meter-wrap{width:100%;height:10px;background:var(--inset);border:1px solid var(--line);
+  border-radius:6px;overflow:hidden;margin-top:12px}
+.meter-bar{height:100%;width:0;background:linear-gradient(90deg,#2ecc71,#f1c40f 70%,#ff4d4f);transition:width .06s linear}
+.audio-pick{width:100%}
+
+/* ===== Menu "Adicionar fonte" + toast + musica de fundo ===== */
+.add-menu{position:fixed;z-index:300;min-width:230px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 16px 44px rgba(0,0,0,.5);padding:6px;animation:modal-pop .16s var(--ease-out) both}
+.add-menu button{display:block;width:100%;text-align:left;padding:10px 12px;border:0;background:transparent;
+  color:var(--txt);font-size:13px;font-weight:600;border-radius:8px;cursor:pointer}
+.add-menu button:hover{background:var(--panel2)}
+
+.toast{position:fixed;left:50%;bottom:60px;transform:translate(-50%,12px);z-index:400;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;
+  color:var(--txt);font-size:13px;box-shadow:0 12px 30px rgba(0,0,0,.5);opacity:0;
+  transition:all .3s var(--ease-out);max-width:80vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.bgm{width:100%}
+.bgm-add{margin-bottom:10px}
+.bgm-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;max-height:240px;overflow:auto}
+.bgm-track{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:8px;background:var(--panel2);cursor:pointer}
+.bgm-track:hover{border-color:var(--accent)}
+.bgm-track.playing{border-color:var(--accent);background:rgba(26,140,255,.12)}
+.bgm-track .tnm{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bgm-track .tx{color:var(--accent2);font-size:13px}
+.bgm-bar{display:flex;align-items:center;gap:10px;margin-top:12px}
+.bgm-bar button{width:38px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:14px}
+.bgm-bar button.play{background:linear-gradient(180deg,#1a8cff,#0a6ad8);border-color:#0a6ad8;color:#fff}
+.bgm-now{flex:1;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ===== Barra de transporte de midia (video arquivo/URL) ===== */
+.media-bar{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.mb-btn{min-width:34px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-weight:700;padding:0 8px;font-size:13px}
+.mb-btn.on,.mb-btn:hover{border-color:var(--accent)}
+.mb-seek{flex:1;accent-color:var(--accent)}
+.mb-time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:90px}
+.mb-name{font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ===== Player do YouTube (flutuante) ===== */
+.yt-dock{position:fixed;right:12px;bottom:60px;width:360px;max-width:92vw;z-index:200;background:var(--panel);
+  border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.55);overflow:hidden;animation:modal-pop .2s var(--ease-out) both}
+.yt-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.yt-head b{font-size:11px;letter-spacing:.14em;color:var(--muted)}
+.yt-frame{position:relative;aspect-ratio:16/9;background:#000}
+.yt-frame iframe,.yt-frame>div{position:absolute;inset:0;width:100%;height:100%;border:0}
+.yt-bar{display:flex;align-items:center;gap:8px;padding:9px 12px}
+.yt-bar button{min-width:34px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer}
+.yt-bar input[type=range]{flex:1;accent-color:var(--accent)}
+#ytTime{font-size:11px;color:var(--muted);min-width:84px;text-align:center}
+
+/* player do YouTube posicionado por cima do monitor (PREVIEW/PROGRAM) */
+.yt-stage{position:fixed;z-index:20;border-radius:12px;overflow:hidden;background:#000;box-shadow:0 0 0 1px var(--line)}
+.yt-stage iframe{width:100%;height:100%;border:0;display:block}

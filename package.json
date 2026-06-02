@@ -1,0 +1,22 @@
+{
+  "name": "setelagoas-live",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "SeteLagoas Live — motor proprio de transmissao ao vivo (WebRTC). Fatia 1: celular como camera.",
+  "scripts": {
+    "start": "node src/server/index.js",
+    "dev": "node --watch src/server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "qrcode": "^1.5.4",
+    "selfsigned": "^2.4.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4"
+  }
+}

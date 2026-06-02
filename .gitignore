@@ -1,0 +1,11 @@
+node_modules/
+.cert/
+*.log
+
+# Android (gerado pelo Capacitor durante o build na nuvem)
+android/
+ios/
+.gradle/
+*.apk
+*.aab
+.DS_Store
