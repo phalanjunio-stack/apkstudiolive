@@ -93,6 +93,18 @@ const Graphics = (function () {
     const ov = Object.assign({ id: seq++, type, visible: true, scene: activeScene }, DEF[type]());
     overlays.push(ov); renderOne(ov); emit(); return ov;
   }
+  // duplica uma camada. toSceneId omitido = mesma cena (leve deslocamento p/ não sobrepor).
+  // toSceneId de OUTRA cena = MESMA posição (pra alinhar entre cenas). null = global.
+  function duplicate(id, toSceneId) {
+    const o = get(id); if (!o) return null;
+    const cross = (toSceneId !== undefined && toSceneId !== o.scene);
+    const clone = Object.assign({}, o, { id: seq++, el: null, visible: true,
+      scene: (toSceneId === undefined ? o.scene : (toSceneId == null ? null : toSceneId)),
+      x: o.x + (cross ? 0 : 3), y: o.y + (cross ? 0 : 3),
+      data: JSON.parse(JSON.stringify(o.data || {})) });
+    delete clone._hideT; delete clone._t; delete clone._paintList;
+    overlays.push(clone); renderOne(clone); emit(); return clone;
+  }
   function remove(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0) return; overlays[i].el?.remove(); overlays.splice(i, 1); emit(); }
   function setVisible(id, v) {
     const o = get(id); if (!o) return; o.visible = v;
@@ -314,7 +326,7 @@ const Graphics = (function () {
   return {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays,
-    setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene,
+    setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate,
     boot() { const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
   };
 })();

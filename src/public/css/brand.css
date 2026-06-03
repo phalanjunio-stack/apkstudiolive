@@ -115,3 +115,10 @@ html[data-theme="light"]{
 /* painel Gráficos: seções Fonte vs Sobreposições */
 .gfx-sec{margin-bottom:11px}
 .gfx-sec-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:7px}
+
+/* botão "+ camada" no painel da cena + linha de vídeo clicável */
+.sc-add{margin-top:5px;width:100%;padding:7px;border-radius:8px;border:1px dashed var(--line2);
+  background:transparent;color:var(--muted);font-weight:600;font-size:11px;cursor:pointer}
+.sc-add:hover{border-color:var(--accent);color:var(--txt);background:rgba(var(--accent-rgb),.06)}
+.sc-lvid{cursor:pointer}
+.sc-lvid:hover{border-color:var(--accent)}

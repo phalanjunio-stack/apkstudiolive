@@ -50,15 +50,53 @@
   function selectScene(id) { if (!load().some(x => x.id === id)) return; setActive(id, true); render(); }        // clique simples → ao ar
   function editScene(id) { openId = (openId === id ? null : id); if (openId) setActive(id, false); render(); }     // duplo-clique → abre camadas
 
+  // ---- menu flutuante simples (reaproveita o estilo .add-menu) ----
+  function miniMenu(ev, items) {
+    const old = document.getElementById('scMenu'); if (old) old.remove();
+    const m = el('div', 'add-menu'); m.id = 'scMenu';
+    items.forEach(([label, fn]) => { const b = document.createElement('button'); b.textContent = label; b.onclick = (e) => { e.stopPropagation(); m.remove(); fn(); }; m.appendChild(b); });
+    document.body.appendChild(m);
+    const r = (ev.currentTarget || ev.target).getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 250)) + 'px';
+    m.style.top = (r.bottom + 6) + 'px';
+    setTimeout(() => document.addEventListener('pointerdown', function h(e) { if (!m.contains(e.target)) { m.remove(); document.removeEventListener('pointerdown', h, true); } }, true), 0);
+  }
+  function saveProgram(id, p) { const l = load(); const i = l.findIndex(x => x.id === id); if (i >= 0) { l[i].program = p; save(l); lastProg = String(p || ''); } }
+  function pickImg(id) { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => { const f = i.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => G().update(id, { src: rd.result }); rd.readAsDataURL(f); }; i.click(); }
+  function sourceMenu(ev, sc) {
+    const items = []; let srcs = []; try { srcs = window.Studio.sourcesInfo().list; } catch {}
+    srcs.forEach(s => items.push([(s.id === sc.program ? '● ' : '    ') + (s.label || s.id), () => { if (window.Studio.setProgram) window.Studio.setProgram(s.id); saveProgram(sc.id, s.id); render(); }]));
+    items.push(['➕  Adicionar fonte…', () => { if (window.Studio.openAddMenu) window.Studio.openAddMenu(ev); }]);
+    miniMenu(ev, items);
+  }
+  function addLayerMenu(ev, sc) {
+    if (activeId !== sc.id) setActive(sc.id, false);
+    const A = t => { if (G().setActiveScene) G().setActiveScene(sc.id); return G().add(t); };
+    miniMenu(ev, [
+      ['✍️  Texto / Escrita', () => { A('text'); render(); }],
+      ['🖼️  Logo / Imagem', () => { const o = A('image'); pickImg(o.id); render(); }],
+      ['📹  Vídeo PiP', () => { const o = A('video'); const st = window.Studio.state(); G().update(o.id, { sourceId: st.preview || st.program || null }); render(); }],
+      ['🏆  Placar', () => { A('scoreboard'); render(); }],
+      ['📊  Rodapé', () => { A('ticker'); render(); }],
+    ]);
+  }
+  function dupMenu(ev, o, sc) {
+    const scenes = load();
+    const items = [['⧉  Duplicar nesta cena', () => { G().duplicate(o.id, sc.id); render(); }]];
+    scenes.filter(x => x.id !== sc.id).forEach(x => items.push(['→  Copiar p/ "' + x.name + '"', () => { G().duplicate(o.id, x.id); toast('Copiada p/ "' + x.name + '" — mesma posição'); render(); }]));
+    miniMenu(ev, items);
+  }
+
   // ---- painel: as camadas de UMA cena (vídeo + gráficos próprios + globais) ----
   function layersPanel(sc) {
     const box = el('div', 'sc-layers');
-    const vid = el('div', 'sc-lrow sc-lvid');
-    vid.append(el('span', 'sc-lic', '🎥'), el('span', 'lp-nm', srcLabel(sc.program) || '— sem fonte —'), el('span', 'sc-ltag', 'vídeo'));
+    const vid = el('div', 'sc-lrow sc-lvid'); vid.title = 'Escolher / adicionar a fonte desta cena';
+    vid.append(el('span', 'sc-lic', '🎥'), el('span', 'lp-nm', srcLabel(sc.program) || '— escolher fonte —'), el('span', 'sc-ltag', 'trocar ▾'));
+    vid.onclick = (e) => sourceMenu(e, sc);
     box.appendChild(vid);
 
     const own = (G() && G().listForScene) ? G().listForScene(sc.id) : [];
-    if (!own.length) box.appendChild(el('div', 'lp-empty', 'Sem camadas próprias ainda. Com esta cena aberta, adicione em Gráficos / Modelos / Futebol — entram aqui.'));
+    if (!own.length) box.appendChild(el('div', 'lp-empty', 'Sem camadas próprias ainda — use "+ camada" abaixo.'));
     [...own].reverse().forEach(o => {
       const sel = G().selected && G().selected() === o.id;
       const row = el('div', 'sc-lrow lp-row' + (o.visible === false ? ' off' : '') + (sel ? ' sel' : ''));
@@ -67,11 +105,13 @@
       const nm = el('span', 'lp-nm', layerName(o));
       const up = el('button', 'lp-mini', '▲'); up.title = 'Frente'; up.onclick = e => { e.stopPropagation(); G().raise(o.id); };
       const dn = el('button', 'lp-mini', '▼'); dn.title = 'Trás'; dn.onclick = e => { e.stopPropagation(); G().lower(o.id); };
+      const dup = el('button', 'lp-mini', '⧉'); dup.title = 'Duplicar / copiar p/ outra cena'; dup.onclick = e => { e.stopPropagation(); dupMenu(e, o, sc); };
       const x = el('button', 'lp-x', '×'); x.title = 'Remover camada'; x.onclick = e => { e.stopPropagation(); G().remove(o.id); };
-      row.append(eye, nm, up, dn, x);
+      row.append(eye, nm, up, dn, dup, x);
       row.onclick = () => { if (activeId !== sc.id) setActive(sc.id, false); G().select(o.id); };
       box.appendChild(row);
     });
+    const addb = el('button', 'sc-add'); addb.textContent = '+ camada'; addb.title = 'Adicionar nesta cena'; addb.onclick = (e) => addLayerMenu(e, sc); box.appendChild(addb);
 
     const gl = (G() && G().globals) ? G().globals() : [];
     if (gl.length) {
