@@ -87,6 +87,9 @@ const Graphics = (function () {
   function globals() { return overlays.filter(o => o.scene == null); }
   function listForActive() { return overlays.filter(o => o.scene == null || o.scene === activeScene); }
   function setOverlayScene(id, sceneId) { const o = get(id); if (!o) return; o.scene = (sceneId == null ? null : sceneId); applyVisibility(); emit(); }
+  // troca ONDE as camadas são desenhadas (PROGRAM <-> canvas do editor de cena, fora do ar).
+  // limpa o host antigo pra não duplicar; re-renderiza no novo. Não mexe nos dados.
+  function setHost(el) { if (!el || el === host) return; if (host) host.innerHTML = ''; host = el; selectedId = null; renderAll(); }
 
   function add(type) {
     if (!DEF[type]) return;
@@ -326,7 +329,7 @@ const Graphics = (function () {
   return {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays,
-    setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate,
+    setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     boot() { const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
   };
 })();
