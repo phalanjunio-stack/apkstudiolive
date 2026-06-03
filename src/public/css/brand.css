@@ -84,3 +84,17 @@ html[data-theme="light"]{
    fica overflow:auto e cortava os 3px de cima (a borda tracejada sumia).
    Uma folga no topo do container rolável resolve sem mexer no layout. */
 .fontes.collapsible .fontes-grid{padding-top:6px}
+
+/* ---------- 7. CENAS: camadas por cena (duplo-clique abre) ---------- */
+.sc-wrap{display:flex;flex-direction:column}
+.sc-chip.open .sc-go{border-color:var(--accent);color:#cfe0ff}
+.sc-layers{display:flex;flex-direction:column;gap:5px;margin:6px 0 6px 9px;padding:9px 9px 9px 11px;
+  border-left:2px solid rgba(var(--accent-rgb),.55);background:rgba(var(--accent-rgb),.06);border-radius:0 9px 9px 0}
+.sc-lrow{display:flex;align-items:center;gap:7px}
+.sc-lvid{padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.sc-lic{font-size:13px;width:18px;text-align:center;flex:none}
+.sc-ltag{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-left:auto;
+  background:var(--inset);border:1px solid var(--line);padding:2px 6px;border-radius:5px}
+.sc-lsec{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:5px;padding-left:2px}
+.sc-global{opacity:.85}
+.sc-global .lp-nm{font-style:italic}

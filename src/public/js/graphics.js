@@ -4,7 +4,7 @@
 // Obs: por enquanto renderiza no monitor PROGRAM; entra no stream/gravação na fatia de saída.
 const Graphics = (function () {
   const KEY = 'sl-overlays';
-  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null;
+  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null;
   function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
@@ -43,7 +43,7 @@ const Graphics = (function () {
   }
 
   function saveLocal() {
-    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, data: o.data })))); } catch {}
+    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: o.data })))); } catch {}
   }
   function emit() { saveLocal(); notify(); }
   function load() {
@@ -58,12 +58,12 @@ const Graphics = (function () {
   }
   function onChange(fn) { subs.push(fn); }
   function hideAll() { overlays.forEach(o => { o.visible = false; if (o.el) o.el.style.display = 'none'; }); if (selectedId != null) select(null); emit(); }
-  function showAll() { overlays.forEach(o => { o.visible = true; if (o.el) o.el.style.display = ''; }); emit(); }
+  function showAll() { overlays.forEach(o => { o.visible = true; }); applyVisibility(); emit(); }
   function clearAll() { overlays.slice().forEach(o => { o.el?.remove(); }); overlays = []; selectedId = null; emit(); }
   function flash(id, ms) { setVisible(id, true); setTimeout(() => setVisible(id, false), ms || 6000); }
   function selected() { return selectedId; }
   // exporta/importa o conjunto de camadas (pra CENAS guardarem a sua montagem)
-  function exportOverlays() { return overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, data: JSON.parse(JSON.stringify(o.data || {})) })); }
+  function exportOverlays() { return overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: JSON.parse(JSON.stringify(o.data || {})) })); }
   function importOverlays(arr) {
     selectedId = null;
     overlays.forEach(o => { try { o.el && o.el.remove(); } catch {} });
@@ -75,20 +75,32 @@ const Graphics = (function () {
   function list() { return overlays; }
   function get(id) { return overlays.find(o => o.id === id); }
 
+  // ===== CENAS: cada camada tem um "dono" (scene). null = global (todas as cenas) =====
+  // Trocar de cena NÃO destrói nada — só mostra as camadas da cena ativa + globais.
+  function ownedShow(o) { return (o.scene == null || o.scene === activeScene) && o.visible !== false; }
+  function applyVisibility() { overlays.forEach(o => { if (o.el) o.el.style.display = ownedShow(o) ? '' : 'none'; }); }
+  function setActiveScene(id) { activeScene = (id == null ? null : id); if (selectedId != null) select(null); applyVisibility(); notify(); }
+  function getActiveScene() { return activeScene; }
+  function listForScene(id) { return overlays.filter(o => o.scene === id); }
+  function globals() { return overlays.filter(o => o.scene == null); }
+  function listForActive() { return overlays.filter(o => o.scene == null || o.scene === activeScene); }
+  function setOverlayScene(id, sceneId) { const o = get(id); if (!o) return; o.scene = (sceneId == null ? null : sceneId); applyVisibility(); emit(); }
+
   function add(type) {
     if (!DEF[type]) return;
-    const ov = Object.assign({ id: seq++, type, visible: true }, DEF[type]());
+    const ov = Object.assign({ id: seq++, type, visible: true, scene: activeScene }, DEF[type]());
     overlays.push(ov); renderOne(ov); emit(); return ov;
   }
   function remove(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0) return; overlays[i].el?.remove(); overlays.splice(i, 1); emit(); }
   function setVisible(id, v) {
     const o = get(id); if (!o) return; o.visible = v;
+    const show = ownedShow(o);
     if (o.el) {
       if (o.type === 'scoreboard') { // placar surge / recolhe com animação
         clearTimeout(o._hideT);
-        if (v) { o.el.style.display = ''; o.el.classList.remove('ov-out'); void o.el.offsetWidth; o.el.classList.add('ov-in'); }
-        else { o.el.classList.remove('ov-in'); o.el.classList.add('ov-out'); o._hideT = setTimeout(() => { if (!o.visible) { o.el.style.display = 'none'; o.el.classList.remove('ov-out'); } }, 430); }
-      } else { o.el.style.display = v ? '' : 'none'; }
+        if (show) { o.el.style.display = ''; o.el.classList.remove('ov-out'); void o.el.offsetWidth; o.el.classList.add('ov-in'); }
+        else { o.el.classList.remove('ov-in'); o.el.classList.add('ov-out'); o._hideT = setTimeout(() => { if (!ownedShow(o)) { o.el.style.display = 'none'; o.el.classList.remove('ov-out'); } }, 430); }
+      } else { o.el.style.display = show ? '' : 'none'; }
     }
     emit();
   }
@@ -115,7 +127,7 @@ const Graphics = (function () {
     el.className = 'ov ov-' + ov.type;
     el.style.left = ov.x + '%'; el.style.top = ov.y + '%';
     if (ov.w) el.style.width = ov.w + '%';
-    if (!ov.visible) el.style.display = 'none';
+    if (!ownedShow(ov)) el.style.display = 'none';
     ov.el = el;
     if (ov.type === 'image') el.innerHTML = '<img alt="">';
     else if (ov.type === 'scoreboard') el.innerHTML = '<div class="sb"><img class="sb-logo sb-hl" alt=""><span class="sb-team sb-h"><span class="sb-nm"></span></span><span class="sb-score sb-hs"></span><span class="sb-mid"><span class="sb-stage"></span><span class="sb-clock"></span><span class="sb-added"></span></span><span class="sb-score sb-as"></span><span class="sb-team sb-a"><span class="sb-nm"></span></span><img class="sb-logo sb-al" alt=""><span class="sb-comp"></span></div>';
@@ -284,6 +296,7 @@ const Graphics = (function () {
   return {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays,
+    setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene,
     boot() { const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
   };
 })();
