@@ -9,7 +9,7 @@
    ============================================ */
 (function () {
   const KEY = 'sl-scenes', AKEY = 'sl-scene-active';
-  let host, activeId = null, tick = null, lastProg = '';
+  let host, activeId = null, previewId = null, tick = null, lastProg = '';
   let modalScene = null, prevActive = null, seVid = null, seHost = null, seSide = null, seTick = null;
   try { activeId = localStorage.getItem(AKEY) || null; } catch {}
 
@@ -48,7 +48,18 @@
     l.push(sc); save(l); openId = sc.id; setActive(sc.id, false); render();
     toast('Cena criada. Adicione logos/escritas em Gráficos ou Modelos — elas entram nesta cena.');
   }
-  function selectScene(id) { if (!load().some(x => x.id === id)) return; setActive(id, true); render(); }        // clique simples → ao ar
+  function selectScene(id) { if (!load().some(x => x.id === id)) return; setActive(id, true); render(); }        // API: manda direto pro ar
+  function loadToPreview(id) {                                                                                    // clique simples → PREVIEW (fora do ar)
+    const sc = load().find(x => x.id === id); if (!sc) return;
+    previewId = id;
+    if (sc.program != null && window.Studio && window.Studio.setPreview) window.Studio.setPreview(sc.program);
+    if (G() && G().setPreviewScene) G().setPreviewScene(id);
+    render(); toast('◐ "' + sc.name + '" no PREVIEW');
+  }
+  function takeToAir() {                                                                                          // TAKE: preview → programa
+    if (!previewId) return toast('Clique numa cena pra carregar no PREVIEW primeiro');
+    setActive(previewId, true); render();
+  }
   function editScene(id) { openEditor(id); }                                                                      // duplo-clique → editor (modal, fora do ar)
 
   // ---- menu flutuante simples (reaproveita o estilo .add-menu) ----
@@ -338,14 +349,15 @@
   function render() {
     if (!host) return; const list = load(); host.innerHTML = '';
     const add = el('button', 'btn-soft fb-prim sc-save', '+ Nova cena'); add.onclick = newScene; host.appendChild(add);
+    const take = el('button', 'sc-take', '▶ Pôr no ar (TAKE)'); take.title = 'Manda a cena do PREVIEW pro PROGRAM'; take.onclick = takeToAir; if (load().length) host.appendChild(take);
     if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Crie uma cena e monte as camadas dela (logos, escritas, placar). Clique = ao ar · Duplo-clique = abrir as camadas.')); return; }
     const grid = el('div', 'sc-grid');
     list.forEach(s => {
       const wrap = el('div', 'sc-wrap');
-      const chip = el('div', 'sc-chip' + (s.id === activeId ? ' active' : ''));
-      const go = el('button', 'sc-go', s.name); go.title = 'Clique: ir ao ar · Duplo-clique: abrir o editor';
+      const chip = el('div', 'sc-chip' + (s.id === activeId ? ' active' : '') + (s.id === previewId ? ' preview' : ''));
+      const go = el('button', 'sc-go', s.name); go.title = 'Clique: ver no PREVIEW · Duplo-clique: abrir o editor';
       let ct = null;
-      go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => selectScene(s.id), 230); };
+      go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => loadToPreview(s.id), 230); };
       go.ondblclick = () => { clearTimeout(ct); editScene(s.id); };
       const ed = el('button', 'sc-mini', '▤'); ed.title = 'Abrir editor da cena'; ed.onclick = e => { e.stopPropagation(); editScene(s.id); };
       const ren = el('button', 'sc-mini', '✎'); ren.title = 'Renomear'; ren.onclick = e => { e.stopPropagation(); const n = prompt('Nome da cena:', s.name); if (n != null) { const l = load(); const j = l.findIndex(x => x.id === s.id); if (j >= 0) { l[j].name = n || s.name; save(l); render(); } } };
