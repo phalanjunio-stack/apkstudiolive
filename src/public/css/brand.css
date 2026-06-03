@@ -130,6 +130,10 @@ html[data-theme="light"]{
   animation:modal-pop .22s var(--ease-out) both}
 .se-head{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--line)}
 .se-head b{font-size:14px;font-weight:700}.se-head .se-nm{color:var(--accent2)}
+.se-fmt{display:flex;gap:3px;background:var(--inset);border:1px solid var(--line);border-radius:8px;padding:3px}
+.se-fmt button{padding:5px 9px;border:0;background:transparent;color:var(--muted);font-weight:700;font-size:11px;border-radius:6px;cursor:pointer}
+.se-fmt button:hover{color:var(--txt)}
+.se-fmt button.on{background:var(--grad-blue);color:#fff}
 .se-actions{display:flex;gap:8px;align-items:center}
 .se-air{padding:9px 15px;border-radius:9px;border:1px solid rgba(255,255,255,.16);background:var(--grad-ruby);
   color:#fff;font-weight:700;cursor:pointer;letter-spacing:.03em;box-shadow:var(--glow-ruby)}
