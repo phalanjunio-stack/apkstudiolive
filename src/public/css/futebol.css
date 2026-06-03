@@ -1,0 +1,449 @@
+/* ============================================================
+   FUTEBOL — página de controle + placar (período) + lower-thirds
+   Usa os tokens do tema premium (azul / claro-escuro).
+   ============================================================ */
+
+/* ---------- PÁGINA DE CONTROLE ---------- */
+.fb-page-wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.fb-page{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1100px;animation:modal-pop .4s var(--ease-out) both}
+.fb-scorecard,.fb-card.full,.fb-prevstage{grid-column:1 / -1}
+
+/* ---------- PRÉVIA AO VIVO (como fica na transmissão) ---------- */
+/* fixa no topo: fica sempre visível enquanto você mexe nos controles abaixo */
+.fb-prevstage{position:sticky;top:0;z-index:5;background-image:var(--grad-card);background-color:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);box-shadow:0 14px 30px -12px rgba(0,0,0,.5),var(--shadow-card);padding:13px 14px}
+.fb-prevstage-tag{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+  font-weight:700;margin-bottom:10px}
+.fb-prevstage-tag small{letter-spacing:0;text-transform:none;font-weight:500;opacity:.8}
+.fb-prevstage-inner{position:relative;aspect-ratio:16/9;max-height:min(280px,38vh);border-radius:10px;overflow:hidden;
+  background:
+    radial-gradient(130% 90% at 50% -12%, rgba(31,139,255,.12), transparent 55%),
+    linear-gradient(180deg,#0e1f33 0%,#0b1a2c 52%,#0f3d24 53%,#0a2c19 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05),inset 0 -40px 60px rgba(0,0,0,.35)}
+.fb-prevstage-inner.no-video::after{content:'';position:absolute;left:0;right:0;top:53%;bottom:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 40px, transparent 40px 80px)}
+.fb-prev-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;display:block}
+.fb-prevstage-inner.no-video .fb-prev-video{display:none}
+.fb-prev-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:11px;
+  color:rgba(255,255,255,.5);pointer-events:none;display:none}
+.fb-prevstage-inner.no-video .fb-prev-hint{display:block}
+.fb-live-badge{position:absolute;top:10px;right:10px;z-index:4;display:flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:800;letter-spacing:.1em;color:#fff;background:rgba(210,39,28,.92);
+  padding:4px 9px;border-radius:6px;box-shadow:0 2px 10px rgba(255,59,48,.5);pointer-events:none}
+.fb-live-badge i{width:7px;height:7px;border-radius:50%;background:#fff;animation:pm-pulse 1.4s ease-in-out infinite}
+.fb-prevstage-inner.no-video .fb-live-badge{display:none}
+/* CAMADAS na prévia — clicar/mover/redimensionar/girar (estilo Photoshop) */
+.fb-proxy{position:absolute;transform-origin:center center;cursor:move;touch-action:none;user-select:none;z-index:2}
+.fb-proxy:hover:not(.selected){outline:1px dashed rgba(54,209,255,.5);outline-offset:3px}
+.fb-proxy.selected{outline:1.5px solid var(--accent2);outline-offset:3px;z-index:7}
+.fb-proxy.drag{cursor:grabbing}
+.fb-proxy-img{width:100%;display:block;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.fb-proxy-tk{background:linear-gradient(90deg,#0a2540,#1a8cff);color:#fff;font-weight:700;font-size:12px;
+  padding:5px 12px;border-radius:4px;white-space:nowrap;overflow:hidden}
+/* alças de redimensionar (4 cantos) */
+.fb-rh{position:absolute;width:13px;height:13px;background:#fff;border:2px solid var(--accent);border-radius:3px;
+  box-shadow:0 1px 3px rgba(0,0,0,.5);z-index:8;touch-action:none}
+.fb-rh-nw{left:-7px;top:-7px;cursor:nwse-resize}
+.fb-rh-ne{right:-7px;top:-7px;cursor:nesw-resize}
+.fb-rh-se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.fb-rh-sw{left:-7px;bottom:-7px;cursor:nesw-resize}
+/* alças de borda = RECORTAR aquele lado (clip, sem mudar tamanho) */
+.fb-eh{position:absolute;background:#fff;border:1px solid var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.5);z-index:8;touch-action:none}
+.fb-eh-n{top:-5px;left:50%;width:20px;height:9px;margin-left:-10px;border-radius:3px;cursor:ns-resize}
+.fb-eh-s{bottom:-5px;left:50%;width:20px;height:9px;margin-left:-10px;border-radius:3px;cursor:ns-resize}
+.fb-eh-e{right:-5px;top:50%;width:9px;height:20px;margin-top:-10px;border-radius:3px;cursor:ew-resize}
+.fb-eh-w{left:-5px;top:50%;width:9px;height:20px;margin-top:-10px;border-radius:3px;cursor:ew-resize}
+/* alça de girar */
+.fb-rot{position:absolute;left:50%;top:-30px;width:15px;height:15px;margin-left:-7px;border-radius:50%;
+  background:var(--accent2);border:2px solid #fff;cursor:grab;z-index:8;box-shadow:0 1px 4px rgba(0,0,0,.5);touch-action:none}
+.fb-rot::after{content:'';position:absolute;left:50%;top:13px;width:2px;height:17px;background:var(--accent2);transform:translateX(-50%)}
+
+/* barra de ferramentas abaixo da prévia */
+.fb-prevstage-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:11px}
+.fb-pb-group{display:flex;align-items:center;gap:6px;padding-right:9px;border-right:1px solid var(--line2)}
+.fb-pb-lab{font-size:10px;letter-spacing:.04em;color:var(--muted);font-weight:700;text-transform:uppercase}
+.fb-pb-range{flex:0 1 120px;min-width:90px;accent-color:var(--accent)}
+.fb-tool{padding:6px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--txt);font-weight:600;font-size:11.5px;cursor:pointer;transition:all .12s var(--ease-out)}
+.fb-tool:hover{border-color:var(--accent)}
+.fb-del{margin-left:auto;color:#ff7a7c;border-color:rgba(255,93,108,.4)}
+.fb-del:hover{border-color:var(--bad);background:rgba(255,93,108,.1)}
+
+/* painel de camadas */
+.fb-layers{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:11px;padding-top:11px;border-top:1px solid var(--line)}
+.fb-layers-lab{font-size:10px;letter-spacing:.16em;font-weight:700;color:var(--muted);margin-right:2px}
+.fb-layers-empty{font-size:11px;color:var(--muted)}
+.fb-layer{display:flex;align-items:center;gap:7px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;
+  background:var(--panel2);cursor:pointer;font-size:12px;font-weight:600;transition:all .12s var(--ease-out)}
+.fb-layer:hover{border-color:var(--line2)}
+.fb-layer.active{border-color:var(--accent);background:rgba(31,139,255,.10);color:var(--accent)}
+.fb-layer.off{opacity:.5}
+.fb-layer-eye{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;
+  border:0;background:none;color:inherit;cursor:pointer;padding:0}
+.fb-layer-nm{white-space:nowrap}
+
+.fb-card{background-image:var(--grad-card);background-color:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-card);padding:16px}
+.fb-card-h{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  font-weight:600;margin-bottom:12px}
+.fb-card-h small{letter-spacing:0;text-transform:none;color:var(--muted);font-weight:500}
+.fb-card-sub{font-size:11px;color:var(--muted);margin:10px 0 6px}
+
+/* cabeçalho com placar grande */
+.fb-scorecard{grid-column:1/-1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;
+  background:linear-gradient(180deg,var(--chrome2),var(--chrome));border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow-card);padding:18px 22px}
+.fb-side{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+.fb-badge{width:64px;height:64px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 18px -6px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.12);overflow:hidden}
+.fb-badge img{width:100%;height:100%;object-fit:contain}
+.fb-tn{font-size:16px;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.fb-center{text-align:center}
+.fb-bigscore{display:flex;align-items:center;gap:14px;justify-content:center;font-variant-numeric:tabular-nums}
+.fb-bigscore b{font-size:54px;font-weight:800;line-height:1;min-width:46px}
+.fb-bigscore span{font-size:24px;color:var(--muted)}
+.fb-clock{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:6px;color:var(--accent2)}
+.fb-stage{font-size:12px;letter-spacing:.16em;font-weight:700;color:var(--accent);text-transform:uppercase;min-height:14px;margin-top:2px}
+.fb-comp{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* linhas/campos */
+.fb-row{display:flex;gap:10px;flex-wrap:wrap}
+.fb-row2{display:flex;gap:10px}
+.fb-field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.fb-field>span{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.fb-page input[type=text],.fb-page select{width:100%;padding:9px 10px;border-radius:8px;
+  background:var(--inset);color:var(--txt);border:1px solid var(--line);font-size:13px}
+.fb-page input[type=text]:focus,.fb-page select:focus{border-color:var(--accent);outline:none}
+.fb-page input[type=color]{width:46px;height:38px;padding:2px;border-radius:8px;border:1px solid var(--line);background:var(--inset);cursor:pointer}
+.fb-prim{background:var(--grad-blue) !important;color:#fff !important;border:1px solid rgba(255,255,255,.16) !important;box-shadow:var(--glow-blue)}
+
+/* período (segmented) */
+.fb-seg{display:flex;flex-wrap:wrap;gap:6px}
+.fb-seg button{flex:1;min-width:92px;padding:9px 6px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--txt);font-weight:600;font-size:12px;cursor:pointer;
+  transition:all .15s var(--ease-out)}
+.fb-seg button:hover{border-color:var(--accent);transform:translateY(-1px)}
+
+/* times + gols */
+.fb-teams{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px}
+.fb-team-col{display:flex;flex-direction:column;gap:10px}
+.fb-scorebtns{display:flex;gap:8px}
+.fb-sb{flex:1;height:42px;border-radius:9px;border:1px solid var(--line2);background:linear-gradient(180deg,var(--panel2),var(--inset));
+  color:var(--txt);font-size:22px;font-weight:800;cursor:pointer;transition:all .15s var(--ease-out)}
+.fb-sb:hover{transform:translateY(-1px)}
+.fb-sb-plus{background:var(--grad-blue);border-color:rgba(255,255,255,.16);color:#fff;box-shadow:var(--glow-blue)}
+
+/* eventos */
+.fb-ev{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.fb-ev-lab{font-size:11px;font-weight:700;color:var(--muted);min-width:54px;letter-spacing:.06em}
+.fb-ev select{flex:0 0 130px}
+.fb-ev input{flex:1;min-width:120px}
+.fb-ev-btn{padding:9px 14px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);
+  color:var(--txt);font-weight:700;cursor:pointer;transition:all .15s var(--ease-out);white-space:nowrap}
+.fb-ev-btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.fb-ev-goal{background:var(--grad-blue);border-color:transparent;color:#fff}
+.fb-ev-yellow{background:linear-gradient(180deg,#ffd84d,#f3b50c);border-color:#d99e07;color:#3a2c00}
+.fb-ev-red{background:linear-gradient(180deg,#ff6a6c,#e0252a);border-color:#c01b20;color:#fff}
+
+/* jogos do dia */
+.fb-games{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.fb-game{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);
+  border-radius:9px;background:var(--panel2)}
+.fb-game-nm{flex:1;font-weight:600;font-size:13px}
+.fb-game-nm i{color:var(--muted);font-style:normal;margin:0 4px}
+.fb-game-comp{font-size:11px;color:var(--muted)}
+.fb-game-x{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:var(--inset);
+  color:var(--muted);cursor:pointer;font-size:15px}
+.fb-game-x:hover{color:var(--bad);border-color:var(--bad)}
+
+@media(max-width:820px){.fb-page{grid-template-columns:1fr}}
+
+/* ============================================================
+   PLACAR — período/etapa + competição (overlay no PROGRAM)
+   ============================================================ */
+.sb-mid{display:inline-flex;flex-direction:column;align-items:center;line-height:1.05}
+.sb-stage{font-size:9px;letter-spacing:.12em;font-weight:700;opacity:.92;margin-top:2px;white-space:nowrap}
+.sb-comp{display:block;font-size:9px;letter-spacing:.06em;opacity:.8;text-align:center;margin-top:3px;white-space:nowrap}
+
+/* ============================================================
+   LOWER-THIRDS — gol / cartão / substituição
+   ============================================================ */
+.fb-banner{position:absolute;left:4%;bottom:8%;z-index:6;display:flex;align-items:center;
+  min-height:46px;max-width:56%;border-radius:12px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(16,24,42,.93),rgba(9,14,24,.95));
+  box-shadow:0 14px 32px -12px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.08);
+  color:#fff;font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,sans-serif;
+  transform:translateX(-115%);opacity:0;transition:transform .5s cubic-bezier(.22,1,.36,1),opacity .4s ease}
+.fb-banner.show{transform:translateX(0);opacity:1}
+/* escudo do time no início do lower-third */
+.fb-crest{width:36px;height:36px;margin:5px 0 5px 6px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:900;color:#fff;background:linear-gradient(180deg,#1c2942,#121d31);
+  box-shadow:inset 0 -3px 0 var(--tc,#1a8cff),0 1px 4px rgba(0,0,0,.4);overflow:hidden}
+.fb-crest img{width:100%;height:100%;object-fit:contain;display:block}
+.fb-strip{width:3px;flex:0 0 3px;align-self:stretch;margin:6px 0 6px 6px;border-radius:2px}
+.fb-main{display:flex;flex-direction:column;justify-content:center;gap:0;padding:6px 14px 6px 11px;min-width:0}
+.fb-tag{font-size:9.5px;font-weight:800;letter-spacing:.14em;color:#ffd24a;line-height:1.35}
+.fb-goal .fb-tag{color:#3ff08a;font-size:12px;letter-spacing:.1em}
+.fb-team{font-size:11.5px;font-weight:700;letter-spacing:.02em;opacity:.9;white-space:nowrap;line-height:1.25}
+.fb-name{font-size:13px;font-weight:800;white-space:nowrap;line-height:1.2}
+.fb-min{display:flex;align-items:center;padding:0 12px;font-size:15px;font-weight:800;
+  font-variant-numeric:tabular-nums;background:rgba(255,255,255,.06);color:#cfe0ff;align-self:stretch;margin-left:6px}
+.fb-cardico{width:18px;height:24px;border-radius:3px;align-self:center;margin-left:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,.5);transform:rotate(-7deg)}
+.fb-cardico.yellow{background:linear-gradient(180deg,#ffe24d,#f3b50c)}
+.fb-cardico.red{background:linear-gradient(180deg,#ff5a5c,#d2271c)}
+.fb-subnames{display:flex;flex-direction:column;gap:0;font-size:12px;font-weight:700;line-height:1.3}
+.fb-subnames .in{color:#3ff08a}
+.fb-subnames .out{color:#ff8a8a}
+
+/* ============================================================
+   CONFIGURAÇÃO (FutSetup) — biblioteca de times, elenco, partida
+   ============================================================ */
+.fs-wrap{display:flex;flex-direction:column;gap:14px;margin-bottom:14px}
+.fs-card .fb-card-h{display:flex;align-items:center;gap:8px}
+.fs-card .fb-card-h .fb-prim,.fs-card .fb-card-h>.btn-soft{margin-left:auto}
+
+.fs-slots{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.fs-slot{background:var(--inset);border:1px solid var(--line2);border-radius:10px;padding:11px}
+.fs-slot-lab{font-size:9px;letter-spacing:.12em;color:var(--muted);font-weight:600;margin-bottom:8px}
+.fs-slot-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.fs-slot-meta b{font-size:14px;font-weight:600;color:var(--txt)}
+.fs-crest{width:40px;height:40px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#fff;background:linear-gradient(180deg,#1b2740,#121d31);
+  border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 -4px 0 var(--cc,#28406b);overflow:hidden}
+.fs-crest img{width:100%;height:100%;object-fit:contain}
+.fs-sel{width:100%;background:var(--panel2);border:1px solid var(--line2);color:var(--txt);border-radius:8px;padding:8px;font-size:12px;cursor:pointer}
+
+.fs-comp{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%}
+.fs-complogo{width:100%}
+
+.fs-teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.fs-team{display:flex;flex-direction:column;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+.fs-team-head{display:flex;align-items:center;gap:10px}
+.fs-team-info{flex:1;min-width:0;line-height:1.35}
+.fs-team-info b{display:block;font-size:13px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-team-info span{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted);font-weight:500}
+.fs-dots{display:inline-flex;gap:4px;flex:none;font-style:normal}
+.fs-dots i{width:11px;height:11px;border-radius:50%;border:1px solid rgba(255,255,255,.25)}
+.fs-team-acts{display:flex;gap:5px}
+.fs-team-acts .fs-mini{flex:1;text-align:center}
+.fs-team-acts .fs-x{flex:none;width:30px;padding:6px 0}
+.fs-mini{font-size:11px;font-weight:600;padding:6px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel);color:var(--txt);cursor:pointer;transition:.13s}
+.fs-mini:hover{border-color:var(--accent);color:var(--accent)}
+.fs-x{color:var(--muted)}.fs-x:hover{border-color:var(--rec);color:var(--rec)}
+
+.fs-editor{background:var(--inset);border:1px solid var(--line2);border-radius:11px;padding:12px;margin-bottom:12px}
+.fs-ed-head{display:flex;align-items:center;margin-bottom:11px}
+.fs-ed-head b{font-size:13px;font-weight:600}.fs-ed-head .fs-mini{margin-left:auto}
+.fs-ed-top{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.fs-crest-edit{width:60px;height:60px;font-size:15px;cursor:pointer}
+.fs-ed-fields{flex:1;display:grid;grid-template-columns:2fr .8fr 1fr 1fr 1.4fr;gap:8px}
+.fs-abbr{text-transform:uppercase;text-align:center;letter-spacing:.1em;font-weight:800}
+.fs-ed-fields input[type=color]{width:100%;height:34px;padding:2px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);cursor:pointer}
+
+/* card "Animação do gol" — compacto */
+.fs-gol{max-width:460px}
+.fs-gol-prev{position:relative;width:100%;max-width:360px;height:118px;border-radius:9px;overflow:hidden;margin-bottom:10px;border:1px solid var(--line2);
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 26px,transparent 26px 52px),radial-gradient(120% 90% at 50% 120%,#1a6e3a,#0c4d27 55%,#073a1d)}
+.fs-gol-prev-tag{position:absolute;top:5px;left:7px;z-index:12;font-size:7.5px;font-weight:800;letter-spacing:.12em;color:#cfe0ff;background:#0a1426cc;padding:2px 6px;border-radius:5px}
+/* GOOOL menor dentro da prévia, proporcional ao box */
+.fs-gol-prev .fb-gl{font-size:42px !important}
+.fs-gol-prev .fb-golbig i{font-size:11px !important}
+.fs-gol-line{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.fs-gol-lab{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;width:82px;flex:none}
+.fs-gol-styles{display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0}
+.fs-gol-style{font-size:10px;font-weight:700;padding:5px 9px;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--muted);cursor:pointer;transition:.13s}
+.fs-gol-style:hover{border-color:var(--accent);color:var(--txt)}
+.fs-gol-style.on{background:var(--grad-blue);color:#fff;border-color:transparent}
+.fs-gol-range{flex:1;max-width:200px;-webkit-appearance:none;appearance:none;height:5px;border-radius:99px;background:var(--inset);outline:none;cursor:pointer}
+.fs-gol-range::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 7px rgba(42,151,255,.5)}
+.fs-gol-range::-moz-range-thumb{width:13px;height:13px;border:0;border-radius:50%;background:var(--accent);cursor:pointer}
+.fs-gol-v{font-size:10px;font-weight:800;color:var(--muted);min-width:46px;text-align:left;flex:none}
+.fs-gol-test{margin-top:5px;padding:7px 14px;border-radius:8px;border:0;background:var(--grad-blue);color:#fff;font-weight:800;font-size:11px;cursor:pointer;box-shadow:var(--glow-blue)}
+.fs-gol-test:hover{filter:brightness(1.07)}
+
+.fs-sq-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.fs-sq-head b{font-size:11px;letter-spacing:.14em;color:var(--muted);font-weight:800}
+.fs-sq-head small{color:var(--muted2,#5e6e90);font-size:10px}
+.fs-sq-head .fs-mini{margin-left:auto}
+.fs-squad{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto}
+.fs-prow{display:flex;gap:7px;align-items:center}
+.fs-prow input{background:var(--panel2);border:1px solid var(--line2);color:var(--txt);border-radius:7px;padding:7px 9px;font-size:12px}
+.fs-pn{width:52px;flex:none;text-align:center;font-weight:800}
+.fs-pname{flex:1;min-width:0}
+.fs-role{font-size:10.5px;font-weight:700;padding:6px 10px;border-radius:7px;border:1px solid var(--line2);background:rgba(46,224,122,.12);color:#42d98a;cursor:pointer;flex:none;white-space:nowrap}
+.fs-role.res{background:rgba(120,165,255,.1);color:var(--muted)}
+.fs-ed-foot{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+@media(max-width:1100px){.fs-comp{grid-template-columns:1fr 1fr}.fs-slots{grid-template-columns:1fr}.fs-ed-fields{grid-template-columns:1fr 1fr}.fs-ed-top{flex-direction:column}}
+
+/* ---- card de título no PROGRAM (Intervalo / Fim / Pré-jogo / Pênaltis / Stats / Patrocínio) ---- */
+.fb-title{position:absolute;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .4s ease}
+.fb-title.show{opacity:1}
+.fb-title-in{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 38px;border-radius:14px;
+  background:linear-gradient(180deg,rgba(14,22,40,.93),rgba(8,14,24,.95));border:1px solid rgba(120,165,255,.26);
+  box-shadow:0 20px 50px -16px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.04);animation:fb-title-pop .45s cubic-bezier(.22,1,.36,1) both}
+.fb-title-t{font:900 clamp(22px,5vw,46px)/1 Plus Jakarta Sans,Inter,"Segoe UI",system-ui,sans-serif;letter-spacing:.04em;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+.fb-title-s{font-size:clamp(11px,1.8vw,16px);font-weight:700;letter-spacing:.12em;color:#9fd9ff;text-transform:uppercase}
+.fb-title.warn .fb-title-in{border-color:rgba(241,196,64,.42)} .fb-title.warn .fb-title-t{color:#ffd24a}
+.fb-title.end .fb-title-in{border-color:rgba(255,93,108,.42)} .fb-title.end .fb-title-t{color:#ff8a8a}
+@keyframes fb-title-pop{0%{opacity:0;transform:translateY(14px) scale(.96)}100%{opacity:1;transform:none}}
+
+/* ---- GOOOL! SOBRE O PROGRAM — estilos selecionáveis (wave/drop/zoom/slide/neon) ---- */
+.fb-golbig{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  pointer-events:none;opacity:0;overflow:hidden}
+.fb-golbig::before{content:"";position:absolute;inset:0;background:radial-gradient(50% 50% at 50% 50%,rgba(91,108,255,.30),transparent 70%);opacity:0}
+.fb-golbig.on{opacity:1}
+.fb-golbig.on::before{opacity:1;transition:opacity .3s ease}
+/* "recolher": tempo que fica é controlado no JS, que adiciona .fade */
+.fb-golbig.fade,.fb-golbig.fade::before{opacity:0 !important;transition:opacity .45s ease}
+.fb-golbig b,.fb-golbig i{position:relative;z-index:2;text-align:center}
+.fb-golbig b{display:inline-flex;align-items:flex-end;gap:.01em;line-height:1}
+.fb-golbig i{font-style:normal;font-weight:800;font-size:clamp(12px,2vw,22px);letter-spacing:.14em;text-transform:uppercase;color:#dffff0;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+.fb-gl{display:inline-block;font-weight:900;letter-spacing:.03em;line-height:1;color:#eafff2;
+  font-size:clamp(36px,9vw,76px);transform-origin:50% 100%;
+  text-shadow:0 3px 12px rgba(0,0,0,.6),0 0 22px rgba(150,160,255,.95),0 0 52px rgba(91,108,255,.75),0 0 100px rgba(91,108,255,.5)}
+/* animação por LETRA (var --gl-anim) e da PALAVRA inteira (var --gl-wanim) */
+.fb-golbig.on .fb-gl{animation:var(--gl-anim,none) var(--gol-dur,.5s) var(--gl-ease,cubic-bezier(.2,1.7,.35,1)) both;animation-delay:calc(var(--i) * var(--gol-stagger,.1s))}
+.fb-golbig.on b{animation:var(--gl-wanim,none) calc(var(--gol-dur,.5s) * 1.4) var(--gl-wease,cubic-bezier(.2,1.5,.4,1)) both}
+/* cada estilo: estado inicial das letras + qual keyframe usa */
+.fb-anim-wave .fb-gl{opacity:0;transform:translateY(.9em) scale(.55)} .fb-anim-wave{--gl-anim:fb-gl-rise}
+.fb-anim-drop .fb-gl{opacity:0;transform:translateY(-.9em) scale(.7)} .fb-anim-drop{--gl-anim:fb-gl-drop;--gl-ease:cubic-bezier(.3,1.4,.4,1)}
+.fb-anim-zoom .fb-gl{opacity:1} .fb-anim-zoom b{opacity:0} .fb-anim-zoom{--gl-wanim:fb-w-zoom}
+.fb-anim-slide .fb-gl{opacity:1} .fb-anim-slide b{opacity:0} .fb-anim-slide{--gl-wanim:fb-w-slide;--gl-wease:cubic-bezier(.2,1,.3,1)}
+.fb-anim-neon .fb-gl{opacity:1} .fb-anim-neon b{opacity:0} .fb-anim-neon{--gl-wanim:fb-w-neon}
+@keyframes fb-gl-rise{0%{opacity:0;transform:translateY(.9em) scale(.55)}55%{opacity:1;transform:translateY(-.1em) scale(1.14)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fb-gl-drop{0%{opacity:0;transform:translateY(-.9em) scale(.7)}60%{opacity:1;transform:translateY(.08em) scale(1.1)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fb-w-zoom{0%{opacity:0;transform:scale(.3)}60%{opacity:1;transform:scale(1.14)}100%{opacity:1;transform:scale(1)}}
+@keyframes fb-w-slide{0%{opacity:0;transform:translateX(-55%)}70%{opacity:1;transform:translateX(4%)}100%{opacity:1;transform:translateX(0)}}
+@keyframes fb-w-neon{0%{opacity:0}10%{opacity:1}18%{opacity:.25}26%{opacity:1}38%{opacity:.4}46%{opacity:1}100%{opacity:1}}
+
+/* ---- PLACAR surge / recolhe (anima o .sb interno; não mexe no posicionamento) ---- */
+.ov.ov-in .sb{animation:fb-sb-in .5s cubic-bezier(.22,1,.36,1) both}
+.ov.ov-out .sb{animation:fb-sb-out .42s ease both}
+@keyframes fb-sb-in{0%{opacity:0;transform:translateY(-16px) scale(.9)}60%{opacity:1;transform:translateY(2px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fb-sb-out{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-14px) scale(.94)}}
+
+@media (prefers-reduced-motion: reduce){
+  .fb-banner{transition:opacity .2s ease}
+  .fb-banner{transform:none}
+  /* GOOOL + placar animam mesmo com "reduzir movimento" (vencem o *{animation:none} global) */
+  .fb-golbig.on .fb-gl{animation:var(--gl-anim,none) var(--gol-dur,.5s) var(--gl-ease,cubic-bezier(.2,1.7,.35,1)) both !important;animation-delay:calc(var(--i) * var(--gol-stagger,.1s)) !important}
+  .fb-golbig.on b{animation:var(--gl-wanim,none) calc(var(--gol-dur,.5s) * 1.4) var(--gl-wease,cubic-bezier(.2,1.5,.4,1)) both !important}
+  .ov.ov-in .sb{animation:fb-sb-in .5s cubic-bezier(.22,1,.36,1) both !important}
+  .ov.ov-out .sb{animation:fb-sb-out .42s ease both !important}
+}
+
+/* ============================================================
+   8 MODELOS DE PLACAR  (igual a referência)
+   Estrutura: [escudo][nome][gols][etapa/relógio/+N][gols][nome][escudo]
+   ============================================================ */
+.sb{position:relative;display:inline-flex;align-items:center;font-weight:800;letter-spacing:.02em;
+  font-size:15px;border-radius:9px;height:auto;box-shadow:0 8px 22px rgba(0,0,0,.55)}
+.sb-logo{height:42px;width:42px;object-fit:contain;display:block;z-index:3;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55))}
+.sb-hl{margin-right:-6px} .sb-al{margin-left:-6px}
+.sb-team{display:flex;align-items:center;height:46px;padding:0 18px;color:#fff;white-space:nowrap;
+  background:var(--tc,#1a3a7a);text-shadow:0 1px 2px rgba(0,0,0,.4);font-size:17px;letter-spacing:.03em}
+.sb-score{display:flex;align-items:center;justify-content:center;height:46px;min-width:44px;font-size:22px;color:#0b1220;background:#fff}
+.sb-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:72px;height:46px;
+  background:linear-gradient(180deg,#2a93ff,#0a66d8);color:#fff;padding:0 8px}
+.sb-stage{font-size:9px;letter-spacing:.05em;font-weight:700;line-height:1.15;opacity:.95;white-space:nowrap}
+.sb-clock{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.05;background:transparent;color:#fff;min-width:0}
+.sb-added{font-size:9px;font-weight:800;line-height:1;color:#ffe08a}
+.sb-comp{position:absolute;left:0;right:0;bottom:-15px;text-align:center;font-size:9px;color:#dfeaff;opacity:.85;white-space:nowrap}
+
+/* 1. MODERNO */
+.sb.sb-modern{border-radius:11px}
+.sb.sb-modern .sb-h{border-radius:11px 0 0 11px}
+.sb.sb-modern .sb-a{border-radius:0 11px 11px 0}
+.sb.sb-modern .sb-mid{background:linear-gradient(180deg,#2a93ff,#0856c4)}
+
+/* 2. LATERAL CLEAN */
+.sb.sb-lateral{border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.sb.sb-lateral .sb-team{height:42px}
+.sb.sb-lateral .sb-score{height:42px;background:#eef2f8}
+.sb.sb-lateral .sb-mid{height:42px;background:linear-gradient(180deg,#1f8bff,#0c6fd6)}
+
+/* 3. CENTRAL EM DESTAQUE */
+.sb.sb-central{border-radius:8px}
+.sb.sb-central .sb-score{min-width:54px;font-size:26px;color:#fff;
+  background:linear-gradient(180deg,#2a93ff,#0a66d8);transform:skewX(-9deg);box-shadow:0 0 16px rgba(31,139,255,.55)}
+.sb.sb-central .sb-mid{background:#0a1322;min-width:82px}
+.sb.sb-central .sb-clock{font-size:19px}
+
+/* 4. TRANSPARENTE */
+.sb.sb-transparent{box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.sb.sb-transparent .sb-h{border-radius:8px 0 0 8px}
+.sb.sb-transparent .sb-a{border-radius:0 8px 8px 0}
+.sb.sb-transparent .sb-team{background:color-mix(in srgb,var(--tc,#1a3a7a) 32%, rgba(8,12,22,.6));backdrop-filter:blur(3px)}
+.sb.sb-transparent .sb-score{background:rgba(8,12,22,.6);color:#fff}
+.sb.sb-transparent .sb-mid{background:color-mix(in srgb,#6a48c8 40%, rgba(8,12,22,.66))}
+
+/* 5. PREMIUM (preto + ouro) */
+.sb.sb-premium{background:#0a0c10;border:1px solid #caa45a;border-radius:10px;padding:0 6px;
+  box-shadow:0 0 0 1px rgba(216,176,108,.35),0 10px 26px rgba(0,0,0,.6)}
+.sb.sb-premium .sb-team{background:transparent;color:#f4e6c4;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.sb.sb-premium .sb-score{background:transparent;color:#fff;min-width:40px;
+  border-left:1px solid rgba(216,176,108,.22);border-right:1px solid rgba(216,176,108,.22)}
+.sb.sb-premium .sb-mid{background:transparent;min-width:74px;height:40px;margin:3px 4px;
+  border:1px solid rgba(216,176,108,.6);border-radius:8px}
+.sb.sb-premium .sb-clock{color:#f3d9a4} .sb.sb-premium .sb-stage{color:#caa45a} .sb.sb-premium .sb-added{color:#f3d9a4}
+
+/* 6. VERTICAL / COMPACTO */
+.sb.sb-vertical{display:grid;grid-template-columns:auto 1fr auto;gap:4px;background:rgba(8,12,22,.94);
+  padding:7px;border-radius:9px;min-width:240px;box-shadow:0 8px 22px rgba(0,0,0,.55)}
+.sb.sb-vertical .sb-logo{height:28px;width:28px;margin:0;align-self:center;justify-self:center}
+.sb.sb-vertical .sb-hl{grid-area:1/1} .sb.sb-vertical .sb-al{grid-area:2/1}
+.sb.sb-vertical .sb-h{grid-area:1/2;height:32px;border-radius:6px;font-size:14px;padding:0 12px}
+.sb.sb-vertical .sb-a{grid-area:2/2;height:32px;border-radius:6px;font-size:14px;padding:0 12px}
+.sb.sb-vertical .sb-hs{grid-area:1/3;height:32px;min-width:38px;background:#1f8bff;color:#fff;border-radius:6px}
+.sb.sb-vertical .sb-as{grid-area:2/3;height:32px;min-width:38px;background:#1f8bff;color:#fff;border-radius:6px}
+.sb.sb-vertical .sb-mid{grid-area:3/1/3/4;flex-direction:row;gap:10px;height:30px;background:transparent;justify-content:center}
+.sb.sb-vertical .sb-clock{background:#1f8bff;padding:3px 8px;border-radius:5px;font-size:14px}
+.sb.sb-vertical .sb-added{color:#9fc2ff}
+.sb.sb-vertical .sb-comp{position:static}
+
+/* 7. ESPORTIVO (verde neon) */
+.sb.sb-esportivo{border-radius:6px;box-shadow:0 0 18px rgba(46,224,122,.22),0 8px 22px rgba(0,0,0,.5)}
+.sb.sb-esportivo .sb-team{box-shadow:inset 0 0 0 1px rgba(46,224,122,.25)}
+.sb.sb-esportivo .sb-score{min-width:50px;color:#04240f;background:linear-gradient(180deg,#2ee07a,#10a352);
+  transform:skewX(-10deg);box-shadow:0 0 14px rgba(46,224,122,.55)}
+.sb.sb-esportivo .sb-mid{background:#0a1322} .sb.sb-esportivo .sb-clock{color:#bdf5d2}
+
+/* 8. CLÁSSICO (placas brancas) */
+.sb.sb-classico{border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,.45)}
+.sb.sb-classico .sb-team{background:#f5f7fb;color:#0e1726;text-shadow:none;border-bottom:3px solid var(--tc,#1a3a7a)}
+.sb.sb-classico .sb-score{background:#fff;color:#0b1220;border-left:1px solid #d6deec}
+.sb.sb-classico .sb-mid{background:#0e1116;color:#fff} .sb.sb-classico .sb-stage{color:#cfd8e6}
+
+/* ---------- SELETOR de modelos (miniaturas) ---------- */
+.fb-models{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:900px){.fb-models{grid-template-columns:repeat(4,1fr)}}
+.fb-model{display:flex;flex-direction:column;gap:8px;padding:9px;border:1px solid var(--line);border-radius:10px;
+  background:var(--panel2);cursor:pointer;transition:all .15s var(--ease-out)}
+.fb-model:hover{transform:translateY(-2px);border-color:var(--accent)}
+.fb-model.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),var(--glow-blue)}
+.fb-model-prev{display:flex;align-items:stretch;height:30px;border-radius:6px;overflow:hidden;
+  font-size:11px;font-weight:800;box-shadow:0 3px 8px rgba(0,0,0,.4);background:#0b1220}
+.fb-mp-h,.fb-mp-a{flex:1;display:flex;align-items:center;padding:0 7px;color:#fff;min-width:0}
+.fb-mp-h{background:#1a3a7a} .fb-mp-a{background:#7a1a1a;justify-content:flex-end}
+.fb-mp-h::before,.fb-mp-a::after{content:'';width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.55);flex:0 0 11px}
+.fb-mp-h::before{margin-right:5px} .fb-mp-a::after{margin-left:5px}
+.fb-mp-s{display:flex;align-items:center;justify-content:center;min-width:20px;background:#fff;color:#0b1220}
+.fb-mp-c{display:flex;align-items:center;justify-content:center;min-width:42px;font-size:10px;color:#fff;
+  background:linear-gradient(180deg,#2a93ff,#0a66d8)}
+.fb-model-tag{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--txt)}
+.fb-model-tag i{width:18px;height:18px;border-radius:5px;background:var(--inset);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-style:normal;color:var(--muted)}
+.fb-model.active .fb-model-tag i{background:var(--accent);color:#fff;border-color:transparent}
+/* acentos por modelo na miniatura */
+.fb-model-prev.sb-lateral .fb-mp-c{background:#1f8bff}
+.fb-model-prev.sb-central .fb-mp-s{background:#1f8bff;color:#fff}
+.fb-model-prev.sb-transparent{background:rgba(255,255,255,.05)}
+.fb-model-prev.sb-transparent .fb-mp-h,.fb-model-prev.sb-transparent .fb-mp-a{background:rgba(20,30,52,.5)}
+.fb-model-prev.sb-transparent .fb-mp-c{background:#6a48c8}
+.fb-model-prev.sb-premium{background:#0a0c10;box-shadow:inset 0 0 0 1px #caa45a}
+.fb-model-prev.sb-premium .fb-mp-h,.fb-model-prev.sb-premium .fb-mp-a,.fb-model-prev.sb-premium .fb-mp-s,.fb-model-prev.sb-premium .fb-mp-c{background:transparent;color:#f3d9a4}
+.fb-model-prev.sb-esportivo .fb-mp-c{background:#0b1220}
+.fb-model-prev.sb-esportivo .fb-mp-s{background:linear-gradient(180deg,#2ee07a,#10a352);color:#04240f}
+.fb-model-prev.sb-classico .fb-mp-h,.fb-model-prev.sb-classico .fb-mp-a{background:#f5f7fb;color:#0b1220}
+.fb-model-prev.sb-classico .fb-mp-c{background:#0e1116}

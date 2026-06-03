@@ -1,4 +1,4 @@
-/* ===== SeteLagoas Câmera — visual premium (glass, glow, depth) ===== */
+/* ===== Kivo Câmera — visual premium (glass, glow, depth) ===== */
 :root{
   --bg:#04060c; --txt:#eef3fb; --muted:#8597b4; --faint:#5d6b85;
   --accent:#2b8bff; --accent2:#46d3ff; --ok:#34d399; --bad:#ff5a5a; --amber:#f7b955;
@@ -10,7 +10,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
 body.pa{
-  color:var(--txt);font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
+  color:var(--txt);font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;
   display:flex;flex-direction:column;height:100dvh;overflow:hidden;
   background:
     radial-gradient(110% 60% at 50% -8%, rgba(43,139,255,.22), transparent 60%),
@@ -30,6 +30,7 @@ body.pa{
 .pa-logo{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;
   font-weight:900;color:#fff;font-size:17px;background:radial-gradient(130% 130% at 28% 18%,#5ed6ff,#1a7bf0 55%,#0846a8);
   box-shadow:0 4px 16px rgba(26,123,240,.55),inset 0 1px 0 rgba(255,255,255,.4)}
+.pa-logo-img{background:none;box-shadow:none;object-fit:contain}
 
 .pa-body{flex:1;overflow-y:auto;min-height:0;position:relative}
 .scr{animation:scrin .35s var(--ease) both}

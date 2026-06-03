@@ -4,17 +4,27 @@
   background:var(--panel2);color:var(--txt);cursor:pointer;transition:all .15s var(--ease-out)}
 .mixbtn:hover{border-color:var(--accent);filter:brightness(1.07)}
 
-.mixer{display:flex;gap:8px;overflow-x:auto;min-height:222px;align-items:stretch;padding-bottom:4px}
+.mixer{display:flex;gap:10px;overflow-x:auto;min-height:222px;align-items:stretch;padding:8px 6px 8px}
 .mixer-empty{color:var(--muted);font-size:12px;padding:14px;margin:auto;text-align:center}
 
 /* strip sempre escuro, como mesa real */
-.ch{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:66px;
+.ch{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:66px;width:84px;max-width:84px;flex:none;
   background:#0b1220;border:1px solid #1b2740;border-radius:9px;padding:8px 7px 9px}
 .ch-master{background:linear-gradient(180deg,#1a1f2b,#0b1220);border-color:#3a4150}
-.ch-top{display:flex;align-items:center;gap:2px;width:100%}
-.ch-name{flex:1;font-size:10px;font-weight:700;color:#e6eefc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.ch-top{display:flex;align-items:center;gap:2px;width:100%;min-width:0}
+.ch-name{flex:1;min-width:0;font-size:10px;font-weight:700;color:#e6eefc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .ch-x{width:13px;height:13px;border:0;background:transparent;color:#7e8db0;cursor:pointer;font-size:13px;line-height:1;padding:0}
 .ch-x:hover{color:#ff4d4f}
+/* badge PGM/PRÉ no canal de vídeo (segue PROGRAM/PREVIEW) */
+.ch-air{flex:none;font-size:8px;font-weight:800;letter-spacing:.05em;padding:1px 5px;border-radius:4px;line-height:1.5}
+.ch-air:empty{display:none}
+.ch[data-air="program"] .ch-air{background:var(--rec,#ff5d6c);color:#fff}
+.ch[data-air="preview"] .ch-air{background:var(--live,#3fd39b);color:#04240f}
+.ch[data-air="program"]{box-shadow:inset 0 0 0 1px rgba(255,93,108,.45)}
+.ch[data-air="preview"]{box-shadow:inset 0 0 0 1px rgba(63,211,155,.4)}
+/* cor de identificação do canal de vídeo (bate com o card da fonte) */
+.ch[data-vid]{border-top:2px solid var(--cc,var(--line))}
+.ch[data-vid] .ch-name{color:var(--cc)}
 .ch-db{font-size:10px;font-weight:700;color:#cfe0ff;font-variant-numeric:tabular-nums}
 
 .ch-body{display:flex;gap:5px;align-items:stretch;height:150px;justify-content:center}

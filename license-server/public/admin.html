@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kivo · Painel de Licenças</title>
+  <style>
+    :root{--bg:#070c16;--panel:#0e1828;--panel2:#0b1320;--inset:#091019;--line:rgba(120,165,255,.12);
+      --txt:#e9effc;--muted:#8090b4;--accent:#1f8bff;--accent2:#36d1ff;--ok:#2ecc71;--bad:#ff4d4f;--warn:#ffb02e;
+      --grad:linear-gradient(180deg,#2a97ff,#0a66d8)}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(120% 80% at 80% -10%,rgba(31,139,255,.10),transparent 60%),var(--bg);
+      color:var(--txt);font-family:Inter,"Segoe UI",system-ui,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent2)}
+    .wrap{max-width:1100px;margin:0 auto;padding:22px}
+    .topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+    .logo{width:34px;height:34px;border-radius:9px;background:radial-gradient(120% 120% at 30% 20%,#36d1ff,#0a6ad8 60%,#063a78);
+      display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff}
+    .brand{font-size:18px;font-weight:700}.brand span{color:var(--accent2);font-weight:500}
+    .btn{padding:10px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);
+      font-weight:600;font-size:13px;cursor:pointer;transition:all .15s}
+    .btn:hover{border-color:var(--accent)}
+    .btn.prim{background:var(--grad);border-color:transparent;color:#fff}
+    .btn.danger{color:#ff8a8a;border-color:rgba(255,77,79,.4)}.btn.danger:hover{background:rgba(255,77,79,.12);border-color:var(--bad)}
+    .btn.sm{padding:6px 10px;font-size:12px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 16px 40px -18px #000}
+    .h{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:12px}
+    label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 5px}
+    input,select{width:100%;padding:10px 11px;border-radius:8px;background:var(--inset);border:1px solid var(--line);color:var(--txt);font-size:13px}
+    input:focus,select:focus{border-color:var(--accent);outline:none}
+    .grid{display:grid;gap:12px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+    .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+    .stat b{display:block;font-size:26px;font-weight:800}.stat span{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+    td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+    tr:hover td{background:rgba(120,165,255,.04)}
+    .key{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;letter-spacing:.5px;cursor:copy}
+    .badge{font-size:10px;font-weight:800;letter-spacing:.04em;padding:3px 8px;border-radius:20px}
+    .b-active{background:rgba(46,204,113,.18);color:#5be08a}.b-revoked{background:rgba(255,77,79,.18);color:#ff8a8a}.b-disabled{background:rgba(160,170,190,.18);color:#aab}
+    .feat{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+    .feat label{display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;color:var(--txt);font-size:12px;cursor:pointer}
+    .feat input{width:auto}
+    .muted{color:var(--muted)}.right{text-align:right}
+    .login{max-width:360px;margin:14vh auto 0}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);
+      padding:11px 18px;border-radius:10px;box-shadow:0 12px 30px #000;opacity:0;transition:opacity .2s;z-index:50}
+    .toast.show{opacity:1}
+    .modal{position:fixed;inset:0;background:rgba(3,6,14,.7);display:none;align-items:center;justify-content:center;z-index:40}
+    .modal.show{display:flex}
+    .modal .card{width:min(560px,94vw);max-height:84vh;overflow:auto;margin:0}
+    .hide{display:none !important}
+    @media(max-width:760px){.g4,.g3,.g2,.stats{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  <!-- LOGIN -->
+  <div class="wrap login" id="loginView">
+    <div class="topbar"><span class="logo">K</span><span class="brand">Kivo <span>Licenças</span></span></div>
+    <div class="card">
+      <div class="h">Acesso administrativo</div>
+      <label>Senha</label>
+      <input type="password" id="loginPass" placeholder="senha do admin" />
+      <button class="btn prim" id="loginBtn" style="margin-top:12px;width:100%">Entrar</button>
+      <p class="muted" id="loginErr" style="font-size:12px;margin:10px 0 0"></p>
+    </div>
+  </div>
+
+  <!-- PAINEL -->
+  <div class="wrap hide" id="appView">
+    <div class="topbar">
+      <span class="logo">K</span><span class="brand">Kivo <span>Licenças</span></span>
+      <button class="btn sm" id="reloadBtn" style="margin-left:auto">Atualizar</button>
+      <button class="btn sm" id="logoutBtn">Sair</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="card">
+      <div class="h">Nova licença / chave</div>
+      <div class="grid g3">
+        <div><label>Cliente (nome)</label><input id="nlName" placeholder="Nome do cliente / canal" /></div>
+        <div><label>E-mail / contato</label><input id="nlEmail" placeholder="email ou WhatsApp" /></div>
+        <div><label>Plano</label><select id="nlPlan"></select></div>
+      </div>
+      <div class="grid g3" style="margin-top:10px">
+        <div><label>Máquinas (limite)</label><input id="nlMax" type="number" min="1" value="1" /></div>
+        <div><label>Expira em (vazio = vitalícia)</label><input id="nlExp" type="date" /></div>
+        <div><label>Chave (vazio = gerar)</label><input id="nlKey" placeholder="KIVO-XXXX-XXXX-XXXX" /></div>
+      </div>
+      <div class="feat" id="nlFeats"></div>
+      <button class="btn prim" id="nlCreate" style="margin-top:14px">Gerar chave</button>
+    </div>
+
+    <div class="card">
+      <div class="h">Licenças</div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Chave</th><th>Cliente</th><th>Plano</th><th>Status</th><th>Máquinas</th><th>Expira</th><th class="right">Ações</th></tr></thead>
+          <tbody id="licRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal de máquinas -->
+  <div class="modal" id="devModal"><div class="card">
+    <div class="h" id="devTitle">Máquinas ativadas</div>
+    <div style="overflow:auto"><table><thead><tr><th>ID da máquina</th><th>Nome</th><th>IP</th><th>Visto</th><th></th></tr></thead><tbody id="devRows"></tbody></table></div>
+    <button class="btn" id="devClose" style="margin-top:14px">Fechar</button>
+  </div></div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const PLANS = {
+      basic:   { label: 'Básico',    features: { futebol: true, modelos: true, streaming: false, maxCameras: 2 } },
+      pro:     { label: 'Pro',       features: { futebol: true, modelos: true, streaming: true, maxCameras: 6 } },
+      lifetime:{ label: 'Vitalício', features: { futebol: true, modelos: true, streaming: true, maxCameras: 6 } },
+    };
+    const FEATS = [['futebol', 'Futebol'], ['modelos', 'Modelos'], ['streaming', 'Transmissão']];
+    let token = localStorage.getItem('kivo-admin-token') || '';
+
+    const $ = id => document.getElementById(id);
+    const toast = m => { const t = $('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2200); };
+    async function api(path, opts) {
+      opts = opts || {}; opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {}, token ? { Authorization: 'Bearer ' + token } : {});
+      if (opts.body && typeof opts.body !== 'string') opts.body = JSON.stringify(opts.body);
+      const r = await fetch(path, opts);
+      if (r.status === 401) { logout(); throw new Error('401'); }
+      return r.json();
+    }
+
+    // ---- login ----
+    $('loginBtn').onclick = async () => {
+      $('loginErr').textContent = '';
+      try {
+        const r = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('loginPass').value }) });
+        const j = await r.json();
+        if (!r.ok || !j.token) { $('loginErr').textContent = j.error || 'Falha'; return; }
+        token = j.token; localStorage.setItem('kivo-admin-token', token); show();
+      } catch { $('loginErr').textContent = 'Servidor indisponível'; }
+    };
+    $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginBtn').click(); });
+    function logout() { token = ''; localStorage.removeItem('kivo-admin-token'); $('appView').classList.add('hide'); $('loginView').classList.remove('hide'); }
+    $('logoutBtn').onclick = () => { api('/api/admin/logout', { method: 'POST' }).catch(() => {}); logout(); };
+    $('reloadBtn').onclick = load;
+
+    // ---- plano / features na criação ----
+    function fillPlanSelect() { $('nlPlan').innerHTML = Object.entries(PLANS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join(''); }
+    function fillFeats() {
+      const plan = PLANS[$('nlPlan').value] || PLANS.pro;
+      $('nlFeats').innerHTML = FEATS.map(([k, lab]) => `<label><input type="checkbox" data-f="${k}" ${plan.features[k] ? 'checked' : ''}>${lab}</label>`).join('') +
+        `<label style="margin-left:4px">Câmeras <input type="number" id="nlCams" min="1" value="${plan.features.maxCameras || 6}" style="width:64px;margin-left:6px"></label>`;
+    }
+    function gatherFeats() { const f = {}; document.querySelectorAll('#nlFeats input[data-f]').forEach(i => f[i.dataset.f] = i.checked); f.maxCameras = +($('nlCams') || {}).value || 6; return f; }
+
+    $('nlCreate').onclick = async () => {
+      const name = $('nlName').value.trim();
+      let customer_id = null;
+      if (name) { const c = await api('/api/admin/customer', { method: 'POST', body: { name, email: $('nlEmail').value.trim() } }); customer_id = c.id; }
+      const j = await api('/api/admin/license', { method: 'POST', body: {
+        customer_id, plan: $('nlPlan').value, features: gatherFeats(),
+        max_devices: +$('nlMax').value || 1, expires_at: $('nlExp').value || null, key: $('nlKey').value.trim()
+      }});
+      if (j.error) return toast(j.error);
+      $('nlName').value = $('nlEmail').value = $('nlKey').value = ''; $('nlExp').value = '';
+      toast('Chave criada: ' + j.key); navigator.clipboard?.writeText(j.key).catch(() => {}); load();
+    };
+
+    // ---- carregar painel ----
+    async function load() {
+      const d = await api('/api/admin/overview');
+      $('stats').innerHTML = [
+        ['Clientes', d.stats.customers], ['Licenças', d.stats.licenses], ['Ativas', d.stats.active], ['Máquinas', d.stats.devices]
+      ].map(([l, v]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
+      $('licRows').innerHTML = d.licenses.map(rowHtml).join('') || '<tr><td colspan="7" class="muted">Nenhuma licença ainda.</td></tr>';
+      d.licenses.forEach(l => {
+        $('rev' + l.id) && ($('rev' + l.id).onclick = () => act('/api/admin/license/' + l.id + '/revoke', 'POST', 'Chave revogada'));
+        $('del' + l.id) && ($('del' + l.id).onclick = () => { if (confirm('Apagar esta licença e suas ativações?')) act('/api/admin/license/' + l.id, 'DELETE', 'Apagada'); });
+        $('dev' + l.id) && ($('dev' + l.id).onclick = () => showDevices(l));
+      });
+    }
+    function rowHtml(l) {
+      const st = l.status === 'active' ? 'b-active' : l.status === 'revoked' ? 'b-revoked' : 'b-disabled';
+      const exp = l.expires_at ? l.expires_at.slice(0, 10) : 'vitalícia';
+      return `<tr>
+        <td><span class="key" onclick="navigator.clipboard&&navigator.clipboard.writeText('${l.key}');" title="copiar">${l.key}</span></td>
+        <td>${l.customer_name || '<span class="muted">—</span>'}<div class="muted" style="font-size:11px">${l.customer_email || ''}</div></td>
+        <td>${(PLANS[l.plan] || {}).label || l.plan}</td>
+        <td><span class="badge ${st}">${l.status}</span></td>
+        <td><button class="btn sm" id="dev${l.id}">${l.devices}/${l.max_devices}</button></td>
+        <td>${exp}</td>
+        <td class="right">${l.status === 'active' ? `<button class="btn sm" id="rev${l.id}">Revogar</button> ` : ''}<button class="btn sm danger" id="del${l.id}">×</button></td>
+      </tr>`;
+    }
+    async function act(path, method, msg) { const j = await api(path, { method }); if (j.ok) { toast(msg); load(); } }
+
+    async function showDevices(l) {
+      const rows = await api('/api/admin/license/' + l.id + '/activations');
+      $('devTitle').textContent = 'Máquinas — ' + l.key;
+      $('devRows').innerHTML = rows.map(a => `<tr>
+        <td style="font-family:monospace;font-size:11px">${(a.device_id || '').slice(0, 22)}</td>
+        <td>${a.device_name || '—'}</td><td class="muted">${a.ip || ''}</td>
+        <td class="muted" style="font-size:11px">${(a.last_seen || '').replace('T', ' ')}</td>
+        <td><button class="btn sm danger" onclick="unbind(${a.id})">liberar</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Nenhuma máquina ativada.</td></tr>';
+      $('devModal').classList.add('show');
+    }
+    window.unbind = async id => { await api('/api/admin/activation/' + id, { method: 'DELETE' }); $('devModal').classList.remove('show'); toast('Máquina liberada'); load(); };
+    $('devClose').onclick = () => $('devModal').classList.remove('show');
+
+    function show() { $('loginView').classList.add('hide'); $('appView').classList.remove('hide'); fillPlanSelect(); $('nlPlan').onchange = fillFeats; fillFeats(); load(); }
+    if (token) show();
+  </script>
+</body>
+</html>

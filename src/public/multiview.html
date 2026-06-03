@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kivo Multiview</title>
+  <link rel="icon" type="image/svg+xml" href="/img/kivo-icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <style>
+    *{box-sizing:border-box;margin:0}
+    body{background:#05080f;color:#cfe0ff;font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,Arial,sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+    .mvh{display:flex;align-items:center;gap:10px;padding:7px 14px;background:#0a1220;border-bottom:1px solid #1b2740;flex:none}
+    .mvh .lg{width:24px;height:24px;border-radius:6px;background:radial-gradient(120% 120% at 30% 20%,#36d1ff,#0a6ad8 60%,#063a78);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:13px}
+    .mvh b{font-size:14px;font-weight:700}.mvh small{color:#5d6b85;font-size:11px}
+    .mvh .clk{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700;color:#9fc2ff;font-size:15px}
+    .mvtop{flex:0 0 56%;display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:7px 7px 4px;min-height:0}
+    .grid{flex:1;display:grid;gap:6px;padding:4px 7px 7px;min-height:0}
+    .cell{position:relative;background:#000;border:2px solid #1b2740;border-radius:9px;overflow:hidden}
+    .cell video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+    .cell .nm{position:absolute;left:8px;bottom:8px;font-size:13px;font-weight:600;background:rgba(0,0,0,.62);padding:3px 11px;border-radius:6px}
+    .cell .bd{position:absolute;top:8px;left:8px;font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 10px;border-radius:6px}
+    .grid .cell .nm{font-size:12px;left:6px;bottom:6px;padding:2px 9px}
+    .grid .cell .bd{font-size:10px;padding:2px 8px}
+    .cell.pvw{border-color:#2ecc71;box-shadow:0 0 0 1px #2ecc71}
+    .cell.pvw .bd{background:#2ecc71;color:#04240f}
+    .cell.pgm{border-color:#ff4d4f;box-shadow:0 0 0 1px #ff4d4f,0 0 22px rgba(255,77,79,.4)}
+    .cell.pgm .bd{background:#ff4d4f;color:#fff}
+    .cell .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#3b4a66;font-size:13px}
+    .empty{flex:1;display:flex;align-items:center;justify-content:center;color:#5d6b85;font-size:14px;text-align:center;padding:24px;line-height:1.6}
+  </style>
+</head>
+<body>
+  <div class="mvh"><span class="lg">K</span><b>Kivo Multiview</b><small>PREVIEW verde · PROGRAM vermelho · F11 = tela cheia</small><span class="clk" id="clk">00:00:00</span></div>
+  <div class="mvtop" id="mvtop">
+    <div class="cell pvw"><video id="vPvw" autoplay muted playsinline></video><span class="bd">PREVIEW</span><span class="nm" id="nPvw"></span><div class="ph" id="phPvw">sem preview</div></div>
+    <div class="cell pgm"><video id="vPgm" autoplay muted playsinline></video><span class="bd">PROGRAM</span><span class="nm" id="nPgm"></span><div class="ph" id="phPgm">nada no ar</div></div>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden>Abra esta tela pelo botão <b>“Multiview (2ª tela)”</b> dentro do Studio (mesma janela do navegador).</div>
+  <script>
+    var cells = {};
+    function studio() { try { return (window.opener && window.opener.Studio) ? window.opener.Studio : null; } catch (e) { return null; } }
+    function setBig(vid, ph, nmEl, src) {
+      if (src && src.stream) { if (vid.srcObject !== src.stream) { vid.srcObject = src.stream; vid.play && vid.play().catch(function () {}); } ph.style.display = 'none'; nmEl.textContent = src.label; }
+      else { vid.srcObject = null; ph.style.display = ''; nmEl.textContent = ''; }
+    }
+    function layout(n) { var g = document.getElementById('grid'); var cols = Math.max(1, Math.min(6, Math.ceil(Math.sqrt(Math.max(1, n))))); g.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)'; }
+    function tick() {
+      var s = studio(), empty = document.getElementById('empty'), top = document.getElementById('mvtop'), grid = document.getElementById('grid');
+      if (!s || !s.sourcesInfo) { empty.hidden = false; top.style.display = 'none'; grid.style.display = 'none'; return setTimeout(tick, 1000); }
+      empty.hidden = true; top.style.display = ''; grid.style.display = '';
+      var info = s.sourcesInfo(), list = info.list || [], ids = {};
+      var byId = {}; list.forEach(function (x) { byId[x.id] = x; });
+      setBig(document.getElementById('vPvw'), document.getElementById('phPvw'), document.getElementById('nPvw'), byId[info.preview]);
+      setBig(document.getElementById('vPgm'), document.getElementById('phPgm'), document.getElementById('nPgm'), byId[info.program]);
+      list.forEach(function (src) {
+        ids[src.id] = 1;
+        var c = cells[src.id];
+        if (!c) {
+          var cell = document.createElement('div'); cell.className = 'cell';
+          var v = document.createElement('video'); v.autoplay = true; v.muted = true; v.playsInline = true;
+          var nm = document.createElement('span'); nm.className = 'nm';
+          var bd = document.createElement('span'); bd.className = 'bd';
+          cell.appendChild(v); cell.appendChild(nm); cell.appendChild(bd); grid.appendChild(cell);
+          c = cells[src.id] = { cell: cell, video: v, nm: nm, bd: bd };
+        }
+        if (c.video.srcObject !== src.stream) { c.video.srcObject = src.stream || null; c.video.play && c.video.play().catch(function () {}); }
+        c.nm.textContent = src.label;
+        var pgm = src.id === info.program, pvw = src.id === info.preview;
+        c.cell.className = 'cell' + (pgm ? ' pgm' : pvw ? ' pvw' : '');
+        c.bd.textContent = pgm ? 'NO AR' : pvw ? 'PREVIEW' : '';
+      });
+      Object.keys(cells).forEach(function (id) { if (!ids[id]) { cells[id].cell.remove(); delete cells[id]; } });
+      layout(list.length);
+      setTimeout(tick, 800);
+    }
+    function clock() { document.getElementById('clk').textContent = new Date().toTimeString().slice(0, 8); setTimeout(clock, 500); }
+    clock(); tick();
+  </script>
+</body>
+</html>

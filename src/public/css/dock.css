@@ -1,0 +1,58 @@
+/* ============================================================
+   DOCK — rodapé escondido que aparece no hover (música+vídeo+stats)
+   ============================================================ */
+/* o dash não reserva mais a faixa fixa do rodapé (a perfbar vai pro dock) */
+.dash.has-dock{grid-template-rows:58px minmax(0,1fr);grid-template-areas:"top top top" "nav main right"}
+
+.kdock{position:fixed;left:0;right:0;bottom:0;z-index:340;display:flex;flex-direction:column;align-items:center;
+  pointer-events:none;transform:translateY(calc(100% - 24px));transition:transform .28s var(--ease-out)}
+.kdock>*{pointer-events:auto}
+.kdock.open,.kdock.pinned{transform:translateY(0)}
+
+/* puxador (sempre visível embaixo) */
+.kdock-tab{display:inline-flex;align-items:center;gap:9px;height:24px;padding:0 16px;border-radius:11px 11px 0 0;
+  background:var(--chrome);border:1px solid var(--line);border-bottom:0;color:var(--muted);
+  font-size:10px;font-weight:800;letter-spacing:.16em;cursor:pointer;user-select:none}
+.kdock-tab:hover{color:var(--txt)}
+.kdock-grip{width:30px;height:4px;border-radius:2px;background:var(--line2)}
+.kdock-pin{width:20px;height:20px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--muted);font-size:11px;line-height:1;cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.kdock-pin.on{color:var(--accent);border-color:var(--accent);background:rgba(42,151,255,.14)}
+
+/* corpo */
+.kdock-body{width:100%;background:var(--chrome);border-top:1px solid var(--line);
+  box-shadow:0 -16px 40px -22px rgba(0,0,0,.7);padding:10px 16px;display:flex;flex-direction:column;gap:9px}
+.kdock-row{display:flex;gap:12px;flex-wrap:wrap}
+.kdock-mod{display:flex;align-items:center;gap:7px;flex:1 1 380px;min-width:330px;
+  background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:7px 11px;transition:opacity .2s}
+.kdock-mod.off{opacity:.5}
+.kdock-mod button{height:30px;min-width:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--txt);cursor:pointer;font-size:12px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center}
+.kdock-mod button:hover{border-color:var(--accent)}
+.kd-play{background:var(--grad-blue,linear-gradient(180deg,#2a97ff,#0a66d8)) !important;border-color:#0a66d8 !important;color:#fff !important}
+.kdock-ic{display:inline-flex;align-items:flex-end;gap:2px;height:14px;flex:none;margin-right:2px}
+.kdock-ic i{width:3px;height:5px;background:var(--accent);border-radius:1px}
+.kdock-mod.playing .kdock-ic i{animation:bgmf-eq .9s ease-in-out infinite}
+.kdock-mod.playing .kdock-ic i:nth-child(2){animation-delay:.18s}
+.kdock-mod.playing .kdock-ic i:nth-child(3){animation-delay:.36s}
+.kdock-title{flex:1 1 0;min-width:0;font-size:12px;font-weight:600;color:var(--txt);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kdock-seek{flex:0 0 110px;height:6px;border-radius:99px;background:var(--inset);cursor:pointer;overflow:hidden}
+.kdock-bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+.kdock-time{flex:none;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* botões de estado do vídeo */
+.kd-t{font-weight:700;font-size:11px !important;color:var(--muted) !important}
+.kd-t.on{color:var(--accent) !important;border-color:var(--accent) !important;background:rgba(42,151,255,.12) !important}
+.kd-list{font-weight:800;font-size:11px !important;border-style:dashed !important;color:var(--txt) !important}
+.kd-list:hover{color:var(--accent) !important}
+.kd-pre,.kd-air{font-weight:800;font-size:11px !important}
+.kd-pre:hover,.kd-pre.act{border-color:var(--live,#3fd39b) !important;color:#3fd39b !important;background:rgba(63,211,155,.14) !important}
+.kd-air:hover,.kd-air.act{border-color:var(--rec,#ff5d6c) !important;color:#ff9aa1 !important;background:rgba(255,93,108,.16) !important}
+
+/* barra de stats movida pra dentro do dock */
+.kdock-stats{width:100%}
+.kdock-stats .perfbar{background:transparent;border-top:0;padding:0;gap:22px}
+
+/* em telas estreitas, módulos empilham */
+@media(max-width:760px){.kdock-mod{min-width:100%;flex-basis:100%}}

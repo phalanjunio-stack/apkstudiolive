@@ -1,4 +1,4 @@
-// SeteLagoas Câmera — app do celular. Vira câmera profissional do Studio (WebRTC).
+// Kivo Câmera — app do celular. Vira câmera profissional do Studio (WebRTC).
 const params = new URLSearchParams(location.search);
 const room = params.get('room') || 'cam1';
 const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };

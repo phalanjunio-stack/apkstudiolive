@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="blueA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1B61FF"/>
+      <stop offset="0.55" stop-color="#0078FF"/>
+      <stop offset="1" stop-color="#00E0FF"/>
+    </linearGradient>
+    <linearGradient id="blueB" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#0838B9"/>
+      <stop offset="0.5" stop-color="#0A6DFF"/>
+      <stop offset="1" stop-color="#0EE7FF"/>
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.000 0 0 0 0 0.45 0 0 0 0 1 0 0 0 0.70 0" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g transform="translate(190,102) scale(1.55)" filter="url(#softGlow)">
+    <polygon points="0,70 175,0 175,510 0,440" fill="url(#blueA)"/>
+    <polygon points="26,95 133,52 133,255 26,210" fill="#1A73FF" opacity="0.95"/>
+    <polygon points="26,300 133,255 133,458 26,415" fill="#0A3BC7" opacity="0.95"/>
+    <polygon points="214,180 515,38 346,250 515,472 214,326" fill="url(#blueB)"/>
+    <polygon points="214,180 346,250 214,326" fill="#00E0FF" opacity="0.92"/>
+  </g>
+</svg>

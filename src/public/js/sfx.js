@@ -90,12 +90,41 @@ const SoundFX = (() => {
     _note('square', 330, t, 0.18, 0.14, 0.005, 165);
     _noise(t, 0.12, 0.05);
   }
+  // whoosh de transição (troca de menu)
+  function navigate() {
+    if (!_enabled) return; const ac = _ac(); if (!ac) return; const t = ac.currentTime;
+    _note('sine', 220, t, 0.18, 0.09, 0.010, 880);   // sweep grave→agudo
+    _noise(t, 0.10, 0.05);
+    _note('sine', 1760, t + 0.10, 0.12, 0.035, 0.006); // sparkle no fim
+  }
+  // COMEMORAÇÃO DE GOL — fanfarra ascendente + torcida (sintetizado, sem arquivo)
+  function _crowd(start, dur) {
+    const buf = _ctx.createBuffer(1, _ctx.sampleRate * dur, _ctx.sampleRate);
+    const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = _ctx.createBufferSource(); src.buffer = buf;
+    const g = _ctx.createGain();
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.linearRampToValueAtTime(0.11, start + 0.5);
+    g.gain.linearRampToValueAtTime(0.075, start + dur * 0.72);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    const f = _ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 850; f.Q.value = 0.6;
+    src.connect(f); f.connect(g); g.connect(_master);
+    src.start(start); src.stop(start + dur + 0.02);
+  }
+  function goal() {
+    if (!_enabled) return; const ac = _ac(); if (!ac) return; const t = ac.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => _note('triangle', f, t + i * 0.11, 0.5, 0.22, 0.008)); // C5 E5 G5 C6
+    _note('triangle', 1046.5, t + 0.46, 0.7, 0.2, 0.01);
+    _note('sine', 2093, t + 0.46, 0.5, 0.05, 0.006);   // brilho
+    _crowd(t, 1.5);                                     // torcida
+  }
 
   // ── Hook global nos meus elementos ──
   function _hookGlobal() {
     document.addEventListener('click', e => {
       const el = e.target.closest('button, a, [role="button"], .nav a, .fcard, .ctrl, .bigbtn, .icon-btn, .theme-option');
       if (!el || el.disabled || el.classList.contains('empty')) return;
+      if (el.closest('.nav-link, .nav a')) return; // troca de menu já toca navigate()
       click();
     }, true);
     document.addEventListener('mouseover', e => {
@@ -127,7 +156,7 @@ const SoundFX = (() => {
   }
 
   return {
-    hover, click, open, close, success, error, createToggle,
+    hover, click, open, close, success, error, navigate, goal, createToggle,
     init() { _hookGlobal(); },
   };
 })();

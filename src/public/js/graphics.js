@@ -4,26 +4,74 @@
 // Obs: por enquanto renderiza no monitor PROGRAM; entra no stream/gravação na fatia de saída.
 const Graphics = (function () {
   const KEY = 'sl-overlays';
-  let host = null, overlays = [], seq = 1, clockTimer = null, notify = null;
+  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null;
+  function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
     image: () => ({ x: 80, y: 5, w: 15, scale: 1, data: { src: '', label: 'Logo' } }),
-    scoreboard: () => ({ x: 4, y: 4, w: 0, scale: 1, data: { home: 'CASA', away: 'VISITANTE', hs: 0, as: 0, clock: 0, running: false, ch: '#1a8cff', ca: '#e74c3c', homeLogo: '', awayLogo: '', design: 'modern' } }),
-    ticker: () => ({ x: 0, y: 88, w: 100, scale: 1, data: { text: 'Bem-vindo a transmissao  •  SeteLagoas Live', speed: 18 } }),
+    scoreboard: () => ({ x: 4, y: 4, w: 0, scale: 1, data: { home: 'CASA', away: 'VISITANTE', hs: 0, as: 0, clock: 0, running: false, ch: '#1a3a7a', ca: '#7a1a1a', homeLogo: '', awayLogo: '', design: 'modern', stage: '', comp: '', added: 0 } }),
+    ticker: () => ({ x: 0, y: 88, w: 100, scale: 1, data: { text: 'Bem-vindo a transmissao  •  Kivo Studio', speed: 18 } }),
     slideshow: () => ({ x: 80, y: 5, w: 18, scale: 1, data: { images: [], interval: 5, transition: 'fade', i: 0 } }),
+    template: () => ({ x: 6, y: 6, w: 40, scale: 1, data: { art: '', fields: [], name: 'Modelo' } }),
   };
+  function tplValue(f, m) {
+    if (!f) return '';
+    if (f.key === 'text') return f.text || '';
+    if (f.key === 'clock') return fmtClock(m.clock || 0);
+    if (f.key === 'added') return m.added ? '+' + m.added : '';
+    if (f.key === 'homeLogo') return m.homeLogo || '';
+    if (f.key === 'awayLogo') return m.awayLogo || '';
+    return (m[f.key] != null ? m[f.key] : '');
+  }
+  function matchData() { const sb = overlays.find(o => o.type === 'scoreboard'); return sb ? sb.data : {}; }
+  function paintTemplate(ov) {
+    const img = ov.el.querySelector('.tpl-art'), fc = ov.el.querySelector('.tpl-fields'); if (!fc) return;
+    const d = ov.data; img.src = d.art || ''; img.style.display = d.art ? '' : 'none';
+    ov.el.classList.toggle('tpl-empty', !d.art);
+    const m = matchData(); fc.innerHTML = '';
+    (d.fields || []).forEach(f => {
+      const v = tplValue(f, m);
+      const sp = document.createElement('span'); sp.className = 'tpl-f';
+      sp.style.left = (f.x || 50) + '%'; sp.style.top = (f.y || 50) + '%';
+      sp.style.fontSize = (f.size || 18) + 'px'; sp.style.color = f.color || '#ffffff';
+      sp.style.fontWeight = f.weight || 800; sp.style.textAlign = f.align || 'center';
+      sp.style.fontFamily = 'Plus Jakarta Sans,Inter,"Segoe UI",system-ui,sans-serif';
+      if (f.key === 'homeLogo' || f.key === 'awayLogo') sp.innerHTML = v ? '<img src="' + v + '" style="height:' + (f.size || 40) + 'px;display:block">' : '';
+      else sp.textContent = v;
+      fc.appendChild(sp);
+    });
+  }
 
   function saveLocal() {
-    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, visible: o.visible, data: o.data })))); } catch {}
+    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, data: o.data })))); } catch {}
   }
-  function emit() { saveLocal(); notify?.(); }
+  function emit() { saveLocal(); notify(); }
   function load() {
     try { const s = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(s)) overlays = s; } catch {}
     overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; });
   }
 
-  function mount(el) { host = el; renderAll(); ensureClock(); }
-  function onChange(fn) { notify = fn; }
+  function mount(el) {
+    host = el; renderAll(); ensureClock();
+    // clicar fora dos overlays (e fora dos editores) deseleciona
+    document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.ov') && !e.target.closest('.gfx-dock') && !e.target.closest('.fb-prevstage')) deselect(); }, true);
+  }
+  function onChange(fn) { subs.push(fn); }
+  function hideAll() { overlays.forEach(o => { o.visible = false; if (o.el) o.el.style.display = 'none'; }); if (selectedId != null) select(null); emit(); }
+  function showAll() { overlays.forEach(o => { o.visible = true; if (o.el) o.el.style.display = ''; }); emit(); }
+  function clearAll() { overlays.slice().forEach(o => { o.el?.remove(); }); overlays = []; selectedId = null; emit(); }
+  function flash(id, ms) { setVisible(id, true); setTimeout(() => setVisible(id, false), ms || 6000); }
+  function selected() { return selectedId; }
+  // exporta/importa o conjunto de camadas (pra CENAS guardarem a sua montagem)
+  function exportOverlays() { return overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, data: JSON.parse(JSON.stringify(o.data || {})) })); }
+  function importOverlays(arr) {
+    selectedId = null;
+    overlays.forEach(o => { try { o.el && o.el.remove(); } catch {} });
+    overlays = (Array.isArray(arr) ? arr : []).map(o => Object.assign({}, o, { el: null, data: JSON.parse(JSON.stringify(o.data || {})) }));
+    overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; });
+    if (host && host.parentElement) host.parentElement.classList.remove('ov-editing');
+    renderAll(); emit();
+  }
   function list() { return overlays; }
   function get(id) { return overlays.find(o => o.id === id); }
 
@@ -33,9 +81,30 @@ const Graphics = (function () {
     overlays.push(ov); renderOne(ov); emit(); return ov;
   }
   function remove(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0) return; overlays[i].el?.remove(); overlays.splice(i, 1); emit(); }
-  function setVisible(id, v) { const o = get(id); if (!o) return; o.visible = v; if (o.el) o.el.style.display = v ? '' : 'none'; emit(); }
+  function setVisible(id, v) {
+    const o = get(id); if (!o) return; o.visible = v;
+    if (o.el) {
+      if (o.type === 'scoreboard') { // placar surge / recolhe com animação
+        clearTimeout(o._hideT);
+        if (v) { o.el.style.display = ''; o.el.classList.remove('ov-out'); void o.el.offsetWidth; o.el.classList.add('ov-in'); }
+        else { o.el.classList.remove('ov-in'); o.el.classList.add('ov-out'); o._hideT = setTimeout(() => { if (!o.visible) { o.el.style.display = 'none'; o.el.classList.remove('ov-out'); } }, 430); }
+      } else { o.el.style.display = v ? '' : 'none'; }
+    }
+    emit();
+  }
   function setWidth(id, w) { const o = get(id); if (!o) return; o.w = w; if (o.el) o.el.style.width = w + '%'; saveLocal(); }
-  function update(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); paint(o); saveLocal(); }
+  function setPos(id, x, y) { const o = get(id); if (!o) return; o.x = Math.max(-20, Math.min(110, x)); o.y = Math.max(-20, Math.min(110, y)); if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } saveLocal(); }
+  function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); }
+  // recorte (Alt-crop estilo OBS) — clip-path no conteúdo, sem mudar tamanho/posição
+  function cropCss(c) { c = c || {}; const t = c.t || 0, r = c.r || 0, b = c.b || 0, l = c.l || 0; return (t < 0.2 && r < 0.2 && b < 0.2 && l < 0.2) ? '' : 'inset(' + t + '% ' + r + '% ' + b + '% ' + l + '%)'; }
+  function applyCrop(o) { if (!o || !o.el) return; const c = o.el.firstElementChild; if (c) c.style.clipPath = cropCss(o.data && o.data.crop); }
+  function setCrop(id, patch) { const o = get(id); if (!o) return; o.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, o.data.crop, patch); applyCrop(o); saveLocal(); }
+  function setScale(id, s) { const o = get(id); if (!o) return; o.scale = Math.max(0.15, Math.min(8, s)); applyTransform(o); saveLocal(); }
+  function setRotation(id, deg) { const o = get(id); if (!o) return; o.rotation = ((deg % 360) + 360) % 360; applyTransform(o); saveLocal(); }
+  function setOpacity(id, v) { const o = get(id); if (!o) return; o.opacity = Math.max(0, Math.min(1, v)); applyTransform(o); saveLocal(); }
+  function raise(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0 || i === overlays.length - 1) return; const [o] = overlays.splice(i, 1); overlays.push(o); if (host && o.el) host.appendChild(o.el); emit(); }
+  function lower(id) { const i = overlays.findIndex(o => o.id === id); if (i <= 0) return; const [o] = overlays.splice(i, 1); overlays.unshift(o); if (host && o.el) host.insertBefore(o.el, host.firstChild); emit(); }
+  function update(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); paint(o); if (o.type === 'scoreboard') overlays.forEach(t => { if (t.type === 'template') paintTemplate(t); }); saveLocal(); }
   function score(id, side, d) { const o = get(id); if (!o) return; const k = side === 'h' ? 'hs' : 'as'; o.data[k] = Math.max(0, o.data[k] + d); paint(o); saveLocal(); }
   function clockCtl(id, action) { const o = get(id); if (!o) return; if (action === 'toggle') o.data.running = !o.data.running; if (action === 'reset') { o.data.clock = 0; o.data.running = false; } paint(o); saveLocal(); }
 
@@ -47,16 +116,17 @@ const Graphics = (function () {
     el.style.left = ov.x + '%'; el.style.top = ov.y + '%';
     if (ov.w) el.style.width = ov.w + '%';
     if (!ov.visible) el.style.display = 'none';
-    el.style.transformOrigin = 'top left';
-    el.style.transform = 'scale(' + (ov.scale || 1) + ')';
     ov.el = el;
     if (ov.type === 'image') el.innerHTML = '<img alt="">';
-    else if (ov.type === 'scoreboard') el.innerHTML = '<div class="sb"><span class="sb-team sb-h"><img class="sb-logo sb-hl" alt=""><span class="sb-nm"></span></span><span class="sb-score sb-hs"></span><span class="sb-clock"></span><span class="sb-score sb-as"></span><span class="sb-team sb-a"><span class="sb-nm"></span><img class="sb-logo sb-al" alt=""></span></div>';
+    else if (ov.type === 'scoreboard') el.innerHTML = '<div class="sb"><img class="sb-logo sb-hl" alt=""><span class="sb-team sb-h"><span class="sb-nm"></span></span><span class="sb-score sb-hs"></span><span class="sb-mid"><span class="sb-stage"></span><span class="sb-clock"></span><span class="sb-added"></span></span><span class="sb-score sb-as"></span><span class="sb-team sb-a"><span class="sb-nm"></span></span><img class="sb-logo sb-al" alt=""><span class="sb-comp"></span></div>';
     else if (ov.type === 'ticker') el.innerHTML = '<div class="tk"><div class="tk-move"><span></span><span></span></div></div>';
     else if (ov.type === 'slideshow') el.innerHTML = '<img class="ss-img" alt="">';
+    else if (ov.type === 'template') el.innerHTML = '<div class="tpl"><img class="tpl-art" alt=""><div class="tpl-fields"></div></div>';
+    applyTransform(ov);
+    applyCrop(ov);
     makeDraggable(ov);
-    makeResizable(ov);
     host.appendChild(el);
+    if (ov.id === selectedId) select(ov.id);
     paint(ov);
   }
 
@@ -71,8 +141,11 @@ const Graphics = (function () {
       ov.el.querySelector('.sb').className = 'sb sb-' + (d.design || 'modern');
       q('.sb-h .sb-nm').textContent = d.home; q('.sb-a .sb-nm').textContent = d.away;
       q('.sb-hs').textContent = d.hs; q('.sb-as').textContent = d.as;
-      q('.sb-h').style.background = d.ch; q('.sb-a').style.background = d.ca;
+      q('.sb-h').style.setProperty('--tc', d.ch); q('.sb-a').style.setProperty('--tc', d.ca);
       q('.sb-clock').textContent = fmtClock(d.clock);
+      const stg = q('.sb-stage'); if (stg) { stg.textContent = d.stage || ''; stg.style.display = d.stage ? '' : 'none'; }
+      const cmp = q('.sb-comp'); if (cmp) { cmp.textContent = d.comp || ''; cmp.style.display = d.comp ? '' : 'none'; }
+      const add = q('.sb-added'); if (add) { add.textContent = d.added ? '+' + d.added : ''; add.style.display = d.added ? '' : 'none'; }
       const hl = q('.sb-hl'), al = q('.sb-al');
       hl.src = d.homeLogo || ''; hl.style.display = d.homeLogo ? '' : 'none';
       al.src = d.awayLogo || ''; al.style.display = d.awayLogo ? '' : 'none';
@@ -84,7 +157,7 @@ const Graphics = (function () {
       if (imgs.length) { ov.data.i = ov.data.i % imgs.length; img.src = imgs[ov.data.i]; img.style.display = ''; img.style.opacity = '1'; ov.el.classList.remove('empty'); }
       else { img.removeAttribute('src'); img.style.display = 'none'; ov.el.classList.add('empty'); }
       ov._t = 0;
-    }
+    } else if (ov.type === 'template') { paintTemplate(ov); }
   }
   function fmtClock(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ':' + String(ss).padStart(2, '0'); }
   function showSlide(ov, idx) {
@@ -108,6 +181,7 @@ const Graphics = (function () {
           o._t = (o._t || 0) + 1;
           if (o._t >= (o.data.interval || 5)) { o._t = 0; showSlide(o, (o.data.i + 1) % o.data.images.length); }
         }
+        if (o.type === 'template') paintTemplate(o); // atualiza relogio/placar nos modelos
       });
     }, 1000);
   }
@@ -115,38 +189,101 @@ const Graphics = (function () {
   function makeDraggable(ov) {
     const el = ov.el;
     el.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('button, input, .ov-resize')) return;
+      if (e.target.closest('button, input, .ovh')) return;
+      if (selectedId !== ov.id) select(ov.id);
       const hr = host.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      const offx = e.clientX - er.left, offy = e.clientY - er.top;
+      const x0 = ov.x, y0 = ov.y, px = e.clientX, py = e.clientY; // arraste por delta (sem pulo)
       el.classList.add('dragging');
       try { el.setPointerCapture(e.pointerId); } catch {}
       const move = (ev) => {
-        let x = (ev.clientX - hr.left - offx) / hr.width * 100;
-        let y = (ev.clientY - hr.top - offy) / hr.height * 100;
-        ov.x = Math.max(0, Math.min(98, x)); ov.y = Math.max(0, Math.min(98, y));
+        ov.x = Math.max(-20, Math.min(110, x0 + (ev.clientX - px) / hr.width * 100));
+        ov.y = Math.max(-20, Math.min(110, y0 + (ev.clientY - py) / hr.height * 100));
         el.style.left = ov.x + '%'; el.style.top = ov.y + '%';
       };
       const up = () => { el.classList.remove('dragging'); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); saveLocal(); };
       el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
     });
   }
-  // alça de redimensionar (arrasta a bolinha do canto pra aumentar/diminuir)
-  function makeResizable(ov) {
-    const h = document.createElement('span'); h.className = 'ov-resize'; ov.el.appendChild(h);
+  // ===== EDITOR: selecionar + alças (mover/redimensionar/recortar/girar) =====
+  function clampc(v, opp) { return Math.max(0, Math.min(95 - (opp || 0), v)); }
+  function select(id) {
+    selectedId = id;
+    overlays.forEach(o => { if (!o.el) return; const on = o.id === id && o.visible !== false; o.el.classList.toggle('ov-selected', on); if (on) ensureHandles(o); else removeHandles(o); });
+    if (host && host.parentElement) host.parentElement.classList.toggle('ov-editing', id != null); // libera overflow p/ as alças
+    notify();
+  }
+  function deselect() { if (selectedId != null) select(null); }
+  function ensureHandles(ov) {
+    const el = ov.el; if (!el || el.querySelector('.ovh-rot')) return;
+    ['n', 'e', 's', 'w'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-e ovh-e-' + c; bindCrop(h, ov, c); el.appendChild(h); });
+    ['nw', 'ne', 'se', 'sw'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-c ovh-c-' + c; bindResize(h, ov, c); el.appendChild(h); });
+    const rot = document.createElement('span'); rot.className = 'ovh ovh-rot'; bindRotate(rot, ov); el.appendChild(rot);
+    const tb = document.createElement('div'); tb.className = 'ovh ov-tools-bar';
+    const mk = (txt, title, fn) => { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.onpointerdown = (e) => e.stopPropagation(); b.onclick = (e) => { e.stopPropagation(); fn(); }; tb.appendChild(b); };
+    mk('↺', 'Girar -15°', () => { ov.rotation = (ov.rotation || 0) - 15; applyTransform(ov); saveLocal(); });
+    mk('↻', 'Girar +15°', () => { ov.rotation = (ov.rotation || 0) + 15; applyTransform(ov); saveLocal(); });
+    mk('0°', 'Endireitar', () => { ov.rotation = 0; applyTransform(ov); saveLocal(); });
+    mk('▫', 'Limpar recorte', () => { ov.data.crop = { t: 0, r: 0, b: 0, l: 0 }; applyCrop(ov); saveLocal(); });
+    mk('↑', 'Trazer p/ frente', () => raise(ov.id));
+    mk('↓', 'Mandar p/ trás', () => lower(ov.id));
+    mk('✕', 'Remover', () => { remove(ov.id); selectedId = null; });
+    el.appendChild(tb);
+  }
+  function removeHandles(ov) { if (ov.el) ov.el.querySelectorAll('.ovh').forEach(n => n.remove()); }
+  function bindResize(h, ov, corner) {
+    const CN = { nw: { x: 'l', sx: 1, y: 't', sy: 1 }, ne: { x: 'r', sx: -1, y: 't', sy: 1 }, se: { x: 'r', sx: -1, y: 'b', sy: -1 }, sw: { x: 'l', sx: 1, y: 'b', sy: -1 } };
     h.addEventListener('pointerdown', (e) => {
-      e.stopPropagation();
-      const sx = e.clientX, sy = e.clientY, s0 = ov.scale || 1;
+      e.stopPropagation(); e.preventDefault();
+      const r = ov.el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, W = r.width, H = r.height;
+      const d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy)), s0 = ov.scale || 1, px = e.clientX, py = e.clientY;
+      const c0 = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop);
       try { h.setPointerCapture(e.pointerId); } catch {}
-      const move = (ev) => { const d = (ev.clientX - sx) + (ev.clientY - sy); let s = s0 * (1 + d / 300); s = Math.max(0.3, Math.min(5, s)); ov.scale = s; ov.el.style.transform = 'scale(' + s + ')'; };
-      const up = () => { h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); saveLocal(); };
-      h.addEventListener('pointermove', move); h.addEventListener('pointerup', up);
+      const mv = (ev) => {
+        if (ev.altKey) {
+          const cn = CN[corner], patch = {};
+          patch[cn.x] = clampc(c0[cn.x] + (ev.clientX - px) * cn.sx / W * 100, c0[cn.x === 'l' ? 'r' : 'l']);
+          patch[cn.y] = clampc(c0[cn.y] + (ev.clientY - py) * cn.sy / H * 100, c0[cn.y === 't' ? 'b' : 't']);
+          ov.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop, patch); applyCrop(ov);
+        } else { ov.scale = Math.max(0.15, Math.min(8, s0 * Math.hypot(ev.clientX - cx, ev.clientY - cy) / d0)); applyTransform(ov); }
+      };
+      const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); saveLocal(); };
+      h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
+    });
+  }
+  function bindCrop(h, ov, edge) {
+    const SIDE = { n: 't', e: 'r', s: 'b', w: 'l' }, OPP = { t: 'b', r: 'l', b: 't', l: 'r' };
+    h.addEventListener('dblclick', (e) => { e.stopPropagation(); ov.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop, { [SIDE[edge]]: 0 }); applyCrop(ov); saveLocal(); });
+    h.addEventListener('pointerdown', (e) => {
+      e.stopPropagation(); e.preventDefault();
+      const r = ov.el.getBoundingClientRect(), W = r.width, H = r.height, px = e.clientX, py = e.clientY, side = SIDE[edge];
+      const c0 = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop);
+      try { h.setPointerCapture(e.pointerId); } catch {}
+      const mv = (ev) => {
+        const dx = ev.clientX - px, dy = ev.clientY - py; let val;
+        if (edge === 'e') val = c0.r - dx / W * 100; else if (edge === 'w') val = c0.l + dx / W * 100;
+        else if (edge === 'n') val = c0.t + dy / H * 100; else val = c0.b - dy / H * 100;
+        ov.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop, { [side]: clampc(val, c0[OPP[side]]) }); applyCrop(ov);
+      };
+      const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); saveLocal(); };
+      h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
+    });
+  }
+  function bindRotate(h, ov) {
+    h.addEventListener('pointerdown', (e) => {
+      e.stopPropagation(); e.preventDefault();
+      const r = ov.el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const a0 = Math.atan2(e.clientY - cy, e.clientX - cx), r0 = ov.rotation || 0;
+      try { h.setPointerCapture(e.pointerId); } catch {}
+      const mv = (ev) => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); ov.rotation = r0 + (a - a0) * 180 / Math.PI; applyTransform(ov); };
+      const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); saveLocal(); };
+      h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
     });
   }
 
   load();
   return {
-    mount, onChange, list, get, add, remove, setVisible, setWidth, update, score, clockCtl,
+    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
+    select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays,
     boot() { const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
   };
 })();

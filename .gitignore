@@ -9,3 +9,12 @@ ios/
 *.apk
 *.aab
 .DS_Store
+
+# Claude Code / temporarios
+.claude/
+.tmp.driveupload/
+
+# license-server: dados de runtime — NUNCA commitar (contem chaves/clientes)
+*.db
+*.db-shm
+*.db-wal

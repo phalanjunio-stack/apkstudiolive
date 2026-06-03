@@ -4,7 +4,7 @@
 const Mixer = (function () {
   const MAX = 1.5, H = 150, CAP = 14, USABLE = H - CAP;
   let ac, programBus, programDest, masterGain, monitorBus, progMon, masterAn, masterData, masterMeterEl;
-  let channels = [], seq = 0, host, headEl, raf = 0, masterVol = 1, masterMuted = false;
+  let channels = [], seq = 0, host, headEl, raf = 0, masterVol = 1, masterMuted = false, masterMon = true;
 
   function ensureAC() {
     if (ac) return;
@@ -20,15 +20,17 @@ const Mixer = (function () {
   }
   function resume() { if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); }
 
-  function addChannel(node, kind, label) {
+  function addChannel(node, kind, label, color) {
     ensureAC(); resume();
     const fader = ac.createGain(); fader.gain.value = 1.0;
+    const cue = ac.createGain(); cue.gain.value = 0;     // monitor de VÍDEO no fone (pre-fader) — ouve mesmo mudo do ar
     const pfl = ac.createGain(); pfl.gain.value = 0;
     const an = ac.createAnalyser(); an.fftSize = 512;
-    node.connect(fader); fader.connect(programBus);
-    node.connect(pfl); pfl.connect(monitorBus);
+    node.connect(fader); fader.connect(programBus);       // LIVE (o MUTE controla se vai pro ar)
+    node.connect(cue); cue.connect(monitorBus);           // FONE (pre-fader)
+    node.connect(pfl); pfl.connect(monitorBus);           // PFL manual (botão fone)
     node.connect(an);
-    const ch = { id: ++seq, kind, label, node, fader, pfl, an, data: new Uint8Array(an.fftSize), vol: 1.0, mute: false, solo: false, monitor: false };
+    const ch = { id: ++seq, kind, label, node, fader, cue, pfl, an, data: new Uint8Array(an.fftSize), vol: 1.0, mute: false, solo: false, monitor: false, isVideo: false, color: color || null };
     channels.push(ch); applyMix(); render();
     return ch;
   }
@@ -37,11 +39,35 @@ const Mixer = (function () {
     channels.forEach(c => {
       const on = !c.mute && (!anySolo || c.solo);
       c.fader.gain.value = on ? c.vol : 0.0001;
-      c.pfl.gain.value = c.monitor ? 1 : 0;
+      c.pfl.gain.value = c.monitor ? 1 : 0; // FONE só quando você aperta o 🎧 (manual)
     });
-    if (progMon) progMon.gain.value = anyPfl ? 0 : 1;
+    if (progMon) progMon.gain.value = (masterMon && !anyPfl) ? 1 : 0;
   }
   function removeChannel(id) { const i = channels.findIndex(c => c.id === id); if (i < 0) return; try { channels[i].node.disconnect(); } catch {} channels.splice(i, 1); applyMix(); render(); }
+  // acende um canal (quando você clica na fonte de vídeo)
+  function flashEl(el, color) { if (!el) return; if (color) el.style.setProperty('--fc', color); el.classList.remove('kv-flash'); void el.offsetWidth; el.classList.add('kv-flash'); setTimeout(() => el.classList.remove('kv-flash'), 2400); }
+  function flashChannel(node) { const c = channels.find(x => x.node === node); if (c) flashEl(c.stripEl, c.color); }
+  // seleção persistente: o canal selecionado acende com glow na cor; tira dos outros
+  function selectChannel(node) { channels.forEach(c => { if (c.stripEl) c.stripEl.classList.toggle('kv-sel', !!(node && c.node === node && c.color)); }); }
+  // desmutar/mutar um canal por código (ex.: TAKE + Play manda o áudio do vídeo pro ar)
+  function refreshStripAir(c) {
+    const el = c.stripEl; if (!el) return;
+    const m = el.querySelector('.cb.m'); if (m) m.classList.toggle('on', c.mute);
+    el.dataset.air = c.isVideo ? (!c.mute ? 'program' : (c.monitor ? 'preview' : '')) : '';
+    const a = el.querySelector('.ch-air'); if (a) a.textContent = c.isVideo ? (!c.mute ? 'AR' : (c.monitor ? 'FONE' : '')) : '';
+  }
+  // ao desmutar um vídeo, muta os OUTROS vídeos (só 1 no ar — sem áudio de 2 vídeos)
+  function muteOtherVideos(except) {
+    let changed = false;
+    channels.forEach(x => { if (x.isVideo && x !== except && !x.mute) { x.mute = true; refreshStripAir(x); changed = true; } });
+    if (changed) applyMix();
+  }
+  function setChannelMuted(node, muted) {
+    const c = channels.find(x => x.node === node); if (!c) return;
+    c.mute = !!muted; applyMix();
+    if (c.isVideo && !c.mute) muteOtherVideos(c);
+    refreshStripAir(c);
+  }
 
   // ── fontes ──
   async function addMic(deviceId, label) {
@@ -57,14 +83,25 @@ const Mixer = (function () {
       addChannel(ac.createMediaStreamSource(new MediaStream(s.getAudioTracks())), 'desktop', 'Audio do PC');
     } catch (e) { toast('Audio PC: ' + e.message); }
   }
+  function musicDecks() { const B = window.BgMusic; if (!B) return []; return (B.decks && B.decks()) || (B.audio ? [B.audio] : []); }
+  function buildMusicNode() { const musicIn = ac.createGain(); musicDecks().forEach(el => { try { ac.createMediaElementSource(el).connect(musicIn); } catch {} }); return musicIn; }
   function addMusic() {
     if (channels.some(c => c.kind === 'music')) return toast('Musica ja esta no mixer.');
-    const a = window.BgMusic && window.BgMusic.audio;
-    if (!a) return toast('Sem playlist. Va em Audio > Musica de fundo.');
+    if (!musicDecks().length) return toast('Sem playlist. Va em Audio > Musica de fundo.');
     ensureAC(); resume();
-    try { addChannel(ac.createMediaElementSource(a), 'music', 'Musica'); } catch (e) { toast('Nao consegui ligar a musica.'); }
+    try { addChannel(buildMusicNode(), 'music', 'Musica'); } catch (e) { toast('Nao consegui ligar a musica.'); }
+  }
+  // roteia a musica de fundo pelo MASTER automaticamente (silencioso, idempotente)
+  // — assim voce ouve a musica SO pelo master, nao mais crua no alto-falante.
+  function ensureMusic() {
+    if (channels.some(c => c.kind === 'music')) return;
+    if (!musicDecks().length) return;
+    try { ensureAC(); resume(); addChannel(buildMusicNode(), 'music', 'Musica'); } catch {}
   }
   function addStreamAudio(stream, label) { if (!stream || !stream.getAudioTracks().length) return; ensureAC(); addChannel(ac.createMediaStreamSource(stream), 'cam', label); }
+  // áudio de um <video>/<audio> direto no mixer (volume controlado pela mesa). Retorna o canal (pra remover depois).
+  function addMediaElement(elem, label, color) { try { ensureAC(); resume(); const ch = addChannel(ac.createMediaElementSource(elem), 'media', label || 'Vídeo', color); if (ch) { ch.isVideo = true; ch.mute = true; applyMix(); render(); } return ch; } catch (e) { return null; } }
+  function removeChannelByNode(node) { const c = channels.find(x => x.node === node); if (c) removeChannel(c.id); }
 
   async function micMenu(ev) {
     document.getElementById('mixMenu')?.remove();
@@ -75,8 +112,8 @@ const Mixer = (function () {
       const b = document.createElement('button'); b.textContent = d.label || 'Entrada de audio'; b.onclick = () => { menu.remove(); addMic(d.deviceId, d.label); }; menu.appendChild(b);
     });
     document.body.appendChild(menu);
-    const r = (ev.currentTarget || ev.target).getBoundingClientRect();
-    menu.style.left = Math.max(8, Math.min(r.left, innerWidth - 248)) + 'px'; menu.style.top = (r.bottom + 6) + 'px';
+    if (window.placeMenu) window.placeMenu(menu, ev.currentTarget || ev.target);
+    else { const r = (ev.currentTarget || ev.target).getBoundingClientRect(); menu.style.left = Math.max(8, Math.min(r.left, innerWidth - 248)) + 'px'; menu.style.top = (r.bottom + 6) + 'px'; }
     setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
   }
 
@@ -117,8 +154,13 @@ const Mixer = (function () {
   }
   function strip(c) {
     const el = document.createElement('div'); el.className = 'ch'; el.dataset.id = c.id;
+    if (c.color) { el.style.setProperty('--cc', c.color); if (c.isVideo) el.dataset.vid = '1'; } // cor de identificação (bate com o card da fonte)
+    const airD = () => c.isVideo ? (!c.mute ? 'program' : (c.monitor ? 'preview' : '')) : '';
+    const airT = () => c.isVideo ? (!c.mute ? 'AR' : (c.monitor ? 'FONE' : '')) : '';
+    const airUpd = () => { el.dataset.air = airD(); const a = el.querySelector('.ch-air'); if (a) a.textContent = airT(); };
+    el.dataset.air = airD();
     el.innerHTML =
-      `<div class="ch-top"><span class="ch-name" title="${c.label}">${c.label}</span><button class="ch-x" title="Remover">&times;</button></div>` +
+      `<div class="ch-top"><span class="ch-name" title="${c.label}">${c.label}</span><span class="ch-air">${airT()}</span><button class="ch-x" title="Remover">&times;</button></div>` +
       `<div class="ch-db">${fmtDb(c.vol)}</div>` +
       '<div class="ch-body">' + SCALE + '<div class="ch-meter"><i></i></div></div>' +
       '<div class="ch-btns"><button class="cb s">S</button><button class="cb m">M</button><button class="cb fone" title="Monitorar no fone (ouco so isso)">&#127911;</button></div>';
@@ -128,10 +170,13 @@ const Mixer = (function () {
     const sB = el.querySelector('.s'), mB = el.querySelector('.m'), fB = el.querySelector('.fone');
     sB.classList.toggle('on', c.solo); mB.classList.toggle('on', c.mute); fB.classList.toggle('on', c.monitor);
     sB.onclick = () => { c.solo = !c.solo; sB.classList.toggle('on', c.solo); applyMix(); };
-    mB.onclick = () => { c.mute = !c.mute; mB.classList.toggle('on', c.mute); applyMix(); };
-    fB.onclick = () => { c.monitor = !c.monitor; fB.classList.toggle('on', c.monitor); applyMix(); };
+    mB.onclick = () => { c.mute = !c.mute; mB.classList.toggle('on', c.mute); applyMix(); if (c.isVideo && !c.mute) muteOtherVideos(c); airUpd(); };
+    fB.onclick = () => { c.monitor = !c.monitor; fB.classList.toggle('on', c.monitor); applyMix(); airUpd(); };
     el.querySelector('.ch-x').onclick = () => removeChannel(c.id);
+    // clicar no canal acende a FONTE de vídeo correspondente
+    el.addEventListener('click', e => { if (e.target.closest('button, .ch-body, .cb')) return; if (window.Studio && window.Studio.selectSourceByNode) window.Studio.selectSourceByNode(c.node); });
     c.meterEl = el.querySelector('.ch-meter i');
+    c.stripEl = el;
     return el;
   }
   function masterStrip() {
@@ -140,12 +185,15 @@ const Mixer = (function () {
       '<div class="ch-top"><span class="ch-name">MASTER</span></div>' +
       `<div class="ch-db">${fmtDb(masterMuted ? 0 : masterVol)}</div>` +
       '<div class="ch-body">' + SCALE + '<div class="ch-meter"><i></i></div></div>' +
-      '<div class="ch-btns"><button class="cb m">M</button></div>';
-    const db = el.querySelector('.ch-db'), mB = el.querySelector('.m');
+      '<div class="ch-btns"><button class="cb m">M</button><button class="cb fone" title="Monitorar o MASTER no fone (referencia)">&#127911;</button></div>';
+    const db = el.querySelector('.ch-db'), mB = el.querySelector('.m'), fB = el.querySelector('.fone');
     const fader = makeFader(masterVol, (v) => { masterVol = v; if (!masterMuted) masterGain.gain.value = v; db.textContent = fmtDb(v); });
     el.querySelector('.ch-body').insertBefore(fader, el.querySelector('.ch-meter'));
     mB.classList.toggle('on', masterMuted);
     mB.onclick = () => { masterMuted = !masterMuted; masterGain.gain.value = masterMuted ? 0.0001 : masterVol; mB.classList.toggle('on', masterMuted); };
+    fB.classList.toggle('on', masterMon);
+    fB.title = 'Monitorar o MASTER no fone (referencia)';
+    fB.onclick = () => { masterMon = !masterMon; fB.classList.toggle('on', masterMon); applyMix(); };
     masterMeterEl = el.querySelector('.ch-meter i');
     return el;
   }
@@ -153,7 +201,12 @@ const Mixer = (function () {
     const rms = (an, data) => { an.getByteTimeDomainData(data); let s = 0; for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; s += v * v; } return Math.min(1, Math.sqrt(s / data.length) * 2.4); };
     function frame() {
       channels.forEach(c => { if (c.meterEl) c.meterEl.style.height = (rms(c.an, c.data) * 100) + '%'; });
-      if (masterAn && masterMeterEl) masterMeterEl.style.height = (rms(masterAn, masterData) * 100) + '%';
+      if (masterAn) {
+        const ml = rms(masterAn, masterData);
+        if (masterMeterEl) masterMeterEl.style.height = (ml * 100) + '%';
+        const v = Math.round(ml * 100) + '%';
+        document.querySelectorAll('.mon .meter').forEach(m => m.style.setProperty('--vu', v)); // VU nos monitores
+      }
       raf = requestAnimationFrame(frame);
     }
     if (!raf) frame();
@@ -165,7 +218,7 @@ const Mixer = (function () {
     if (host) { renderHead(); render(); }
     window.addEventListener('pointerdown', resume);
   }
-  return { addMic, addDesktop, addMusic, addStreamAudio, removeChannel, boot, get programStream() { return programDest ? programDest.stream : null; } };
+  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, get programStream() { return programDest ? programDest.stream : null; } };
 })();
 window.Mixer = Mixer;
 Mixer.boot();

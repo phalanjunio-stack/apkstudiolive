@@ -21,7 +21,7 @@ cf.stderr.on('data', scan);
 function start(pub) {
   const line = '='.repeat(54);
   console.log(`\n${line}`);
-  console.log('  SeteLagoas Live — pronto!');
+  console.log('  Kivo Studio — pronto!');
   console.log(line);
   console.log('  Studio (no PC):     https://localhost:' + PORT + '/studio');
   console.log('  Câmera (celular):   ' + pub + '/phone');

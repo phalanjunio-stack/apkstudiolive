@@ -1,6 +1,6 @@
 {
-  "appId": "com.setelagoas.camera",
-  "appName": "SeteLagoas Câmera",
+  "appId": "com.kivo.camera",
+  "appName": "Kivo Câmera",
   "webDir": "mobile/www",
   "server": {
     "androidScheme": "https",

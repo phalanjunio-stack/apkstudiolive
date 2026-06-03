@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="pt-br" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kivo Studio — Modo Futebol</title>
+<link rel="icon" type="image/svg+xml" href="/img/kivo-icon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+<style>
+/* ============================================================
+   KIVO STUDIO · MODO FUTEBOL — tela própria, dark premium broadcast
+   Tokens herdados do nosso premium.css (azul/ciano navy).
+   ============================================================ */
+:root{
+  --bg:#04080f; --bg2:#02040a;
+  --panel:#0b1626; --panel2:#091320; --inset:#070f1b;
+  --line:rgba(120,165,255,.10); --line2:rgba(120,165,255,.20); --line3:rgba(120,165,255,.32);
+  --chrome:#070f1d; --chrome2:#0b1730;
+  --txt:#e9effc; --muted:#8090b4; --muted2:#5e6e90;
+  --accent:#1f8bff; --accent2:#36d1ff;
+  --live:#2ee07a; --rec:#ff4d4f; --ok:#2ee07a; --warn:#f1c40f;
+  --grad-blue:linear-gradient(180deg,#2a97ff,#0a66d8);
+  --grad-ruby:linear-gradient(180deg,#ff5a5c,#d22f31);
+  --shadow-card:0 16px 38px -16px rgba(0,0,0,.62),0 2px 8px rgba(0,0,0,.34);
+  --shadow-pop:0 28px 64px -20px rgba(0,0,0,.74);
+  --glow-blue:0 6px 26px rgba(31,139,255,.34);
+  /* cores dos eventos */
+  --c-gol:#20e37a; --c-amarelo:#ffc53d; --c-vermelho:#ff5d5c; --c-sub:#3b82f6;
+  --c-penalti:#a06bff; --c-escanteio:#ff924d; --c-falta:#19c3c3; --c-defesa:#2a97ff; --c-fim:#a9b8d6;
+  --r:12px; --r-lg:14px; --r-sm:9px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,Arial,sans-serif;color:var(--txt);
+  background:
+    radial-gradient(1200px 560px at 82% -14%, rgba(31,139,255,.10), transparent 60%),
+    radial-gradient(960px 520px at -8% 116%, rgba(54,209,255,.06), transparent 60%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased;overflow:hidden
+}
+button{font-family:inherit;color:inherit}
+::-webkit-scrollbar{width:0;height:0}
+.app{display:grid;grid-template-columns:218px 1fr 304px;grid-template-rows:58px 1fr 38px;
+  grid-template-areas:"top top top" "nav main right" "foot foot foot";height:100vh}
+
+/* ---------- TOPBAR ---------- */
+.top{grid-area:top;display:flex;align-items:center;gap:18px;padding:0 16px;
+  background:linear-gradient(180deg,var(--chrome2),var(--chrome));border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 4px 18px -8px rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:20}
+.brand{display:flex;align-items:center;gap:11px;flex:none}
+.brand img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 6px 16px rgba(31,139,255,.5))}
+.brand .bt{font-weight:800;font-size:15px;letter-spacing:.2px;line-height:1}
+.brand .bt em{color:var(--accent2);font-style:normal;font-weight:500}
+.brand .bs{display:block;font-size:8.5px;letter-spacing:.3em;color:var(--muted);margin-top:3px;font-weight:600}
+.modes{display:flex;gap:6px;background:var(--inset);padding:5px;border-radius:11px;border:1px solid var(--line)}
+.mode{display:flex;align-items:center;gap:8px;height:34px;padding:0 15px;border:1px solid transparent;border-radius:8px;
+  background:transparent;color:var(--muted);font-weight:650;font-size:12.5px;cursor:pointer;transition:.16s;white-space:nowrap}
+.mode:hover{color:var(--txt);background:rgba(120,165,255,.06)}
+.mode.active{color:#fff;background:var(--grad-blue);border-color:rgba(255,255,255,.16);box-shadow:var(--glow-blue)}
+.mode svg{width:16px;height:16px}
+.tstats{display:flex;align-items:center;gap:16px;margin-left:6px}
+.ts{display:flex;flex-direction:column;line-height:1.05}
+.ts .k{font-size:8.5px;letter-spacing:.13em;color:var(--muted2);font-weight:700}
+.ts .v{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.ts.rec .v{color:var(--rec)} .ts.ok .v{color:var(--live)}
+.ts.with{flex-direction:row;align-items:center;gap:7px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.rec{background:var(--rec);box-shadow:0 0 8px var(--rec)} .dot.off{background:#3a4660}
+.dot.net{background:var(--live);box-shadow:0 0 8px var(--live)}
+.tsep{width:1px;height:26px;background:var(--line2)}
+.bars{display:inline-flex;align-items:flex-end;gap:2px;height:14px}
+.bars i{width:3px;background:var(--live);border-radius:1px;opacity:.9}
+.bars i:nth-child(1){height:5px}.bars i:nth-child(2){height:8px}.bars i:nth-child(3){height:11px}.bars i:nth-child(4){height:14px}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.ico-btn{width:34px;height:34px;border-radius:9px;background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+.ico-btn:hover{border-color:var(--accent);color:var(--txt)}
+.ico-btn svg{width:17px;height:17px}
+.avatar{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#1f8bff,#36d1ff);border:1px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#04101f;cursor:pointer}
+
+/* ---------- NAV ---------- */
+.nav{grid-area:nav;background:linear-gradient(180deg,var(--chrome2),var(--chrome));border-right:1px solid var(--line);
+  padding:12px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;color:var(--muted);font-size:13px;
+  font-weight:550;cursor:pointer;border:1px solid transparent;border-left:2px solid transparent;text-decoration:none;transition:.14s}
+.nav a .ic{width:20px;display:inline-flex;align-items:center;justify-content:center;opacity:.85}
+.nav a .ic svg{width:18px;height:18px}
+.nav a:hover{background:rgba(120,165,255,.08);color:var(--txt)}
+.nav a.active{background:linear-gradient(90deg,rgba(31,139,255,.20),rgba(31,139,255,.03));color:var(--accent);
+  font-weight:700;border:1px solid rgba(31,139,255,.30);border-left:2px solid var(--accent)}
+.nav a.active .ic{opacity:1}
+.nav a .chev{margin-left:auto;opacity:.5}
+.nav-foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:11px;border:1px solid var(--line);
+  border-radius:12px;background:var(--panel2)}
+.nav-foot img{width:28px;height:28px;object-fit:contain}
+.nav-foot .nf{font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--muted)}
+.nav-foot .nv{font-size:9.5px;color:var(--muted2);margin-top:2px}
+
+/* ---------- MAIN ---------- */
+.main{grid-area:main;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.card{background:linear-gradient(180deg,rgba(120,165,255,.045),rgba(120,165,255,0)),var(--panel);
+  border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-card);backdrop-filter:blur(6px)}
+.card-pad{padding:13px 14px}
+.sec{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.sec h3{margin:0;font-size:10.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.sec .sp{margin-left:auto}
+
+/* ===== ROW 1 — PREVIEW / SWITCHER / PROGRAM ===== */
+.live{display:grid;grid-template-columns:1fr 92px 1fr;gap:12px}
+.mon{position:relative;border-radius:var(--r-lg);overflow:hidden;border:2px solid var(--line2);background:#000;
+  aspect-ratio:16/9;box-shadow:var(--shadow-card)}
+.mon.pv{border-color:rgba(31,139,255,.55);box-shadow:0 0 0 1px rgba(31,139,255,.25),0 18px 40px -18px rgba(0,0,0,.7)}
+.mon.pg{border-color:rgba(255,77,79,.6);box-shadow:0 0 0 1px rgba(255,77,79,.28),0 18px 40px -18px rgba(0,0,0,.7)}
+.pitch{position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 38px, transparent 38px 76px),
+    radial-gradient(130% 96% at 50% 120%, #1c7a40, #0c5128 52%, #073a1d);
+  overflow:hidden}
+.pitch::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:rgba(255,255,255,.16)}
+.pitch::after{content:"";position:absolute;left:50%;top:50%;width:96px;height:96px;transform:translate(-50%,-50%);
+  border:2px solid rgba(255,255,255,.16);border-radius:50%}
+.mon-tag{position:absolute;top:9px;left:9px;display:flex;gap:6px;align-items:center;z-index:5}
+.tag{font-size:10px;font-weight:800;letter-spacing:.08em;padding:3px 9px;border-radius:6px;backdrop-filter:blur(4px)}
+.tag.pv{background:rgba(31,139,255,.92);color:#fff}
+.tag.pg{background:rgba(255,77,79,.94);color:#fff}
+.tag.noar{background:#0c1322cc;color:#ff8d8f;border:1px solid rgba(255,77,79,.5)}
+.tag.cam{background:#0c1322cc;color:#cfe0ff;border:1px solid var(--line2);display:inline-flex;gap:6px;align-items:center}
+.tag.cam .g{width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 7px var(--live)}
+.mon-foot{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:9px;padding:7px 10px;z-index:5;
+  background:linear-gradient(0deg,rgba(2,6,14,.86),transparent)}
+.mon-foot .mf{font-size:10px;color:#b9c8e8;font-weight:600}
+.mon-foot .live-pill{margin-left:auto;font-size:10px;font-weight:800;color:#fff;background:var(--rec);padding:2px 8px;border-radius:5px;letter-spacing:.06em}
+.vu{display:flex;gap:2px;align-items:flex-end;height:11px}
+.vu i{width:2px;border-radius:1px;background:var(--live);height:6px}
+.vu i:nth-child(odd){height:9px;background:#7be0a3}.vu i:nth-child(5){background:var(--warn);height:11px}
+
+/* switcher */
+.switch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px}
+.take,.cut{width:100%;border:0;border-radius:11px;cursor:pointer;font-weight:800;letter-spacing:.05em;transition:.15s}
+.take{padding:15px 0;font-size:15px;color:#fff;background:var(--grad-blue);box-shadow:var(--glow-blue)}
+.take:hover{filter:brightness(1.08)}
+.arrow{display:flex;flex-direction:column;align-items:center;color:var(--muted);font-size:10px;letter-spacing:.1em}
+.arrow svg{width:26px;height:26px;color:var(--accent2);animation:flow 1.8s ease-in-out infinite}
+@keyframes flow{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(4px);opacity:1}}
+.cut{padding:13px 0;font-size:14px;color:var(--txt);background:var(--panel);border:1px solid var(--line2)}
+.cut:hover{border-color:var(--accent);color:#fff}
+.auto-box{width:100%;background:var(--inset);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+.auto-box .l{font-size:9px;letter-spacing:.14em;color:var(--muted2);font-weight:700}
+.auto-box select{margin-top:5px;width:100%;background:var(--panel);border:1px solid var(--line2);color:var(--txt);
+  border-radius:7px;padding:5px;font-size:12px;font-weight:700;text-align:center;cursor:pointer}
+
+/* scoreboard overlay no PROGRAM */
+.scb{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:6;display:flex;flex-direction:column;align-items:center;gap:0;filter:drop-shadow(0 8px 20px rgba(0,0,0,.6))}
+.scb-comp{font-size:8.5px;font-weight:800;letter-spacing:.12em;color:#cfe0ff;background:#0a1426e0;padding:2px 12px;border-radius:6px 6px 0 0;border:1px solid var(--line2);border-bottom:0}
+.scb-main{display:flex;align-items:stretch;background:linear-gradient(180deg,#0e1a30,#0a1322);border:1px solid var(--line2);border-radius:0 0 4px 4px;overflow:hidden}
+.scb-team{display:flex;align-items:center;gap:7px;padding:6px 11px}
+.scb-team.away{flex-direction:row-reverse}
+.crest{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:900;
+  color:#fff;background:linear-gradient(180deg,#22324f,#16223a);border:1px solid rgba(255,255,255,.14);position:relative}
+.crest.home{box-shadow:inset 0 -3px 0 var(--home,#1f8bff)}
+.crest.away{box-shadow:inset 0 -3px 0 var(--away,#ff4d4f)}
+.scb-nm{font-size:13px;font-weight:800;letter-spacing:.02em;color:#fff}
+.scb-score{display:flex;align-items:center;gap:8px;padding:0 12px;background:#060c18;border-left:1px solid var(--line2);border-right:1px solid var(--line2)}
+.scb-score b{font-size:21px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;min-width:16px;text-align:center}
+.scb-score span{color:var(--muted);font-weight:700}
+.scb-clock{display:flex;flex-direction:column;align-items:center;background:#0a1426e0;border:1px solid var(--line2);border-top:0;
+  padding:2px 14px 3px;border-radius:0 0 6px 6px;margin-top:-1px}
+.scb-clock .t{font-size:14px;font-weight:900;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.scb-clock .p{font-size:8px;font-weight:800;letter-spacing:.1em;color:#9fd9ff;background:var(--accent);
+  color:#04101f;padding:1px 8px;border-radius:4px;margin-top:1px}
+
+/* ===== ROW 2 — PLACAR / CRONOMETRO / EVENTOS ===== */
+.row2{display:grid;grid-template-columns:1.05fr .92fr 1.25fr;gap:12px}
+
+/* placar & times */
+.teams{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:start}
+.team-col .lab{font-size:9px;letter-spacing:.14em;color:var(--muted2);font-weight:800;text-align:center;margin-bottom:7px}
+.team-head{display:flex;align-items:center;gap:8px}
+.team-head.away{flex-direction:row-reverse}
+.crest-lg{width:42px;height:42px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;
+  background:linear-gradient(180deg,#22324f,#16223a);border:1px solid rgba(255,255,255,.14);flex:none}
+.crest-lg.home{box-shadow:inset 0 -4px 0 var(--home,#1f8bff)}
+.crest-lg.away{box-shadow:inset 0 -4px 0 var(--away,#ff4d4f)}
+.team-name{flex:1;min-width:0;background:var(--inset);border:1px solid var(--line2);border-radius:8px;color:#fff;font-weight:700;
+  font-size:13px;padding:9px 10px;display:flex;align-items:center;gap:7px}
+.team-name input{flex:1;min-width:0;background:transparent;border:0;color:#fff;font-weight:700;font-size:13px;outline:none}
+.team-name .pen{color:var(--muted);flex:none}
+.score-big{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:6px}
+.scnum{width:64px;height:62px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:900;
+  color:#fff;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,#0f1d34,#0a1626);border:1px solid var(--line2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.score-x{font-size:18px;color:var(--muted);font-weight:700}
+.stepper{display:flex;gap:6px;justify-content:center;margin-top:8px}
+.stepper button{width:34px;height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);
+  font-size:17px;font-weight:800;cursor:pointer;transition:.13s;line-height:1}
+.stepper button:hover{border-color:var(--accent);color:var(--accent)}
+.stepper button.minus:hover{border-color:var(--rec);color:var(--rec)}
+.color-row{display:flex;align-items:center;gap:8px;margin-top:9px;justify-content:center}
+.color-row .cl{font-size:9px;letter-spacing:.1em;color:var(--muted2);font-weight:700}
+.swatch{width:30px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.18);cursor:pointer;padding:0;position:relative;overflow:hidden}
+.swatch input{position:absolute;inset:-6px;opacity:0;cursor:pointer}
+.meta-row{display:flex;gap:8px;margin-top:12px}
+.chip-in{flex:1;background:var(--inset);border:1px solid var(--line2);border-radius:8px;padding:7px 9px}
+.chip-in .l{font-size:8px;letter-spacing:.12em;color:var(--muted2);font-weight:800}
+.chip-in input{width:100%;background:transparent;border:0;color:var(--txt);font-size:12px;font-weight:600;outline:none;margin-top:2px}
+.btn-air{margin-top:11px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:10px;
+  border:1px solid rgba(31,139,255,.4);background:linear-gradient(180deg,rgba(31,139,255,.18),rgba(31,139,255,.05));color:#bfe0ff;
+  font-weight:800;font-size:12.5px;cursor:pointer;transition:.15s;letter-spacing:.03em}
+.btn-air:hover{background:var(--grad-blue);color:#fff;border-color:transparent;box-shadow:var(--glow-blue)}
+.btn-air svg{width:16px;height:16px}
+
+/* cronômetro */
+.clock-wrap{display:flex;flex-direction:column;align-items:center}
+.clock{font-size:54px;font-weight:900;letter-spacing:.02em;font-variant-numeric:tabular-nums;line-height:1;
+  background:linear-gradient(180deg,#eaf3ff,#a9cdf6);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:0 0 26px rgba(54,209,255,.18)}
+.clock.run{animation:clk 1s steps(1) infinite}
+@keyframes clk{50%{opacity:.86}}
+.add-badge{font-size:11px;font-weight:800;color:#04101f;background:var(--warn);padding:2px 9px;border-radius:6px;margin-top:8px;opacity:0;transition:.2s;height:0;overflow:hidden}
+.add-badge.on{opacity:1;height:auto;padding:3px 9px}
+.periods{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+.per{padding:7px 11px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--muted);
+  font-size:11px;font-weight:700;cursor:pointer;transition:.13s}
+.per:hover{border-color:var(--accent);color:var(--txt)}
+.per.active{background:var(--grad-blue);color:#fff;border-color:transparent;box-shadow:var(--glow-blue)}
+.clock-ctrl{display:flex;gap:8px;margin-top:13px;width:100%}
+.cc{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:9px;font-weight:800;font-size:12px;
+  cursor:pointer;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);transition:.14s}
+.cc svg{width:15px;height:15px}
+.cc.go{background:linear-gradient(180deg,#2ee07a,#15a657);color:#03210f;border-color:transparent}
+.cc.go:hover{filter:brightness(1.08)}
+.cc.pause:hover{border-color:var(--warn);color:var(--warn)}
+.cc.reset:hover{border-color:var(--rec);color:var(--rec)}
+.adds{display:flex;align-items:center;gap:7px;margin-top:13px;width:100%;justify-content:center}
+.adds .l{font-size:9px;letter-spacing:.12em;color:var(--muted2);font-weight:800}
+.addb{width:34px;height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--accent2);
+  font-size:12px;font-weight:800;cursor:pointer;transition:.13s}
+.addb:hover{border-color:var(--accent);background:rgba(31,139,255,.12)}
+.endb{margin-left:6px;padding:0 12px;height:30px;border-radius:8px;border:1px solid rgba(255,77,79,.4);background:rgba(255,77,79,.1);
+  color:#ff8d8f;font-size:11px;font-weight:800;cursor:pointer}
+.endb:hover{background:var(--grad-ruby);color:#fff;border-color:transparent}
+
+/* eventos rápidos 3x3 */
+.events{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.ev{position:relative;display:flex;align-items:center;gap:11px;padding:13px 13px;border-radius:11px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--panel2);
+  border:1px solid var(--line2);transition:.15s;overflow:hidden;text-align:left}
+.ev::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c)}
+.ev:hover{border-color:color-mix(in srgb,var(--c) 60%,transparent);transform:translateY(-1px);
+  box-shadow:0 10px 24px -12px var(--c),inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent)}
+.ev:active{transform:translateY(0)}
+.ev-ic{width:34px;height:34px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
+.ev-ic svg{width:19px;height:19px}
+.ev-nm{font-size:13px;font-weight:800;letter-spacing:.02em;color:#eaf1ff}
+.ev-au{position:absolute;top:8px;right:9px;width:17px;height:17px;border-radius:5px;display:none;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c)}
+.ev-au svg{width:11px;height:11px}
+.ev.has-au .ev-au{display:flex}
+.comem{display:flex;align-items:center;gap:11px;margin-top:11px;padding:9px 12px;border-radius:10px;background:var(--inset);border:1px solid var(--line2)}
+.comem .cb{width:30px;height:30px;border-radius:8px;background:color-mix(in srgb,var(--c-gol) 18%,transparent);color:var(--c-gol);
+  display:flex;align-items:center;justify-content:center;flex:none}
+.comem .cb svg{width:16px;height:16px}
+.comem .ct{font-size:11px;font-weight:800;letter-spacing:.06em;color:#cfe0ff;flex:none}
+.comem .play-mini{width:28px;height:28px;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--live);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.comem .play-mini svg{width:13px;height:13px}
+.vol{flex:1;height:6px;border-radius:99px;background:var(--inset);position:relative;cursor:pointer;border:1px solid var(--line)}
+.vol .fill{position:absolute;left:0;top:0;bottom:0;width:62%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.vol .knob{position:absolute;top:50%;left:62%;width:13px;height:13px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 8px rgba(54,209,255,.5)}
+.comem .st{font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--live);flex:none}
+
+/* ===== ROW 3 — Áudio / Spots / Overlays / Histórico / Jogos ===== */
+.row3{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:start}
+.list{display:flex;flex-direction:column;gap:6px}
+.li{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;background:var(--panel2);border:1px solid var(--line)}
+.li:hover{border-color:var(--line2)}
+.play{width:28px;height:28px;border-radius:7px;border:0;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#2ee07a,#16a557);color:#03210f;box-shadow:0 4px 12px -4px rgba(46,224,122,.5)}
+.play.on{background:linear-gradient(180deg,#ff5a5c,#d22f31);color:#fff}
+.play svg{width:13px;height:13px}
+.li .nm{flex:1;min-width:0;font-size:12px;font-weight:600;color:#dbe6fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .vol{max-width:64px;flex:none;width:64px}
+.li .vol .fill,.li .vol .knob{left:0}
+.ico-s{width:24px;height:24px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex:none}
+.ico-s:hover{color:var(--txt);background:var(--inset)}
+.ico-s svg{width:14px;height:14px}
+.add-row{margin-top:9px;width:100%;padding:9px;border-radius:9px;border:1px dashed var(--line3);background:transparent;color:var(--muted);
+  font-size:11.5px;font-weight:700;cursor:pointer;transition:.14s}
+.add-row:hover{border-color:var(--accent);color:var(--accent);background:rgba(31,139,255,.05)}
+
+/* spots */
+.spot{display:flex;align-items:center;gap:8px;padding:9px;border-radius:9px;background:var(--panel2);border:1px solid var(--line)}
+.spot .nm{flex:1;min-width:0;font-size:11.5px;font-weight:600;color:#dbe6fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spot .now{font-size:10px;font-weight:800;color:var(--accent2);background:rgba(31,139,255,.1);border:1px solid rgba(31,139,255,.28);
+  border-radius:6px;padding:4px 8px;cursor:pointer;white-space:nowrap}
+.spot .now:hover{background:var(--accent);color:#04101f}
+.spot .sched{font-size:10px;font-weight:700;color:var(--muted);background:transparent;border:1px solid var(--line2);border-radius:6px;padding:4px 8px;cursor:pointer;white-space:nowrap}
+.spot .sched:hover{border-color:var(--accent);color:var(--txt)}
+
+/* overlays grid */
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ov{position:relative;border-radius:9px;overflow:hidden;border:1px solid var(--line2);cursor:pointer;aspect-ratio:16/10;
+  background:linear-gradient(160deg,#13243f,#0a1322);display:flex;align-items:flex-end;transition:.15s}
+.ov:hover{border-color:var(--accent);transform:translateY(-1px)}
+.ov.on{border-color:var(--live);box-shadow:0 0 0 1px var(--live),0 8px 20px -10px var(--live)}
+.ov .thumb{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:.5}
+.ov .thumb svg{width:26px;height:26px;color:#5b76a8}
+.ov .ovn{position:relative;z-index:2;width:100%;padding:5px 7px;font-size:9.5px;font-weight:700;color:#dbe6fb;
+  background:linear-gradient(0deg,rgba(3,7,13,.92),transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov .badge-on{position:absolute;top:5px;right:5px;z-index:3;font-size:8px;font-weight:900;color:#03210f;background:var(--live);
+  padding:1px 6px;border-radius:4px;display:none;letter-spacing:.05em}
+.ov.on .badge-on{display:block}
+
+/* histórico */
+.hist{display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto}
+.he{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);
+  animation:rise .3s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.he .min{font-size:12px;font-weight:900;color:#fff;width:30px;flex:none;font-variant-numeric:tabular-nums}
+.he .hic{width:24px;height:24px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c)}
+.he .hic svg{width:14px;height:14px}
+.he .htx{flex:1;min-width:0;line-height:1.25}
+.he .htx .et{font-size:11.5px;font-weight:700;color:#eaf1ff}
+.he .htx .ed{font-size:10px;color:var(--muted)}
+.he .undo{width:24px;height:24px;border-radius:6px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center}
+.he .undo:hover{color:var(--rec);background:rgba(255,77,79,.1)}
+.he .undo svg{width:13px;height:13px}
+
+/* jogos do dia */
+.game{display:flex;align-items:center;gap:9px;padding:9px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;transition:.14s}
+.game:hover{border-color:var(--line2)}
+.game.live{border-color:rgba(255,77,79,.4)}
+.game .gc{width:22px;height:22px;border-radius:5px;background:linear-gradient(180deg,#22324f,#16223a);font-size:7px;font-weight:900;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}
+.game .gn{flex:1;min-width:0;font-size:11.5px;font-weight:600;color:#dbe6fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.game .gn b{font-weight:800;color:#fff}
+.game .gs{font-size:8.5px;font-weight:800;letter-spacing:.06em;padding:2px 7px;border-radius:5px;flex:none}
+.gs.l{background:var(--rec);color:#fff} .gs.a{background:rgba(241,196,64,.16);color:var(--warn)} .gs.t{background:var(--inset);color:var(--muted)}
+.game-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.gb{padding:8px;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);font-size:10.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+.gb:hover{border-color:var(--accent);color:var(--accent)}
+.gb.danger:hover{border-color:var(--rec);color:var(--rec)}
+.gb svg{width:13px;height:13px}
+.btn-new{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:var(--accent2);background:rgba(31,139,255,.1);
+  border:1px solid rgba(31,139,255,.28);border-radius:7px;padding:5px 9px;cursor:pointer}
+.btn-new:hover{background:var(--accent);color:#04101f}
+.btn-new svg{width:13px;height:13px}
+
+/* ---------- RIGHT ---------- */
+.right{grid-area:right;background:linear-gradient(180deg,var(--chrome2),var(--chrome));border-left:1px solid var(--line);
+  padding:13px;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.live-btns{display:flex;flex-direction:column;gap:9px}
+.rec-line{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;background:var(--inset);border:1px solid var(--line2)}
+.rec-line .rl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;color:#dbe6fb}
+.rec-line .rl .dot{width:9px;height:9px}
+.rec-line .rt{margin-left:auto;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--muted)}
+.golive{display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border-radius:11px;border:0;cursor:pointer;
+  font-size:14px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--grad-ruby);box-shadow:0 8px 24px -8px rgba(255,77,79,.5);transition:.15s}
+.golive:hover{filter:brightness(1.07)}
+.golive.on{background:linear-gradient(180deg,#2ee07a,#15a657);box-shadow:0 8px 24px -8px rgba(46,224,122,.5)}
+.golive svg{width:18px;height:18px}
+.safe{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:10px;border:1px solid var(--line2);
+  background:var(--panel2);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+.safe:hover{border-color:var(--accent);color:var(--txt)}
+.safe svg{width:15px;height:15px}
+.scenes{display:flex;flex-direction:column;gap:5px}
+.scene{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);cursor:pointer;transition:.13s}
+.scene:hover{border-color:var(--line2)}
+.scene.active{background:linear-gradient(90deg,rgba(31,139,255,.18),transparent);border-color:rgba(31,139,255,.34)}
+.scene .sn{font-size:9px;font-weight:800;color:var(--muted2);width:16px;flex:none}
+.scene .st{flex:1;font-size:12px;font-weight:600;color:#dbe6fb}
+.scene.active .st{color:#fff}
+.scene .se{color:var(--muted);opacity:.7}
+.scene .se svg{width:15px;height:15px}
+.btn-block{display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;border-radius:9px;border:0;cursor:pointer;
+  background:var(--grad-blue);color:#fff;font-size:11.5px;font-weight:800;box-shadow:var(--glow-blue)}
+.btn-block svg{width:14px;height:14px}
+.layers{display:flex;flex-direction:column;gap:4px}
+.layer{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.layer .eye{width:24px;height:24px;border-radius:6px;border:1px solid var(--line2);background:var(--inset);color:var(--accent2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+.layer.off .eye{color:var(--muted2)}
+.layer .eye svg{width:14px;height:14px}
+.layer .ln{flex:1;font-size:11.5px;font-weight:600;color:#dbe6fb}
+.layer.off .ln{color:var(--muted2)}
+.layer .lair{font-size:8px;font-weight:900;letter-spacing:.06em;color:#03210f;background:var(--live);padding:2px 6px;border-radius:4px}
+.clearbtn{font-size:10px;font-weight:800;color:var(--muted);background:transparent;border:0;cursor:pointer;letter-spacing:.1em}
+.clearbtn:hover{color:var(--rec)}
+.count{font-size:9.5px;font-weight:800;color:var(--muted2)}
+
+/* ---------- FOOTER ---------- */
+.foot{grid-area:foot;display:flex;align-items:center;gap:20px;padding:0 16px;background:linear-gradient(180deg,var(--chrome),var(--bg2));
+  border-top:1px solid var(--line);font-size:11px;z-index:10}
+.fitem{display:flex;align-items:center;gap:7px;color:var(--muted)}
+.fitem svg{width:14px;height:14px;color:var(--muted2)}
+.fitem b{color:#cfe0ff;font-weight:700}
+.fitem.ok b{color:var(--live)}
+.foot .fr{margin-left:auto;display:flex;align-items:center;gap:14px;color:var(--muted2)}
+.foot .fr .sysok{display:flex;align-items:center;gap:7px;color:var(--live);font-weight:700}
+.foot .fr .sysok .dot{background:var(--live);box-shadow:0 0 7px var(--live)}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;bottom:54px;left:50%;transform:translateX(-50%) translateY(20px);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;opacity:0;transition:.25s;pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.tmsg{display:flex;align-items:center;gap:9px;padding:10px 16px;border-radius:11px;background:#0c1726f2;border:1px solid var(--line2);
+  box-shadow:var(--shadow-pop);font-size:12.5px;font-weight:700;color:#eaf1ff;backdrop-filter:blur(10px)}
+.tmsg .ti{width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
+
+/* GOL flash no program */
+.gol-flash{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0}
+.gol-flash.on{animation:golf 2s ease both}
+.gol-flash b{font-size:64px;font-weight:900;letter-spacing:.06em;color:#fff;
+  text-shadow:0 0 30px rgba(46,224,122,.9),0 6px 16px rgba(0,0,0,.6);
+  background:linear-gradient(180deg,#fff,#7be0a3);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+@keyframes golf{0%{opacity:0;transform:scale(.5)}18%{opacity:1;transform:scale(1.08)}30%{transform:scale(1)}78%{opacity:1}100%{opacity:0}}
+
+@media(max-width:1500px){.row3{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1200px){.app{grid-template-columns:64px 1fr}.right{display:none}.nav a span:not(.ic){display:none}.row2{grid-template-columns:1fr}.row3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= TOPBAR ================= -->
+  <header class="top">
+    <div class="brand">
+      <img src="/img/kivo-icon.png" alt="Kivo" onerror="this.style.display='none'" />
+      <div><span class="bt">Kivo <em>Studio</em></span><span class="bs">LIVE PRODUCTION</span></div>
+    </div>
+    <div class="modes">
+      <button class="mode" onclick="location.href='/studio'" title="Voltar pra mesa de corte normal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="14" height="12" rx="2"/><path d="M16 9l6-3v12l-6-3"/></svg>MODO ESTÚDIO</button>
+      <button class="mode active" title="Você está no Modo Futebol">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3"/></svg>MODO FUTEBOL</button>
+    </div>
+    <div class="tstats">
+      <div class="ts"><span class="k">CPU</span><span class="v" id="cpu">12%</span></div>
+      <div class="ts"><span class="k">GPU</span><span class="v" id="gpu">18%</span></div>
+      <div class="tsep"></div>
+      <div class="ts"><span class="k">FPS</span><span class="v" style="color:var(--live)">60</span></div>
+      <div class="tsep"></div>
+      <div class="ts with rec"><span class="dot off" id="recDot2"></span><div><span class="k">GRAVAÇÃO</span><span class="v" id="recTop" style="color:var(--muted)">00:00:00</span></div></div>
+      <div class="ts with"><span class="dot off" id="streamDot"></span><div><span class="k">STREAM</span><span class="v" id="streamTop" style="color:var(--muted)">OFFLINE</span></div></div>
+      <div class="ts with"><span class="dot net"></span><div><span class="k">REDE</span><span class="v" style="color:var(--live);display:flex;align-items:center;gap:6px">Excelente <span class="bars"><i></i><i></i><i></i><i></i></span></span></div></div>
+    </div>
+    <div class="top-right">
+      <button class="ico-btn" title="Multiview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+      <button class="ico-btn" title="Configurações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.4-1.1 2 2 0 1 1-2.8-2.8A1.6 1.6 0 0 0 3.6 14a2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.4 2 2 0 1 1 2.8-2.8A1.6 1.6 0 0 0 10 3.6a2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.4 1.1 2 2 0 1 1 2.8 2.8A1.6 1.6 0 0 0 20.4 10a2 2 0 1 1 0 4z"/></svg></button>
+      <button class="ico-btn" title="Áudio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19 5a10 10 0 0 1 0 14M15.5 8.5a5 5 0 0 1 0 7"/></svg></button>
+      <button class="ico-btn" title="Ajuda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg></button>
+      <button class="avatar" title="Perfil">RT</button>
+    </div>
+  </header>
+
+  <!-- ================= NAV ================= -->
+  <nav class="nav" id="nav"></nav>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <!-- ROW 1: PREVIEW · SWITCHER · PROGRAM -->
+    <div class="live">
+      <div class="mon pv">
+        <div class="pitch"></div>
+        <div class="mon-tag"><span class="tag pv">PREVIEW</span><span class="tag cam"><span class="g"></span>CAM 1</span></div>
+        <div class="mon-foot"><span class="mf">1080p60</span><span class="mf">16:9</span><span class="mf">WebRTC</span>
+          <span class="vu"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+      </div>
+
+      <div class="switch">
+        <button class="take" onclick="doTake()">TAKE</button>
+        <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>PRÉ→PGM</div>
+        <button class="cut" onclick="doTake()">CUT</button>
+        <div class="auto-box"><div class="l">AUTO</div>
+          <select><option>1.0s</option><option>0.5s</option><option>1.5s</option><option>2.0s</option></select></div>
+      </div>
+
+      <div class="mon pg">
+        <div class="pitch"></div>
+        <!-- scoreboard -->
+        <div class="scb">
+          <div class="scb-comp" id="scbComp">CAMPEONATO MINEIRO</div>
+          <div class="scb-main">
+            <div class="scb-team home"><span class="crest home" id="scbCH" style="--home:#1f8bff">CAM</span><span class="scb-nm" id="scbNH">ATLÉTICO FC</span></div>
+            <div class="scb-score"><b id="scbSH">2</b><span>×</span><b id="scbSA">1</b></div>
+            <div class="scb-team away"><span class="crest away" id="scbCA" style="--away:#ff4d4f">UE</span><span class="scb-nm" id="scbNA">UNIÃO ESPORTE</span></div>
+          </div>
+          <div class="scb-clock"><span class="t" id="scbClock">45:00</span><span class="p" id="scbPer">1º TEMPO</span></div>
+        </div>
+        <div class="gol-flash" id="golFlash"><b>GOOOL!</b></div>
+        <div class="mon-tag"><span class="tag pg">PROGRAM</span><span class="tag noar">● NO AR</span></div>
+        <div class="mon-foot"><span class="mf">1080p60</span><span class="mf">16:9</span><span class="live-pill">AO VIVO</span>
+          <span class="vu"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+      </div>
+    </div>
+
+    <!-- ROW 2: PLACAR · CRONOMETRO · EVENTOS -->
+    <div class="row2">
+
+      <!-- PLACAR & TIMES -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Placar &amp; Times</h3></div>
+        <div class="teams">
+          <div class="team-col">
+            <div class="lab">CASA</div>
+            <div class="team-head home"><span class="crest-lg home" id="chH" style="--home:#1f8bff">CAM</span>
+              <div class="team-name"><input id="inH" value="Atlético FC" oninput="syncTeams()"/><span class="pen"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span></div>
+            </div>
+            <div class="score-big"><div class="scnum" id="bigH">2</div></div>
+            <div class="stepper"><button class="minus" onclick="score('h',-1)">−</button><button onclick="score('h',1)">+</button></div>
+            <div class="color-row"><span class="cl">COR DA CASA</span>
+              <label class="swatch" style="background:#1f8bff"><input type="color" value="#1f8bff" oninput="setColor('home',this.value,this)"/></label></div>
+          </div>
+
+          <div style="display:flex;align-items:center;padding-top:46px"><span class="score-x">×</span></div>
+
+          <div class="team-col">
+            <div class="lab">VISITANTE</div>
+            <div class="team-head away"><span class="crest-lg away" id="chA" style="--away:#ff4d4f">UE</span>
+              <div class="team-name"><span class="pen"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><input id="inA" value="União Esporte" oninput="syncTeams()"/></div>
+            </div>
+            <div class="score-big"><div class="scnum" id="bigA">1</div></div>
+            <div class="stepper"><button class="minus" onclick="score('a',-1)">−</button><button onclick="score('a',1)">+</button></div>
+            <div class="color-row"><span class="cl">COR VISITANTE</span>
+              <label class="swatch" style="background:#ff4d4f"><input type="color" value="#ff4d4f" oninput="setColor('away',this.value,this)"/></label></div>
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="chip-in"><div class="l">COMPETIÇÃO</div><input id="inComp" value="Campeonato Mineiro" oninput="document.getElementById('scbComp').textContent=this.value.toUpperCase()"/></div>
+          <div class="chip-in"><div class="l">RODADA</div><input value="5ª Rodada"/></div>
+          <div class="chip-in"><div class="l">ESTÁDIO</div><input value="Arena MRV"/></div>
+        </div>
+        <button class="btn-air" onclick="toast('Placar no ar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> MOSTRAR NO AR</button>
+      </section>
+
+      <!-- CRONÔMETRO -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Cronômetro</h3><span class="sp"></span><span class="count" id="perTag">1º TEMPO</span></div>
+        <div class="clock-wrap">
+          <div class="clock" id="clock">45:00</div>
+          <div class="add-badge" id="addBadge">+0 ACRÉSCIMOS</div>
+          <div class="periods">
+            <button class="per active" data-p="1º TEMPO" onclick="setPeriod(this)">1º Tempo</button>
+            <button class="per" data-p="INTERVALO" onclick="setPeriod(this)">Intervalo</button>
+            <button class="per" data-p="2º TEMPO" onclick="setPeriod(this)">2º Tempo</button>
+            <button class="per" data-p="PRORROGAÇÃO" onclick="setPeriod(this)">Prorrogação</button>
+            <button class="per" data-p="PÊNALTIS" onclick="setPeriod(this)">Pênaltis</button>
+          </div>
+          <div class="clock-ctrl">
+            <button class="cc go" id="ccGo" onclick="toggleClock()"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg><span id="ccGoTx">Iniciar</span></button>
+            <button class="cc pause" onclick="pauseClock()"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pausar</button>
+            <button class="cc reset" onclick="resetClock()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Zerar</button>
+          </div>
+          <div class="adds"><span class="l">ACRÉSCIMOS</span>
+            <button class="addb" onclick="addTime(1)">+1</button><button class="addb" onclick="addTime(2)">+2</button>
+            <button class="addb" onclick="addTime(3)">+3</button><button class="addb" onclick="addTime(4)">+4</button>
+            <button class="addb" onclick="addTime(5)">+5</button>
+            <button class="endb" onclick="endMatch()">ENCERRADO</button></div>
+        </div>
+      </section>
+
+      <!-- EVENTOS RÁPIDOS -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Eventos Rápidos</h3></div>
+        <div class="events" id="events"></div>
+        <div class="comem">
+          <span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18M3 12h18"/></svg></span>
+          <span class="ct">ÁUDIO / COMEMORAÇÃO</span>
+          <button class="play-mini" onclick="this.classList.toggle('on');toast('Comemoração')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg></button>
+          <div class="vol" onclick="setVol(this,event)"><div class="fill"></div><div class="knob"></div></div>
+          <span class="st">● ON</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- ROW 3 -->
+    <div class="row3">
+
+      <!-- ÁUDIO & VINHETAS -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Áudio &amp; Vinhetas</h3></div>
+        <div class="list" id="audioList"></div>
+        <button class="add-row" onclick="toast('Adicionar áudio')">+ Adicionar áudio</button>
+      </section>
+
+      <!-- PROPAGANDAS / SPOTS -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Propagandas / Spots</h3></div>
+        <div class="list" id="spotList"></div>
+        <button class="add-row" onclick="toast('Novo spot')">+ Novo spot</button>
+      </section>
+
+      <!-- OVERLAYS -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Overlays Esportivos</h3></div>
+        <div class="ov-grid" id="ovGrid"></div>
+        <button class="add-row" style="margin-top:9px" onclick="toast('Mais overlays')">+ Mais overlays</button>
+      </section>
+
+      <!-- HISTÓRICO -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Histórico da Partida</h3><span class="sp"></span><span class="count" id="histCount">5</span></div>
+        <div class="hist" id="hist"></div>
+        <button class="add-row" style="margin-top:9px" onclick="clearHist()">Limpar histórico</button>
+      </section>
+
+      <!-- JOGOS DO DIA -->
+      <section class="card card-pad">
+        <div class="sec"><h3>Jogos do Dia</h3><span class="sp"></span><button class="btn-new" onclick="toast('Novo jogo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Novo jogo</button></div>
+        <div class="list" id="games"></div>
+        <div class="game-btns">
+          <button class="gb" onclick="toast('Jogo salvo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Salvar</button>
+          <button class="gb" onclick="toast('Carregar jogo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7l-2-3H5a2 2 0 0 0-2 3z"/></svg>Carregar</button>
+          <button class="gb" onclick="toast('Jogo duplicado')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Duplicar</button>
+          <button class="gb danger" onclick="toast('Jogo encerrado')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>Encerrar</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ================= RIGHT ================= -->
+  <aside class="right">
+    <section class="card card-pad">
+      <div class="sec"><h3>Transmissão</h3></div>
+      <div class="live-btns">
+        <div class="rec-line"><div class="rl"><span class="dot off" id="recDot"></span>RECORD</div><span class="rt" id="recTime">00:00:00</span></div>
+        <button class="golive" id="golive" onclick="toggleLive()"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg><span id="goliveTx">GO LIVE</span></button>
+        <button class="safe" onclick="toast('Safe Mode')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>SAFE MODE</button>
+      </div>
+    </section>
+
+    <section class="card card-pad">
+      <div class="sec"><h3>Cenas</h3><span class="sp"></span><button class="btn-new" onclick="toast('Nova cena')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Nova</button></div>
+      <div class="scenes" id="scenes"></div>
+    </section>
+
+    <section class="card card-pad">
+      <div class="sec"><h3>Camadas no Ar</h3><span class="sp"></span><span class="count" id="layCount">6/10</span><button class="clearbtn" onclick="toast('Limpar camadas')" style="margin-left:8px">LIMPAR</button></div>
+      <div class="layers" id="layers"></div>
+    </section>
+  </aside>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="foot">
+    <div class="fitem ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l2 6 4-14 2 8h6"/></svg>PERFORMANCE <b>Ótimo</b></div>
+    <div class="fitem ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>REDE <b>Excelente</b></div>
+    <div class="fitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>QUADROS PERDIDOS <b>0 (0.00%)</b></div>
+    <div class="fitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>LATÊNCIA <b>12ms</b></div>
+    <div class="fitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>UPLINK <b>8.7 Mbps</b></div>
+    <div class="fitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M4.9 7l4.2 4M19 7l-4 4"/><circle cx="12" cy="16" r="5"/></svg>DROPOUT <b>0%</b></div>
+    <div class="fr"><span>Kivo Studio v2.0.0</span><span>Todos os direitos reservados</span><span class="sysok"><span class="dot"></span>Sistema operacional</span></div>
+  </footer>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===================== ÍCONES ===================== */
+const I = {
+  ball:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18M3 12h18M7 6l5 3 5-3M7 18l5-3 5 3"/>',
+  card:'<rect x="6" y="3" width="12" height="18" rx="2"/>',
+  swap:'<path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/>',
+  pen:'<path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.3 7.2 16.9l.9-5.4L4.2 7.7l5.4-.8z"/>',
+  flag:'<path d="M4 21V4M4 4c3-2 7 2 10 0s5-1 6-1v9c-1 0-3-1-6 1s-7-2-10 0"/>',
+  whistle:'<circle cx="9" cy="14" r="5"/><path d="M14 11l8-3v3l-7 2M9 9V6h4"/>',
+  glove:'<path d="M7 11V6a1.5 1.5 0 0 1 3 0v4M10 10V4a1.5 1.5 0 0 1 3 0v6M13 10V6a1.5 1.5 0 0 1 3 0v6c0 4-2 7-6 7s-6-3-6-6v-2a1.5 1.5 0 0 1 3 0"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  audio:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M16 9a3 3 0 0 1 0 6"/>',
+  play:'<polygon points="6 4 20 12 6 20 6 4"/>',
+  vol:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M16 9a3 3 0 0 1 0 6"/>',
+  dots:'<circle cx="12" cy="6" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="18" r="1.4"/>',
+  undo:'<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  stat:'<path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="13" y="7" width="3" height="10"/>',
+};
+const svg = (p,w=18)=>`<svg viewBox="0 0 24 24" width="${w}" height="${w}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+
+/* ===================== NAV ===================== */
+const NAV = [
+  ['Dashboard','grid','/studio'],['Futebol','flag','',1],['Vôlei','ball',''],
+  ['Fontes','grid',''],['Áudio','audio',''],['Gráficos','stat',''],['Modelos','card',''],
+  ['Transições','swap',''],['Multiview','grid','/multiview'],['Gravações','clock',''],['Stream','play',''],
+  ['Dispositivos','grid',''],['Configurações','pen',''],
+];
+const navIco = {grid:I.grid,ball:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18M3 12h18"/>',flag:I.flag,audio:I.audio,stat:I.stat,card:I.card,swap:I.swap,clock:I.clock,play:I.play,pen:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.4-1.1 2 2 0 1 1-2.8-2.8A1.6 1.6 0 0 0 3.6 14a2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.4 2 2 0 1 1 2.8-2.8A1.6 1.6 0 0 0 10 3.6a2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.4 1.1 2 2 0 1 1 2.8 2.8A1.6 1.6 0 0 0 20.4 10a2 2 0 1 1 0 4z"/>'};
+document.getElementById('nav').innerHTML = NAV.map(([n,ic,href,act])=>
+  `<a class="${act?'active':''}" ${href?`href="${href}"`:'onclick="toast(\''+n+'\')"'}>
+    <span class="ic">${svg(navIco[ic]||I.grid)}</span><span>${n}</span>${act?'<span class="chev">'+svg('<path d="M9 18l6-6-6-6"/>',14)+'</span>':''}</a>`
+).join('') + `<div class="nav-foot"><img src="/img/kivo-icon.png" onerror="this.style.display='none'"/><div><div class="nf">KIVO STUDIO</div><div class="nv">v2.0.0</div></div></div>`;
+
+/* ===================== EVENTOS RÁPIDOS ===================== */
+const EVENTS = [
+  ['Gol','gol',I.ball,1],['Amarelo','amarelo',I.card,1],['Vermelho','vermelho',I.card,1],
+  ['Substituição','sub',I.swap,0],['Pênalti','penalti',I.pen,1],['Escanteio','escanteio',I.flag,0],
+  ['Falta','falta',I.whistle,0],['Defesa','defesa',I.glove,0],['Fim de Tempo','fim',I.clock,0],
+];
+document.getElementById('events').innerHTML = EVENTS.map(([n,c,ic,au])=>
+  `<button class="ev ${au?'has-au':''}" style="--c:var(--c-${c})" onclick="fireEvent('${n}','${c}')">
+    <span class="ev-ic">${svg(ic,19)}</span><span class="ev-nm">${n.toUpperCase()}</span>
+    <span class="ev-au">${svg(I.audio,11)}</span></button>`
+).join('');
+
+/* ===================== ÁUDIO & VINHETAS ===================== */
+const AUDIO = ['Música de gol (Casa)','Música de gol (Visitante)','Torcida','Grito de gol','Vinheta de abertura','Vinheta de intervalo','Vinheta fim de jogo','Apito'];
+document.getElementById('audioList').innerHTML = AUDIO.map((n,i)=>
+  `<div class="li"><button class="play" onclick="togPlay(this,'${n}')">${svg(I.play,13)}</button>
+   <span class="nm">${n}</span>
+   <div class="vol" onclick="setVol(this,event)"><div class="fill" style="width:${60+((i*7)%30)}%"></div><div class="knob" style="left:${60+((i*7)%30)}%"></div></div>
+   <button class="ico-s" title="Volume">${svg(I.vol,14)}</button>
+   <button class="ico-s" title="Opções">${svg(I.dots,14)}</button></div>`
+).join('');
+
+/* ===================== SPOTS ===================== */
+const SPOTS = [['Patrocinador do gol',1],['Patrocinador do placar',1],['Patrocinador do replay',1],['Comercial 15s',1],['Oferecimento intervalo',0]];
+document.getElementById('spotList').innerHTML = SPOTS.map(([n,now])=>
+  `<div class="spot"><span class="nm">${n}</span>${now?`<button class="now" onclick="toast('Tocando: ${n}')">Tocar agora</button>`:`<button class="sched" onclick="toast('Agendar: ${n}')">Agendar</button>`}</div>`
+).join('');
+
+/* ===================== OVERLAYS ===================== */
+const OVER = ['Placar compacto','Placar completo','Card de gol','Cartão amarelo','Cartão vermelho','Substituição','Estatísticas','Pré-jogo','Intervalo','Fim de jogo','Pênaltis','Patrocinador'];
+const OVICO = [I.stat,I.grid,I.ball,I.card,I.card,I.swap,I.stat,I.flag,I.clock,I.whistle,I.pen,I.pen];
+document.getElementById('ovGrid').innerHTML = OVER.map((n,i)=>
+  `<div class="ov ${i<2?'on':''}" onclick="this.classList.toggle('on');toast((this.classList.contains('on')?'No ar: ':'Removido: ')+'${n}')">
+    <div class="thumb">${svg(OVICO[i]||I.grid,26)}</div><span class="badge-on">AO VIVO</span><span class="ovn">${n}</span></div>`
+).join('');
+
+/* ===================== HISTÓRICO ===================== */
+let hist = [
+  [45,'Gol','gol',I.ball,'9. Hulk (CAM)'],[37,'Amarelo','amarelo',I.card,'8. Lucas Silva (UE)'],
+  [33,'Substituição','sub',I.swap,'11. Keno → 7. Zaracho'],[28,'Gol','gol',I.ball,'10. Matheusinho (UE)'],
+  [21,'Escanteio','escanteio',I.flag,'Atlético FC'],[15,'Amarelo','amarelo',I.card,'4. João Victor (ATL)'],
+];
+function renderHist(){
+  document.getElementById('hist').innerHTML = hist.map((h,i)=>
+    `<div class="he" style="--c:var(--c-${h[2]})"><span class="min">${h[0]}'</span>
+      <span class="hic">${svg(h[3],14)}</span>
+      <div class="htx"><div class="et">${h[1]}</div><div class="ed">${h[4]}</div></div>
+      <button class="undo" onclick="undoHist(${i})">${svg(I.undo,13)}</button></div>`
+  ).join('');
+  document.getElementById('histCount').textContent = hist.length;
+}
+function undoHist(i){ hist.splice(i,1); renderHist(); toast('Evento desfeito'); }
+function clearHist(){ hist=[]; renderHist(); toast('Histórico limpo'); }
+renderHist();
+
+/* ===================== JOGOS ===================== */
+const GAMES = [['CAM','Atlético FC','2 x 1','União Esporte','AO VIVO','l'],['CRU','Cruzeiro','1 x 0','América MG','AGENDADO','a'],['MEC','Mineiro EC','x','Democrata GV','20:00','t'],['VN','Villa Nova','x','Caldense','AMANHÃ','t']];
+document.getElementById('games').innerHTML = GAMES.map(([c,h,s,a,st,cl])=>
+  `<div class="game ${cl==='l'?'live':''}" onclick="toast('Abrir: ${h} ${s} ${a}')"><span class="gc">${c}</span>
+    <span class="gn"><b>${h}</b> ${s} ${a}</span><span class="gs ${cl}">${st}</span></div>`
+).join('');
+
+/* ===================== CENAS ===================== */
+const SCENES = ['Principal','Replay','Entrevista','Intervalo','Patrocinador'];
+document.getElementById('scenes').innerHTML = SCENES.map((s,i)=>
+  `<div class="scene ${i===0?'active':''}" onclick="selScene(this)"><span class="sn">${String(i+1).padStart(2,'0')}</span>
+    <span class="st">${s}</span><span class="se">${svg(I.eye,15)}</span></div>`
+).join('');
+function selScene(el){ document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active')); el.classList.add('active'); toast('Cena: '+el.querySelector('.st').textContent); }
+
+/* ===================== CAMADAS ===================== */
+const LAYERS = [['Placar',1,1],['Cronômetro',1,1],['Logo Competição',1,0],['Patrocinador',1,0],['Card de Gol',1,0],['Vinheta de Intervalo',1,0]];
+function renderLayers(){
+  document.getElementById('layers').innerHTML = LAYERS.map(([n,on,air],i)=>
+    `<div class="layer ${on?'':'off'}"><button class="eye" onclick="LAYERS[${i}][1]=LAYERS[${i}][1]?0:1;renderLayers()">${svg(on?I.eye:'<path d="M2 12s3.5-7 10-7c2 0 3.7.6 5.2 1.5M22 12s-3.5 7-10 7c-2 0-3.7-.6-5.2-1.5M4 4l16 16"/>',14)}</button>
+      <span class="ln">${n}</span>${air&&on?'<span class="lair">AO VIVO</span>':''}</div>`
+  ).join('');
+  const on = LAYERS.filter(l=>l[1]).length;
+  document.getElementById('layCount').textContent = on+'/10';
+}
+renderLayers();
+
+/* ===================== PLACAR / TIMES ===================== */
+let sh=2, sa=1;
+function initials(s){ return s.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,3).toUpperCase()||'TM'; }
+function score(side,d){
+  if(side==='h'){ sh=Math.max(0,sh+d); document.getElementById('bigH').textContent=sh; document.getElementById('scbSH').textContent=sh; }
+  else{ sa=Math.max(0,sa+d); document.getElementById('bigA').textContent=sa; document.getElementById('scbSA').textContent=sa; }
+}
+function syncTeams(){
+  const h=document.getElementById('inH').value, a=document.getElementById('inA').value;
+  document.getElementById('scbNH').textContent=h.toUpperCase(); document.getElementById('scbNA').textContent=a.toUpperCase();
+  document.getElementById('chH').textContent=initials(h); document.getElementById('scbCH').textContent=initials(h);
+  document.getElementById('chA').textContent=initials(a); document.getElementById('scbCA').textContent=initials(a);
+}
+function setColor(which,val,el){
+  el.style.background=val;
+  document.querySelectorAll('.'+which).forEach(e=>e.style.setProperty('--'+which,val));
+  toast((which==='home'?'Cor da casa':'Cor do visitante')+' atualizada');
+}
+
+/* ===================== CRONÔMETRO ===================== */
+let secs=45*60, running=false, ticker=null, addMin=0;
+function fmt(s){ s=Math.max(0,s|0); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); }
+function paint(){ const t=fmt(secs); document.getElementById('clock').textContent=t; document.getElementById('scbClock').textContent=t; }
+function toggleClock(){
+  running=!running;
+  document.getElementById('clock').classList.toggle('run',running);
+  document.getElementById('ccGoTx').textContent = running?'Correndo':'Iniciar';
+  document.getElementById('ccGo').style.opacity = running?.7:1;
+  if(running){ ticker=setInterval(()=>{secs++;paint();},1000); toast('Cronômetro iniciado'); }
+  else{ clearInterval(ticker); }
+}
+function pauseClock(){ if(running) toggleClock(); else toast('Já pausado'); }
+function resetClock(){ running&&toggleClock(); secs=0; addMin=0; document.getElementById('addBadge').classList.remove('on'); paint(); toast('Cronômetro zerado'); }
+function addTime(n){ addMin=n; const b=document.getElementById('addBadge'); b.textContent='+'+n+' ACRÉSCIMOS'; b.classList.add('on'); toast('Acréscimos: +'+n); }
+function setPeriod(el){
+  document.querySelectorAll('.per').forEach(p=>p.classList.remove('active')); el.classList.add('active');
+  const p=el.dataset.p; document.getElementById('scbPer').textContent=p; document.getElementById('perTag').textContent=p;
+  if(p==='INTERVALO'){ running&&toggleClock(); }
+  if(p==='2º TEMPO'){ secs=45*60; paint(); }
+  if(p==='1º TEMPO'){ secs=0; paint(); }
+  toast(p);
+}
+function endMatch(){ running&&toggleClock(); document.getElementById('scbPer').textContent='ENCERRADO'; document.getElementById('perTag').textContent='ENCERRADO'; toast('Partida encerrada'); }
+paint();
+
+/* ===================== EVENTOS (ação) ===================== */
+const PLAYERS=['9. Hulk (CAM)','7. Zaracho (CAM)','10. Matheusinho','8. Lucas Silva (UE)','4. João Victor','11. Keno → 7. Paulinho'];
+function fireEvent(name,c){
+  const min=Math.floor(secs/60);
+  const ico = EVENTS.find(e=>e[0]===name)[2];
+  hist.unshift([min,name,c,ico,PLAYERS[Math.floor(secs)%PLAYERS.length]]);
+  renderHist();
+  if(name==='Gol'){ score('h',1); golFlash(); }
+  toast(name+' registrado'+(EVENTS.find(e=>e[0]===name)[3]?' · áudio ▶':''));
+}
+function golFlash(){ const g=document.getElementById('golFlash'); g.classList.remove('on'); void g.offsetWidth; g.classList.add('on'); }
+
+/* ===================== TRANSMISSÃO ===================== */
+let live=false, recOn=false, recSecs=0, recTk=null;
+function toggleLive(){
+  live=!live;
+  const b=document.getElementById('golive');
+  b.classList.toggle('on',live);
+  b.querySelector('#goliveTx').textContent = live?'AO VIVO':'GO LIVE';
+  document.getElementById('streamDot').className='dot '+(live?'rec':'off');
+  document.getElementById('streamTop').textContent=live?'AO VIVO':'OFFLINE';
+  document.getElementById('streamTop').style.color=live?'var(--live)':'var(--muted)';
+  if(live){ startRec(); toast('🔴 No ar — transmitindo'); } else { toast('Transmissão encerrada'); }
+}
+function startRec(){
+  if(recOn) return; recOn=true;
+  document.getElementById('recDot').className='dot rec'; document.getElementById('recDot2').className='dot rec';
+  document.getElementById('recTop').style.color='var(--rec)';
+  recTk=setInterval(()=>{ recSecs++; const t=new Date(recSecs*1000).toISOString().substr(11,8);
+    document.getElementById('recTime').textContent=t; document.getElementById('recTop').textContent=t; },1000);
+}
+
+/* ===================== TAKE ===================== */
+function doTake(){ toast('TAKE · Preview → Program'); const pg=document.querySelector('.mon.pg'); pg.animate([{filter:'brightness(1.4)'},{filter:'brightness(1)'}],{duration:280}); }
+
+/* ===================== utilitários ===================== */
+function togPlay(b,n){ const on=b.classList.toggle('on'); b.innerHTML = on?svg('<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>',13):svg(I.play,13); toast((on?'▶ ':'⏸ ')+n); }
+function setVol(el,e){ const r=el.getBoundingClientRect(); const p=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)); el.querySelector('.fill').style.width=(p*100)+'%'; el.querySelector('.knob').style.left=(p*100)+'%'; }
+let tT=null;
+function toast(msg){ const t=document.getElementById('toast'); t.innerHTML=`<div class="tmsg"><span class="ti"></span>${msg}</div>`; t.classList.add('on'); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('on'),1900); }
+
+/* live CPU/GPU flutuando levinho */
+setInterval(()=>{ document.getElementById('cpu').textContent=(10+Math.round(Math.random()*8))+'%'; document.getElementById('gpu').textContent=(15+Math.round(Math.random()*9))+'%'; },2200);
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#050912" />
+  <title>Kivo Remote</title>
+  <link rel="icon" type="image/svg+xml" href="/img/kivo-icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="/css/remote.css" />
+</head>
+<body class="kr">
+  <main class="kr-shell">
+    <section class="kr-screen is-active" data-screen="home"></section>
+    <section class="kr-screen" data-screen="football"></section>
+    <section class="kr-screen" data-screen="events"></section>
+    <section class="kr-screen" data-screen="goal"></section>
+    <section class="kr-screen" data-screen="audio"></section>
+    <section class="kr-screen" data-screen="studio"></section>
+  </main>
+  <div class="kr-toast" id="krToast"></div>
+  <script src="/js/remote.js"></script>
+</body>
+</html>

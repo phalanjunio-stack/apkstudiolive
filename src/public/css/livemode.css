@@ -1,0 +1,48 @@
+/* ============================================================
+   MODO AO VIVO — console de operação (tela única)
+   ============================================================ */
+.live-toggle{display:inline-flex;align-items:center;padding:7px 13px;border-radius:9px;
+  border:1px solid var(--line2);background:var(--panel2);color:var(--txt);
+  font-weight:700;font-size:12px;letter-spacing:.03em;cursor:pointer;margin-right:8px;transition:all .15s var(--ease-out)}
+.live-toggle:hover{border-color:var(--accent)}
+.live-toggle.on{background:var(--grad-blue);border-color:transparent;color:#fff;box-shadow:var(--glow-blue)}
+
+/* relayout do dashboard em modo ao vivo */
+body.live-mode .nav, body.live-mode .perfbar, body.live-mode .rightcol, body.live-mode .dtop .tstats{display:none}
+body.live-mode .dash{grid-template-columns:1fr;grid-template-rows:52px 1fr;grid-template-areas:"top" "main"}
+body.live-mode .main{padding:12px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+body.live-mode .main .fontes, body.live-mode .main .lower, body.live-mode .main .media-bar{display:none}
+body.live-mode .monitors{flex:1;min-height:0;align-items:center;justify-items:center}
+body.live-mode .mon{max-height:none}   /* tamanho vem do monitorfit.js; mantém o formato certo */
+body.live-mode #liveBar{display:flex}
+
+/* barra de operação */
+#liveBar{display:none;position:relative;gap:14px;background:linear-gradient(180deg,#0f1a2c,#0b1320);
+  border:1px solid var(--line2);border-radius:14px;padding:14px;box-shadow:var(--shadow-card);min-height:150px;max-height:34vh}
+.lb-col{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0;overflow:hidden}
+.lb-col.lb-narrow{flex:0 0 190px}
+.lb-h{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.lb-h small{letter-spacing:0;text-transform:none;font-weight:500;opacity:.7;margin-left:6px}
+.lb-chips{display:flex;flex-wrap:wrap;gap:8px;overflow:auto;align-content:flex-start;padding-right:4px}
+.lb-empty{font-size:12px;color:var(--muted)}
+.lb-chip{padding:12px 15px;border-radius:10px;border:1px solid var(--line2);background:linear-gradient(180deg,#1b2942,#121d31);
+  color:var(--txt);font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;transition:all .12s var(--ease-out)}
+.lb-chip:hover{border-color:var(--accent);transform:translateY(-1px)}
+.lb-chip.active{border-color:var(--rec);background:rgba(255,93,108,.16);color:#ff9a9f}
+.lb-chip.preview{border-color:var(--live);box-shadow:0 0 0 1px rgba(63,211,155,.45)}
+.lb-chip.program{border-color:var(--rec);background:rgba(255,93,108,.2);box-shadow:0 0 12px rgba(255,93,108,.4)}
+#lbFb{display:flex;flex-direction:column;gap:8px}
+#lbFb .lb-btn{width:100%}
+.lb-ctrls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lb-btn{padding:13px 8px;border-radius:10px;border:1px solid var(--line2);background:linear-gradient(180deg,#1b2942,#121d31);
+  color:var(--txt);font-weight:800;font-size:13px;cursor:pointer;transition:all .12s var(--ease-out)}
+.lb-btn:hover{transform:translateY(-1px);filter:brightness(1.07)}
+.lb-btn.prim{background:var(--grad-blue);border-color:transparent;color:#fff}
+.lb-btn.live{grid-column:1/-1;background:linear-gradient(180deg,#ff5a5c,#d2271c);border-color:transparent;color:#fff;font-size:15px;padding:15px}
+.lb-btn.live.on-air{animation:pm-pulse 1.4s ease-in-out infinite}
+.lb-btn.goal{background:linear-gradient(180deg,#2ee07a,#10a352);border-color:transparent;color:#04240f}
+.lb-btn.yellow{background:linear-gradient(180deg,#ffd84d,#f3b50c);border-color:transparent;color:#3a2c00}
+.lb-exit{position:fixed;top:62px;right:18px;z-index:60;padding:8px 14px;border-radius:9px;border:1px solid var(--line2);
+  background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px;cursor:pointer}
+.lb-exit:hover{color:var(--txt);border-color:var(--accent)}
+@media(max-width:1000px){.lb-col.lb-narrow{flex:0 0 150px}}

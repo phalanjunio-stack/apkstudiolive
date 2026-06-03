@@ -7,7 +7,7 @@
    Portado/adaptado do micro.js do Contourline.
    ============================================ */
 (function () {
-  const GLOW_SEL = '.topbar-btn-connect, .theme-switcher-btn, .take';
+  const GLOW_SEL = '.topbar-btn-connect, .theme-switcher-btn, .kmode';
 
   // ── injeta aura + halo + 4 faiscas dentro do botao ──
   function attachSmokeGlow(btn) {
@@ -70,9 +70,9 @@
     // 1) Conectar celular (QR)
     const connect = document.createElement('button');
     connect.className = 'icon-btn topbar-btn-connect';
-    connect.title = 'Conectar celular ao servidor';
+    connect.title = 'Controle pelo celular (QR)';
     connect.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="18" y1="14" x2="21" y2="14"/><line x1="21" y1="18" x2="21" y2="21"/><line x1="17" y1="21" x2="18" y2="21"/></svg>';
-    connect.addEventListener('click', () => document.getElementById('connectModal')?.__show?.());
+    connect.addEventListener('click', () => { if (window.openConnectModal) window.openConnectModal('control', 'control'); else document.getElementById('connectModal')?.__show?.(); });
 
     // 2) Tema
     const themeBox = document.createElement('div');

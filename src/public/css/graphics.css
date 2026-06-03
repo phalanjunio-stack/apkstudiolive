@@ -1,6 +1,6 @@
 /* ===== Overlays de gráficos sobre o PROGRAM ===== */
 .pgm-overlay{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;
-  font-family:Inter,"Segoe UI",system-ui,Arial,sans-serif}
+  font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,Arial,sans-serif}
 .pgm-overlay .ov{position:absolute;pointer-events:auto;cursor:move;user-select:none;touch-action:none}
 .pgm-overlay .ov.dragging{outline:2px dashed var(--accent2);outline-offset:2px}
 
@@ -75,12 +75,36 @@
 .game-x{width:32px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer}
 .game-x:hover{color:var(--bad);border-color:var(--bad)}
 
-/* alca de redimensionar overlay (logo/imagem/placar/rodape) */
-.ov-resize{position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;border-radius:50%;
-  background:var(--accent2);border:2px solid #fff;cursor:nwse-resize;opacity:0;
-  transition:opacity .15s;box-shadow:0 1px 4px rgba(0,0,0,.5);z-index:6;touch-action:none}
-.ov:hover .ov-resize{opacity:.95}
-.ov.dragging .ov-resize{opacity:0}
+/* ===== EDITOR de camadas no PROGRAM (selecionar/mover/redimensionar/recortar/girar) ===== */
+/* durante a edição, libera o overflow do monitor p/ as alças aparecerem fora da borda */
+.mon.ov-editing{overflow:visible;z-index:5}
+.mon.ov-editing .pgm-overlay{overflow:visible}
+.mon.program video{border-radius:13px}
+.ov.ov-selected{outline:1.5px solid var(--accent2);outline-offset:3px;z-index:8}
+.ov:hover:not(.ov-selected){outline:1px dashed rgba(54,209,255,.5);outline-offset:3px}
+.ovh{position:absolute;z-index:9;touch-action:none;pointer-events:auto}
+/* cantos = redimensionar (ALT = recortar) */
+.ovh-c{width:13px;height:13px;background:#fff;border:2px solid var(--accent);border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.55)}
+.ovh-c-nw{left:-7px;top:-7px;cursor:nwse-resize}
+.ovh-c-ne{right:-7px;top:-7px;cursor:nesw-resize}
+.ovh-c-se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.ovh-c-sw{left:-7px;bottom:-7px;cursor:nesw-resize}
+/* bordas = recortar aquele lado */
+.ovh-e{background:#fff;border:1px solid var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.55)}
+.ovh-e-n{top:-5px;left:50%;width:20px;height:9px;margin-left:-10px;border-radius:3px;cursor:ns-resize}
+.ovh-e-s{bottom:-5px;left:50%;width:20px;height:9px;margin-left:-10px;border-radius:3px;cursor:ns-resize}
+.ovh-e-e{right:-5px;top:50%;width:9px;height:20px;margin-top:-10px;border-radius:3px;cursor:ew-resize}
+.ovh-e-w{left:-5px;top:50%;width:9px;height:20px;margin-top:-10px;border-radius:3px;cursor:ew-resize}
+/* alça de girar */
+.ovh-rot{left:50%;top:-30px;width:15px;height:15px;margin-left:-7px;border-radius:50%;
+  background:var(--accent2);border:2px solid #fff;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.ovh-rot::after{content:'';position:absolute;left:50%;top:13px;width:2px;height:17px;background:var(--accent2);transform:translateX(-50%)}
+/* mini-barra de ações (abaixo da camada) */
+.ov-tools-bar{left:0;top:100%;margin-top:8px;display:flex;gap:3px;padding:3px;border-radius:8px;
+  background:rgba(10,16,28,.92);box-shadow:0 6px 18px rgba(0,0,0,.5);backdrop-filter:blur(6px)}
+.ov-tools-bar button{min-width:26px;height:26px;border:1px solid rgba(255,255,255,.12);border-radius:6px;
+  background:rgba(255,255,255,.06);color:#eaf0fb;font-size:12px;font-weight:700;cursor:pointer;padding:0 5px;line-height:1}
+.ov-tools-bar button:hover{background:rgba(31,139,255,.35);border-color:var(--accent)}
 
 /* carrossel de logos (slideshow) */
 .ov-slideshow .ss-img{width:100%;height:auto;display:block;opacity:1;transition:opacity .26s ease;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}

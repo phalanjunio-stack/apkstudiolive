@@ -1,0 +1,15 @@
+{
+  "name": "kivo-license-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Servidor de licenças/chaves do Kivo Studio (SQLite + painel administrativo + API de ativacao).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,69 @@
+/* ============================================================
+   MODELOS (KIVO SCORE) — biblioteca + editor de templates
+   ============================================================ */
+.md-page{max-width:1100px;animation:modal-pop .35s var(--ease-out) both}
+.md-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.md-head .hint{max-width:560px;margin:0}
+.md-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.md-card{background-image:var(--grad-card);background-color:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow-card);padding:12px;display:flex;flex-direction:column;gap:10px}
+.md-thumb{aspect-ratio:16/6;border-radius:9px;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:repeating-conic-gradient(#0c1420 0% 25%, #0a1018 0% 50%) 0 0/16px 16px}
+.md-thumb img{max-width:100%;max-height:100%;object-fit:contain}
+.md-nm{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md-actions{display:flex;gap:6px;flex-wrap:wrap}
+.md-actions .btn-soft{padding:8px 11px;font-size:12px}
+.md-x{width:30px;height:30px;flex:none;border-radius:8px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0}
+.md-x:hover{color:var(--bad);border-color:var(--bad)}
+
+/* ---- editor (modal) ---- */
+.md-overlay{position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;
+  background:rgba(3,6,14,.7);backdrop-filter:blur(6px);animation:modal-fade .18s ease both}
+.md-editor{width:min(1080px,96vw);height:min(86vh,760px);display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line2);border-radius:16px;box-shadow:var(--shadow-pop);overflow:hidden;
+  animation:modal-pop .22s var(--ease-out) both}
+.md-ed-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.md-ed-tag{font-size:10px;letter-spacing:.16em;font-weight:700;color:var(--muted)}
+.md-name{flex:1;padding:9px 12px;border-radius:9px;background:var(--inset);border:1px solid var(--line);color:var(--txt);font-size:14px;font-weight:600}
+.md-name:focus{border-color:var(--accent);outline:none}
+.md-ed-body{flex:1;display:flex;min-height:0}
+.md-stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;overflow:auto;padding:18px;
+  background:radial-gradient(120% 100% at 50% 0%, #11203a, #0a1018 70%)}
+.md-artbox{position:relative;display:inline-block;max-width:100%;line-height:0}
+.md-art{max-width:100%;max-height:62vh;display:block;border-radius:4px}
+.md-changeart{position:absolute;top:12px;right:12px;padding:7px 11px;border-radius:8px;border:1px solid var(--line2);
+  background:rgba(10,16,28,.85);color:#eaf0fb;font-size:12px;font-weight:600;cursor:pointer;z-index:3}
+.md-changeart:hover{border-color:var(--accent)}
+/* campos arrastáveis no editor (ancorados no centro, igual no ar) */
+.md-f{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;line-height:1;cursor:move;
+  font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,.5);user-select:none;touch-action:none}
+.md-f.sel{outline:1.5px dashed var(--accent2);outline-offset:4px}
+.md-f-logo{display:flex;align-items:center;justify-content:center;border:1.5px dashed rgba(120,180,255,.8);
+  border-radius:8px;color:rgba(180,210,255,.9);font-weight:800;background:rgba(20,40,70,.4)}
+
+/* painel lateral do editor */
+.md-side{width:240px;flex:none;border-left:1px solid var(--line);padding:14px;overflow:auto;background:var(--panel2)}
+.md-side-h{font-size:10px;letter-spacing:.16em;font-weight:700;color:var(--muted);margin-bottom:10px}
+.md-addrow{display:flex;gap:6px;margin-bottom:14px}
+.md-addrow select{flex:1;padding:8px;border-radius:8px;background:var(--inset);border:1px solid var(--line);color:var(--txt);font-size:12px}
+.md-addrow .btn-soft{padding:8px 10px;font-size:12px;white-space:nowrap}
+.md-props{display:flex;flex-direction:column;gap:9px}
+.md-prop-h{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:2px}
+.md-pl{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted)}
+.md-pl>span{min-width:58px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.md-pl input[type=range]{flex:1;accent-color:var(--accent)}
+.md-pl input[type=text],.md-pl select{flex:1;padding:7px 9px;border-radius:7px;background:var(--inset);border:1px solid var(--line);color:var(--txt);font-size:12px}
+.md-pl input[type=color]{width:42px;height:32px;border-radius:7px;border:1px solid var(--line);background:var(--inset);cursor:pointer;padding:2px}
+.md-rmfield{margin-top:6px;color:#ff7a7c;border-color:rgba(255,93,108,.4)}
+.md-rmfield:hover{border-color:var(--bad);background:rgba(255,93,108,.1)}
+@media(max-width:760px){.md-ed-body{flex-direction:column}.md-side{width:auto;border-left:0;border-top:1px solid var(--line)}}
+
+/* ---- template NO AR (overlay no PROGRAM) ---- */
+.ov-template{min-width:40px}
+.ov-template .tpl{position:relative;display:block}
+.ov-template .tpl-art{width:100%;display:block}
+.ov-template .tpl-fields{position:absolute;inset:0;pointer-events:none}
+.ov-template .tpl-f{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;line-height:1;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.ov-template.tpl-empty{min-width:160px;min-height:70px;border:1.5px dashed rgba(255,255,255,.55);border-radius:8px}
+.ov-template.tpl-empty::after{content:'modelo';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);font-size:11px}
