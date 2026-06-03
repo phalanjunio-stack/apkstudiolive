@@ -78,3 +78,9 @@ html[data-theme="light"]{
   outline-offset:2px;
   border-radius:6px
 }
+
+/* ---------- 6. FIX: card "Adicionar fonte" cortava o topo no HOVER ----------
+   O hover dá translateY(-3px); com o painel FONTES aberto o .fontes-grid
+   fica overflow:auto e cortava os 3px de cima (a borda tracejada sumia).
+   Uma folga no topo do container rolável resolve sem mexer no layout. */
+.fontes.collapsible .fontes-grid{padding-top:6px}
