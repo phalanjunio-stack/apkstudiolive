@@ -91,6 +91,59 @@ const Graphics = (function () {
   // limpa o host antigo pra não duplicar; re-renderiza no novo. Não mexe nos dados.
   function setHost(el) { if (!el || el === host) return; if (host) host.innerHTML = ''; host = el; selectedId = null; renderAll(); }
 
+  // ===== TIMELINE / ANIMAÇÃO =====
+  // o.data.anim = { tin, tout, fin, fout, keys:[{t,x,y,scale,rot,opacity}] }
+  // animT = tempo atual (s). null = modo edição (sem filtro de tempo, mostra estático).
+  let animT = null;
+  function lerp(a, b, f) { a = (a == null ? 0 : a); b = (b == null ? 0 : b); return a + (b - a) * f; }
+  function interpKeys(keys, t) {
+    const ks = keys.slice().sort((a, b) => a.t - b.t);
+    if (t <= ks[0].t) return ks[0];
+    const last = ks[ks.length - 1]; if (t >= last.t) return last;
+    for (let i = 0; i < ks.length - 1; i++) {
+      const a = ks[i], b = ks[i + 1];
+      if (t >= a.t && t <= b.t) { const f = (t - a.t) / ((b.t - a.t) || 1);
+        return { x: lerp(a.x, b.x, f), y: lerp(a.y, b.y, f), scale: lerp(a.scale == null ? 1 : a.scale, b.scale == null ? 1 : b.scale, f), rot: lerp(a.rot, b.rot, f), opacity: lerp(a.opacity == null ? 1 : a.opacity, b.opacity == null ? 1 : b.opacity, f) }; }
+    }
+    return last;
+  }
+  function inWindow(o, t) { const a = o.data && o.data.anim; if (!a) return true; if (t < (a.tin || 0)) return false; if (a.tout != null && t > a.tout) return false; return true; }
+  function setTime(t) {
+    animT = t;
+    overlays.forEach(o => {
+      if (!o.el) return;
+      const base = (o.scene == null || o.scene === activeScene) && o.visible !== false;
+      const show = base && inWindow(o, t);
+      o.el.style.display = show ? '' : 'none';
+      if (!show) return;
+      const a = o.data && o.data.anim;
+      let op = (o.opacity == null ? 1 : o.opacity);
+      if (a) { const tin = a.tin || 0, tout = (a.tout == null ? Infinity : a.tout), fin = a.fin || 0, fout = a.fout || 0;
+        if (fin > 0 && t < tin + fin) op *= Math.max(0, Math.min(1, (t - tin) / fin));
+        if (fout > 0 && isFinite(tout) && t > tout - fout) op *= Math.max(0, Math.min(1, (tout - t) / fout)); }
+      if (a && a.keys && a.keys.length) {
+        const k = interpKeys(a.keys, t);
+        o.el.style.transformOrigin = 'center center';
+        o.el.style.transform = 'rotate(' + (k.rot || 0) + 'deg) scale(' + (k.scale == null ? 1 : k.scale) + ')';
+        o.el.style.left = (k.x || 0) + '%'; o.el.style.top = (k.y || 0) + '%';
+        o.el.style.opacity = op * (k.opacity == null ? 1 : k.opacity);
+      } else { applyTransform(o); o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; o.el.style.opacity = op; }
+    });
+  }
+  function clearTime() { animT = null; applyVisibility(); overlays.forEach(o => { if (o.el) { applyTransform(o); o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } }); }
+  function ensureAnim(o) { if (!o.data.anim) o.data.anim = { tin: 0, tout: null, fin: 0, fout: 0, keys: [] }; return o.data.anim; }
+  function getAnim(id) { const o = get(id); return o && o.data ? (o.data.anim || null) : null; }
+  function setAnim(id, patch) { const o = get(id); if (!o) return; Object.assign(ensureAnim(o), patch); saveLocal(); notify(); }
+  function clearAnim(id) { const o = get(id); if (!o || !o.data) return; delete o.data.anim; if (o.el) { applyTransform(o); o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } saveLocal(); notify(); }
+  function addKeyframe(id, t) {
+    const o = get(id); if (!o) return; const a = ensureAnim(o);
+    const k = { t: Math.round(t * 100) / 100, x: o.x, y: o.y, scale: o.scale || 1, rot: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity) };
+    const i = a.keys.findIndex(z => Math.abs(z.t - k.t) < 0.06);
+    if (i >= 0) a.keys[i] = k; else a.keys.push(k);
+    a.keys.sort((x, y) => x.t - y.t); saveLocal(); notify(); return k;
+  }
+  function removeKeyframe(id, t) { const o = get(id); if (!o || !o.data.anim) return; o.data.anim.keys = o.data.anim.keys.filter(k => Math.abs(k.t - t) >= 0.06); saveLocal(); notify(); }
+
   function add(type) {
     if (!DEF[type]) return;
     const ov = Object.assign({ id: seq++, type, visible: true, scene: activeScene }, DEF[type]());
@@ -330,6 +383,7 @@ const Graphics = (function () {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
+    setTime, clearTime, getAnim, setAnim, clearAnim, addKeyframe, removeKeyframe,
     boot() { const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
   };
 })();
