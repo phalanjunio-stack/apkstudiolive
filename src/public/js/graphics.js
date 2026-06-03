@@ -13,6 +13,8 @@ const Graphics = (function () {
     ticker: () => ({ x: 0, y: 88, w: 100, scale: 1, data: { text: 'Bem-vindo a transmissao  •  Kivo Studio', speed: 18 } }),
     slideshow: () => ({ x: 80, y: 5, w: 18, scale: 1, data: { images: [], interval: 5, transition: 'fade', i: 0 } }),
     template: () => ({ x: 6, y: 6, w: 40, scale: 1, data: { art: '', fields: [], name: 'Modelo' } }),
+    text: () => ({ x: 22, y: 70, w: 0, scale: 1, data: { text: 'Escreva aqui', size: 36, color: '#ffffff', weight: 800, align: 'center', bg: '' } }),
+    video: () => ({ x: 60, y: 58, w: 32, scale: 1, data: { sourceId: null, label: 'Vídeo' } }),
   };
   function tplValue(f, m) {
     if (!f) return '';
@@ -134,6 +136,8 @@ const Graphics = (function () {
     else if (ov.type === 'ticker') el.innerHTML = '<div class="tk"><div class="tk-move"><span></span><span></span></div></div>';
     else if (ov.type === 'slideshow') el.innerHTML = '<img class="ss-img" alt="">';
     else if (ov.type === 'template') el.innerHTML = '<div class="tpl"><img class="tpl-art" alt=""><div class="tpl-fields"></div></div>';
+    else if (ov.type === 'text') el.innerHTML = '<div class="ovt"></div>';
+    else if (ov.type === 'video') el.innerHTML = '<video class="ov-vid" autoplay playsinline muted></video><span class="ov-vid-ph">Escolha a fonte ▸</span>';
     applyTransform(ov);
     applyCrop(ov);
     makeDraggable(ov);
@@ -170,8 +174,21 @@ const Graphics = (function () {
       else { img.removeAttribute('src'); img.style.display = 'none'; ov.el.classList.add('empty'); }
       ov._t = 0;
     } else if (ov.type === 'template') { paintTemplate(ov); }
+    else if (ov.type === 'text') {
+      const t = ov.el.querySelector('.ovt'); const d = ov.data;
+      t.textContent = d.text || ''; t.style.fontSize = (d.size || 32) + 'px'; t.style.color = d.color || '#fff';
+      t.style.fontWeight = d.weight || 800; t.style.textAlign = d.align || 'center';
+      t.style.background = d.bg || 'transparent'; t.style.padding = (d.bg ? '8px 14px' : '0');
+    } else if (ov.type === 'video') { paintVideo(ov); }
   }
   function fmtClock(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ':' + String(ss).padStart(2, '0'); }
+  function paintVideo(ov) {
+    const v = ov.el && ov.el.querySelector('.ov-vid'), ph = ov.el && ov.el.querySelector('.ov-vid-ph'); if (!v) return;
+    let stream = null;
+    try { const s = window.Studio.sourcesInfo().list.find(x => x.id === ov.data.sourceId); stream = s ? s.stream : null; } catch {}
+    if (stream) { if (v.srcObject !== stream) { v.srcObject = stream; v.play && v.play().catch(() => {}); } v.style.display = ''; if (ph) ph.style.display = 'none'; }
+    else { if (v.srcObject) v.srcObject = null; v.style.display = 'none'; if (ph) ph.style.display = ''; }
+  }
   function showSlide(ov, idx) {
     const imgs = ov.data.images || []; const src = imgs[idx]; if (src == null || !ov.el) return;
     ov.data.i = idx;
@@ -194,6 +211,7 @@ const Graphics = (function () {
           if (o._t >= (o.data.interval || 5)) { o._t = 0; showSlide(o, (o.data.i + 1) % o.data.images.length); }
         }
         if (o.type === 'template') paintTemplate(o); // atualiza relogio/placar nos modelos
+        if (o.type === 'video') paintVideo(o); // mantem o stream do PiP fresco (reconexao etc.)
       });
     }, 1000);
   }

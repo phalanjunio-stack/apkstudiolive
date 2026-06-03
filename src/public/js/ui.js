@@ -460,14 +460,20 @@
   // ---------------- GRAFICOS (overlays do PROGRAM) ----------------
   function renderGraficos() {
     const c = el('div', 'page-card');
-    const add = el('div', 'set-actions');
-    [['+ Vídeo / Fonte', (e) => { if (window.Studio && window.Studio.openAddMenu) window.Studio.openAddMenu(e); }],
+    const t1 = el('div', 'gfx-sec-t'); t1.textContent = 'Fonte — o vídeo no ar'; const s1 = el('div', 'gfx-sec'); s1.appendChild(t1);
+    const a1 = el('div', 'set-actions'); const vb = el('button', 'btn-soft gfx-src'); vb.textContent = '+ Vídeo / Câmera / Tela';
+    vb.onclick = (e) => { if (window.Studio && window.Studio.openAddMenu) window.Studio.openAddMenu(e); };
+    a1.appendChild(vb); s1.appendChild(a1); c.appendChild(s1);
+    const t2 = el('div', 'gfx-sec-t'); t2.textContent = 'Sobreposições — por cima do vídeo'; const s2 = el('div', 'gfx-sec'); s2.appendChild(t2);
+    const a2 = el('div', 'set-actions');
+    [['+ Texto / Escrita', () => window.Graphics.add('text')],
      ['+ Logo / Imagem', () => { const o = window.Graphics.add('image'); pickImageFor(o.id); }],
+     ['+ Vídeo PiP', () => { const o = window.Graphics.add('video'); const st = window.Studio.state(); window.Graphics.update(o.id, { sourceId: st.preview || st.program || null }); }],
      ['+ Placar (futebol)', () => window.Graphics.add('scoreboard')],
      ['+ Rodapé animado', () => window.Graphics.add('ticker')],
-     ['+ Logos em slide', () => window.Graphics.add('slideshow')]].forEach(([l, fn]) => { const b = el('button', 'btn-soft' + (l.indexOf('Vídeo') >= 0 ? ' gfx-src' : '')); b.textContent = l; b.onclick = fn; add.appendChild(b); });
-    c.appendChild(add);
-    const vh = el('p', 'hint'); vh.innerHTML = '🎥 <b>Vídeo</b> entra como <b>FONTE</b> (vai pro PROGRAM e vira o vídeo da cena). Logo, placar e rodapé são <b>sobreposições</b> por cima.'; c.appendChild(vh);
+     ['+ Logos em slide', () => window.Graphics.add('slideshow')]].forEach(([l, fn]) => { const b = el('button', 'btn-soft'); b.textContent = l; b.onclick = fn; a2.appendChild(b); });
+    s2.appendChild(a2); c.appendChild(s2);
+    const vh = el('p', 'hint'); vh.innerHTML = '🎥 <b>Fonte</b> = o vídeo no ar (PROGRAM). <b>Sobreposições</b> ficam por cima. Tudo que você adiciona entra na <b>cena aberta</b>.'; c.appendChild(vh);
     const listWrap = el('div', 'ov-list'); c.appendChild(listWrap);
     const hint = el('p', 'hint'); hint.textContent = 'Arraste cada elemento direto no monitor PROGRAM para posicionar e use a alça do canto para redimensionar.'; c.appendChild(hint);
     function repaint() {
@@ -481,7 +487,7 @@
   }
   function ovControls(o) {
     const w = el('div', 'ov-ctrl');
-    const title = o.type === 'image' ? 'Logo / Imagem' : o.type === 'scoreboard' ? 'Placar' : o.type === 'slideshow' ? 'Logos em slide' : 'Rodapé animado';
+    const TT = { image: 'Logo / Imagem', scoreboard: 'Placar', slideshow: 'Logos em slide', ticker: 'Rodapé animado', text: 'Escrita / Texto', video: 'Vídeo (PiP)' }; const title = TT[o.type] || 'Camada';
     const head = el('div', 'ov-ctrl-head'); head.innerHTML = `<b>${title}</b>`;
     const tools = el('div', 'ov-tools');
     const vis = el('button', 'btn-soft'); vis.textContent = o.visible ? 'Ocultar' : 'Mostrar'; vis.onclick = () => window.Graphics.setVisible(o.id, !o.visible);
@@ -523,6 +529,21 @@
       const list = el('div', 'ss-list'); w.appendChild(list);
       o._paintList = () => { list.innerHTML = ''; (o.data.images || []).forEach((src, i) => { const row = el('div', 'ss-item'); const im = el('img'); im.src = src; const x = el('button', 'game-x'); x.textContent = '×'; x.onclick = () => { o.data.images.splice(i, 1); window.Graphics.update(o.id, {}); o._paintList(); }; row.append(im, x); list.appendChild(row); }); };
       o._paintList();
+    } else if (o.type === 'text') {
+      const r = el('div', 'set-row'); r.innerHTML = '<label>Texto</label>'; const inp = el('textarea'); inp.rows = 2; inp.value = o.data.text || ''; inp.style.flex = '1'; inp.oninput = () => window.Graphics.update(o.id, { text: inp.value }); r.appendChild(inp); w.appendChild(r);
+      const r2 = el('div', 'set-row'); r2.innerHTML = '<label>Tamanho</label>'; const sz = el('input'); sz.type = 'range'; sz.min = 12; sz.max = 120; sz.value = o.data.size || 36; sz.oninput = () => window.Graphics.update(o.id, { size: +sz.value }); r2.appendChild(sz); w.appendChild(r2);
+      const r3 = el('div', 'set-row'); r3.innerHTML = '<label>Cor</label>'; const col = el('input'); col.type = 'color'; col.value = o.data.color || '#ffffff'; col.oninput = () => window.Graphics.update(o.id, { color: col.value }); r3.appendChild(col);
+      const fundo = el('button', 'btn-soft'); fundo.textContent = o.data.bg ? 'Tirar fundo' : 'Fundo escuro'; fundo.onclick = () => window.Graphics.update(o.id, { bg: o.data.bg ? '' : 'rgba(0,0,0,.55)' }); r3.appendChild(fundo); w.appendChild(r3);
+      const r4 = el('div', 'set-row'); r4.innerHTML = '<label>Alinhar</label>'; const al = el('select'); [['left', 'Esquerda'], ['center', 'Centro'], ['right', 'Direita']].forEach(([v, lb]) => { const op = el('option'); op.value = v; op.textContent = lb; if ((o.data.align || 'center') === v) op.selected = true; al.appendChild(op); }); al.onchange = () => window.Graphics.update(o.id, { align: al.value }); r4.appendChild(al); w.appendChild(r4);
+    } else if (o.type === 'video') {
+      const r = el('div', 'set-row'); r.innerHTML = '<label>Fonte</label>'; const sel = el('select');
+      const opt0 = el('option'); opt0.value = ''; opt0.textContent = '— escolha —'; sel.appendChild(opt0);
+      let srcs = []; try { srcs = window.Studio.sourcesInfo().list; } catch {}
+      srcs.forEach(s => { const op = el('option'); op.value = s.id; op.textContent = (s.label || s.id) + (s.kind ? ' (' + s.kind + ')' : ''); if (o.data.sourceId === s.id) op.selected = true; sel.appendChild(op); });
+      sel.onchange = () => window.Graphics.update(o.id, { sourceId: sel.value || null });
+      r.appendChild(sel); w.appendChild(r);
+      const r2 = el('div', 'set-row'); r2.innerHTML = '<label>Largura</label>'; const rg = el('input'); rg.type = 'range'; rg.min = 12; rg.max = 80; rg.value = o.w || 32; rg.oninput = () => window.Graphics.setWidth(o.id, +rg.value); r2.appendChild(rg); w.appendChild(r2);
+      const hint = el('p', 'hint'); hint.textContent = 'Espelha uma fonte já adicionada (câmera, vídeo, tela). Arraste e use a alça pra redimensionar no PROGRAM.'; w.appendChild(hint);
     }
     return w;
   }

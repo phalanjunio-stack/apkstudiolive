@@ -26,7 +26,7 @@
 
   const EYE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYEOFF = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.9 17.9A10 10 0 0 1 12 19C5 19 1 12 1 12a18 18 0 0 1 5-5.9M9.9 4.2A9 9 0 0 1 12 4c7 0 11 7 11 7a18 18 0 0 1-2.2 3.2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-  const LTYPE = { image: 'Logo / Imagem', scoreboard: 'Placar', slideshow: 'Slideshow', ticker: 'Rodapé', template: 'Escrita / Modelo' };
+  const LTYPE = { image: 'Logo / Imagem', scoreboard: 'Placar', slideshow: 'Slideshow', ticker: 'Rodapé', template: 'Modelo', text: 'Escrita', video: 'Vídeo (PiP)' };
   const layerName = o => (o.type === 'template' && o.data && o.data.name) ? o.data.name : (LTYPE[o.type] || 'Camada');
 
   // ---- ativa uma cena: mostra as camadas dela (+ globais); opcionalmente troca a fonte (vai ao ar) ----
