@@ -108,17 +108,17 @@ const Graphics = (function () {
     return last;
   }
   function inWindow(o, t) { const a = o.data && o.data.anim; if (!a) return true; if (t < (a.tin || 0)) return false; if (a.tout != null && t > a.tout) return false; return true; }
-  function setTime(t) {
+  function setTime(t, edit) {
     animT = t;
     overlays.forEach(o => {
       if (!o.el) return;
       const base = (o.scene == null || o.scene === activeScene) && o.visible !== false;
-      const show = base && inWindow(o, t);
+      const show = base && (edit || inWindow(o, t));   // edit = sempre visível p/ poder editar; play = respeita janela
       o.el.style.display = show ? '' : 'none';
       if (!show) return;
       const a = o.data && o.data.anim;
       let op = (o.opacity == null ? 1 : o.opacity);
-      if (a) { const tin = a.tin || 0, tout = (a.tout == null ? Infinity : a.tout), fin = a.fin || 0, fout = a.fout || 0;
+      if (a && !edit) { const tin = a.tin || 0, tout = (a.tout == null ? Infinity : a.tout), fin = a.fin || 0, fout = a.fout || 0;
         if (fin > 0 && t < tin + fin) op *= Math.max(0, Math.min(1, (t - tin) / fin));
         if (fout > 0 && isFinite(tout) && t > tout - fout) op *= Math.max(0, Math.min(1, (tout - t) / fout)); }
       if (a && a.keys && a.keys.length) {

@@ -128,6 +128,86 @@
     seVid.addEventListener('wheel', (e) => { e.preventDefault(); const f = e.deltaY < 0 ? 1.06 : 0.94; sc.vid.scale = Math.max(0.2, Math.min(6, (sc.vid.scale || 1) * f)); applyVidT(sc); saveVid(sc); }, { passive: false });
     seVid.addEventListener('dblclick', () => { sc.vid = { x: 0, y: 0, scale: 1 }; applyVidT(sc); saveVid(sc); });
   }
+
+  // ===== TIMELINE (entra/sai + fade + keyframes) — etapas 1-3 =====
+  let tlT = 0, tlDur = 15, tlPlaying = false, tlRaf = 0, tlPrev = 0;
+  function tlMedia() { try { return (window.Studio.sourceMedia && modalScene) ? window.Studio.sourceMedia(modalScene.program) : null; } catch (e) { return null; } }
+  function tlPos(t) { return Math.max(0, Math.min(100, (t / tlDur) * 100)); }
+  function tlRender() {
+    const body = document.getElementById('seTlBody'); if (!body || !modalScene) return;
+    const own = (G() && G().listForScene) ? G().listForScene(modalScene.id) : [];
+    body.innerHTML = '';
+    const ruler = el('div', 'tl-ruler');
+    ruler.addEventListener('pointerdown', e => { const r = ruler.getBoundingClientRect(); const sk = ev => tlSeek((ev.clientX - r.left) / r.width * tlDur); sk(e); const up = () => { window.removeEventListener('pointermove', sk); window.removeEventListener('pointerup', up); }; window.addEventListener('pointermove', sk); window.addEventListener('pointerup', up); });
+    body.appendChild(ruler);
+    const ph = el('div', 'tl-ph'); ph.style.left = tlPos(tlT) + '%'; body.appendChild(ph);
+    if (!own.length) body.appendChild(el('div', 'tl-empty', 'Adicione camadas (painel à direita) pra animar.'));
+    [...own].reverse().forEach(o => {
+      const a = o.data && o.data.anim;
+      const tin = a ? (a.tin || 0) : 0, tout = (a && a.tout != null) ? a.tout : tlDur;
+      const sel = G().selected && G().selected() === o.id;
+      const track = el('div', 'tl-track' + (sel ? ' sel' : ''));   // faixa ocupa a largura toda → alinha com a régua/playhead
+      track.appendChild(el('span', 'tl-lab', layerName(o)));
+      const bar = el('div', 'tl-bar'); bar.style.left = tlPos(tin) + '%'; bar.style.width = Math.max(1, tlPos(tout) - tlPos(tin)) + '%';
+      const hl = el('span', 'tl-h tl-hl'), hr = el('span', 'tl-h tl-hr'); bar.append(hl, hr); track.appendChild(bar);
+      if (a && a.keys) a.keys.forEach(k => { const d = el('span', 'tl-kf'); d.style.left = tlPos(k.t) + '%'; d.title = 'keyframe ' + k.t + 's · clique=ir · 2 cliques=remover'; d.onclick = ev => { ev.stopPropagation(); tlSeek(k.t); }; d.ondblclick = ev => { ev.stopPropagation(); G().removeKeyframe(o.id, k.t); tlRender(); }; track.appendChild(d); });
+      track.addEventListener('click', e => { if (e.target === track || e.target.classList.contains('tl-lab')) { if (!G().selected || G().selected() !== o.id) G().select(o.id); } });
+      tlDragBar(o, bar, hl, hr, track);
+      body.appendChild(track);
+    });
+    const sid = G().selected && G().selected(), an = (sid != null && G().getAnim) ? (G().getAnim(sid) || {}) : {};
+    const fi = document.getElementById('seFin'), fo = document.getElementById('seFout');
+    if (fi) fi.value = an.fin || 0; if (fo) fo.value = an.fout || 0;
+  }
+  function tlDragBar(o, bar, hl, hr, track) {
+    function start(e, mode) {
+      e.preventDefault(); e.stopPropagation();
+      if (!o.data.anim) o.data.anim = { tin: 0, tout: tlDur, fin: 0, fout: 0, keys: [] };
+      const a = o.data.anim, t0 = a.tin || 0, t1 = (a.tout == null ? tlDur : a.tout), px = e.clientX, r = track.getBoundingClientRect();
+      const move = ev => { const dt = (ev.clientX - px) / r.width * tlDur; let n0 = t0, n1 = t1;
+        if (mode === 'move') { n0 = t0 + dt; n1 = t1 + dt; if (n0 < 0) { n1 -= n0; n0 = 0; } if (n1 > tlDur) { n0 -= (n1 - tlDur); n1 = tlDur; } }
+        else if (mode === 'l') n0 = Math.max(0, Math.min(t1 - 0.2, t0 + dt)); else n1 = Math.min(tlDur, Math.max(t0 + 0.2, t1 + dt));
+        a.tin = Math.round(n0 * 100) / 100; a.tout = Math.round(n1 * 100) / 100;
+        bar.style.left = tlPos(a.tin) + '%'; bar.style.width = Math.max(1, tlPos(a.tout) - tlPos(a.tin)) + '%'; };
+      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); if (G().setAnim) G().setAnim(o.id, {}); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+    }
+    bar.addEventListener('pointerdown', e => { if (e.target === hl || e.target === hr) return; start(e, 'move'); });
+    hl.addEventListener('pointerdown', e => start(e, 'l')); hr.addEventListener('pointerdown', e => start(e, 'r'));
+  }
+  function tlSeek(t) {
+    tlT = Math.max(0, Math.min(tlDur, t));
+    if (G().setTime) G().setTime(tlT, !tlPlaying);
+    const ph = document.querySelector('#seTlBody .tl-ph'); if (ph) ph.style.left = tlPos(tlT) + '%';
+    const lab = document.getElementById('seTime'); if (lab) lab.textContent = tlT.toFixed(1) + ' / ' + tlDur.toFixed(0) + 's';
+    if (!tlPlaying) { const m = tlMedia(); if (m && m.seek) m.seek(tlT); }
+  }
+  function tlToggle() { tlPlaying ? tlPause() : tlPlay(); }
+  function tlPlay() {
+    if (tlPlaying || !modalScene) return; tlPlaying = true;
+    const b = document.getElementById('sePlay'); if (b) b.innerHTML = '&#10074;&#10074;';
+    const m = tlMedia(); if (m && m.play) m.play();
+    tlPrev = (window.performance ? performance.now() : Date.now());
+    const loop = ts => { if (!tlPlaying) return; const dt = (ts - tlPrev) / 1000; tlPrev = ts; let nt = tlT + dt; if (nt >= tlDur) nt = 0; tlSeek(nt); tlRaf = requestAnimationFrame(loop); };
+    tlRaf = requestAnimationFrame(loop);
+  }
+  function tlPause() {
+    tlPlaying = false; if (tlRaf) cancelAnimationFrame(tlRaf); tlRaf = 0;
+    const b = document.getElementById('sePlay'); if (b) b.innerHTML = '&#9654;';
+    const m = tlMedia(); if (m && m.pause) m.pause();
+    if (G().setTime) G().setTime(tlT, true);
+  }
+  function tlInit(sc) {
+    tlPlaying = false; tlT = 0; tlRaf = 0;
+    let dur = 15; const m = tlMedia(); try { if (m && m.dur && m.dur() > 0) dur = m.dur(); } catch (e) {}
+    tlDur = (isFinite(dur) && dur > 0) ? dur : 15;
+    const sePlay = document.getElementById('sePlay'); if (sePlay) sePlay.onclick = tlToggle;
+    const seKf = document.getElementById('seKf'); if (seKf) seKf.onclick = () => { const s = G().selected && G().selected(); if (s == null) return toast('Selecione uma camada (clique nela no palco)'); G().addKeyframe(s, tlT); tlRender(); toast('Keyframe @ ' + tlT.toFixed(1) + 's'); };
+    const seKfClr = document.getElementById('seKfClr'); if (seKfClr) seKfClr.onclick = () => { const s = G().selected && G().selected(); if (s == null) return toast('Selecione uma camada'); G().clearAnim(s); tlRender(); };
+    const fi = document.getElementById('seFin'); if (fi) fi.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fin: +fi.value || 0 }); };
+    const fo = document.getElementById('seFout'); if (fo) fo.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fout: +fo.value || 0 }); };
+    tlRender(); tlSeek(0);
+  }
   function seRender() {
     if (!seSide || !modalScene) return;
     modalScene = load().find(x => x.id === modalScene.id) || modalScene;
@@ -146,7 +226,9 @@
       + '<div class="se-body"><div class="se-stagewrap"><div class="se-stage" id="seStage">'
       + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
       + '<div class="se-empty" id="seEmpty">Sem fonte — escolha ao lado &#9656;</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
-      + '</div></div><div class="se-side" id="seSide"></div></div></div>';
+      + '</div></div><div class="se-side" id="seSide"></div></div>'
+      + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><span class="se-time" id="seTime">0.0s</span><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-tl-h">barras = entra/sai &middot; &#9670; grava posição no tempo (camada selecionada) &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
+      + '</div>';
     document.body.appendChild(ov);
     ov.querySelector('.se-nm').textContent = sc.name;
     ov.querySelector('.se-stage').style.aspectRatio = fmtRatio();
@@ -160,6 +242,7 @@
     if (G() && G().setActiveScene) G().setActiveScene(sc.id);
     seRender();
     bindVideoTransform(sc);
+    tlInit(sc);
     if (!seTick) seTick = setInterval(seRefreshVid, 700);
   }
   function putOnAir() {
@@ -178,6 +261,8 @@
     teardown(); render();
   }
   function teardown() {
+    tlPlaying = false; if (tlRaf) cancelAnimationFrame(tlRaf); tlRaf = 0;
+    if (G() && G().clearTime) G().clearTime();
     if (seTick) { clearInterval(seTick); seTick = null; }
     document.removeEventListener('keydown', seEsc, true);
     const m = document.getElementById('seModal'); if (m) m.remove();
@@ -266,7 +351,7 @@
     if (G() && G().setActiveScene) G().setActiveScene(activeId);     // restaura a cena ativa ao abrir o Studio
     render();
     lastProg = String(progId() || '');
-    if (G() && G().onChange) G().onChange(() => { if (modalScene) seRender(); });   // editor aberto acompanha mudanças
+    if (G() && G().onChange) G().onChange(() => { if (modalScene) { seRender(); tlRender(); } });   // editor aberto acompanha mudanças
     if (!tick) tick = setInterval(autoSave, 1500);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
