@@ -121,7 +121,7 @@
       + '<div class="se-actions"><button class="se-air">▸ Pôr no ar</button><button class="modal-close se-x" aria-label="Fechar">&times;</button></div></div>'
       + '<div class="se-body"><div class="se-stagewrap"><div class="se-stage" id="seStage">'
       + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
-      + '<div class="se-empty" id="seEmpty">Sem fonte — escolha ao lado &#9656;</div><div class="se-ovs" id="seOvs"></div>'
+      + '<div class="se-empty" id="seEmpty">Sem fonte — escolha ao lado &#9656;</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
       + '</div></div><div class="se-side" id="seSide"></div></div></div>';
     document.body.appendChild(ov);
     ov.querySelector('.se-nm').textContent = sc.name;
