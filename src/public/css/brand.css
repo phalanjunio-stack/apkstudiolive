@@ -160,6 +160,10 @@ html[data-theme="light"]{
 .tl-hl{left:-3px}.tl-hr{right:-3px}
 .tl-kf{position:absolute;top:50%;width:9px;height:9px;background:var(--accent2);border:1px solid #fff;transform:translate(-50%,-50%) rotate(45deg);z-index:4;cursor:pointer}
 .tl-empty{font-size:11px;color:var(--muted);padding:8px}
+
+/* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
+.ovv{pointer-events:none !important;cursor:default !important}
+.ovv .ovh,.ovv .ov-tools-bar{display:none !important}
 .se-actions{display:flex;gap:8px;align-items:center}
 .se-air{padding:9px 15px;border-radius:9px;border:1px solid rgba(255,255,255,.16);background:var(--grad-ruby);
   color:#fff;font-weight:700;cursor:pointer;letter-spacing:.03em;box-shadow:var(--glow-ruby)}

@@ -4,7 +4,7 @@
 // Obs: por enquanto renderiza no monitor PROGRAM; entra no stream/gravação na fatia de saída.
 const Graphics = (function () {
   const KEY = 'sl-overlays';
-  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null;
+  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null, hostV = null, previewScene = null;
   function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
@@ -26,10 +26,11 @@ const Graphics = (function () {
     return (m[f.key] != null ? m[f.key] : '');
   }
   function matchData() { const sb = overlays.find(o => o.type === 'scoreboard'); return sb ? sb.data : {}; }
-  function paintTemplate(ov) {
-    const img = ov.el.querySelector('.tpl-art'), fc = ov.el.querySelector('.tpl-fields'); if (!fc) return;
+  function paintTemplate(ov) { if (ov.el) paintTemplateRoot(ov, ov.el); if (ov.elv) paintTemplateRoot(ov, ov.elv); }
+  function paintTemplateRoot(ov, root) {
+    const img = root.querySelector('.tpl-art'), fc = root.querySelector('.tpl-fields'); if (!fc) return;
     const d = ov.data; img.src = d.art || ''; img.style.display = d.art ? '' : 'none';
-    ov.el.classList.toggle('tpl-empty', !d.art);
+    root.classList.toggle('tpl-empty', !d.art);
     const m = matchData(); fc.innerHTML = '';
     (d.fields || []).forEach(f => {
       const v = tplValue(f, m);
@@ -47,7 +48,7 @@ const Graphics = (function () {
   function saveLocal() {
     try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: o.data })))); } catch {}
   }
-  function emit() { saveLocal(); notify(); }
+  function emit() { saveLocal(); notify(); applyPreview(); }
   function load() {
     try { const s = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(s)) overlays = s; } catch {}
     overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; });
@@ -161,7 +162,7 @@ const Graphics = (function () {
     delete clone._hideT; delete clone._t; delete clone._paintList;
     overlays.push(clone); renderOne(clone); emit(); return clone;
   }
-  function remove(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0) return; overlays[i].el?.remove(); overlays.splice(i, 1); emit(); }
+  function remove(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0) return; overlays[i].el?.remove(); overlays[i].elv?.remove(); overlays.splice(i, 1); emit(); }
   function setVisible(id, v) {
     const o = get(id); if (!o) return; o.visible = v;
     const show = ownedShow(o);
@@ -176,7 +177,14 @@ const Graphics = (function () {
   }
   function setWidth(id, w) { const o = get(id); if (!o) return; o.w = w; if (o.el) o.el.style.width = w + '%'; saveLocal(); }
   function setPos(id, x, y) { const o = get(id); if (!o) return; o.x = Math.max(-20, Math.min(110, x)); o.y = Math.max(-20, Math.min(110, y)); if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } saveLocal(); }
-  function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); }
+  function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); if (o.elv) applyTransformV(o); }
+  // ===== PREVIEW: render paralelo no monitor PREVIEW (cena diferente do PROGRAM, só leitura) =====
+  function applyTransformV(o) { if (!o.elv) return; o.elv.style.transformOrigin = 'center center'; o.elv.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.elv.style.opacity = (o.opacity == null ? 1 : o.opacity); o.elv.style.left = o.x + '%'; o.elv.style.top = o.y + '%'; }
+  function previewShow(o) { return (o.scene == null || o.scene === previewScene) && o.visible !== false; }
+  function applyPreviewOne(o) { if (!o.elv) return; o.elv.style.display = previewShow(o) ? '' : 'none'; applyTransformV(o); }
+  function applyPreview() { overlays.forEach(applyPreviewOne); }
+  function setPreviewScene(id) { previewScene = (id == null ? null : id); applyPreview(); }
+  function getPreviewScene() { return previewScene; }
   // recorte (Alt-crop estilo OBS) — clip-path no conteúdo, sem mudar tamanho/posição
   function cropCss(c) { c = c || {}; const t = c.t || 0, r = c.r || 0, b = c.b || 0, l = c.l || 0; return (t < 0.2 && r < 0.2 && b < 0.2 && l < 0.2) ? '' : 'inset(' + t + '% ' + r + '% ' + b + '% ' + l + '%)'; }
   function applyCrop(o) { if (!o || !o.el) return; const c = o.el.firstElementChild; if (c) c.style.clipPath = cropCss(o.data && o.data.crop); }
@@ -184,13 +192,25 @@ const Graphics = (function () {
   function setScale(id, s) { const o = get(id); if (!o) return; o.scale = Math.max(0.15, Math.min(8, s)); applyTransform(o); saveLocal(); }
   function setRotation(id, deg) { const o = get(id); if (!o) return; o.rotation = ((deg % 360) + 360) % 360; applyTransform(o); saveLocal(); }
   function setOpacity(id, v) { const o = get(id); if (!o) return; o.opacity = Math.max(0, Math.min(1, v)); applyTransform(o); saveLocal(); }
-  function raise(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0 || i === overlays.length - 1) return; const [o] = overlays.splice(i, 1); overlays.push(o); if (host && o.el) host.appendChild(o.el); emit(); }
-  function lower(id) { const i = overlays.findIndex(o => o.id === id); if (i <= 0) return; const [o] = overlays.splice(i, 1); overlays.unshift(o); if (host && o.el) host.insertBefore(o.el, host.firstChild); emit(); }
+  function raise(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0 || i === overlays.length - 1) return; const [o] = overlays.splice(i, 1); overlays.push(o); if (host && o.el) host.appendChild(o.el); if (hostV && o.elv) hostV.appendChild(o.elv); emit(); }
+  function lower(id) { const i = overlays.findIndex(o => o.id === id); if (i <= 0) return; const [o] = overlays.splice(i, 1); overlays.unshift(o); if (host && o.el) host.insertBefore(o.el, host.firstChild); if (hostV && o.elv) hostV.insertBefore(o.elv, hostV.firstChild); emit(); }
   function update(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); paint(o); if (o.type === 'scoreboard') overlays.forEach(t => { if (t.type === 'template') paintTemplate(t); }); saveLocal(); }
   function score(id, side, d) { const o = get(id); if (!o) return; const k = side === 'h' ? 'hs' : 'as'; o.data[k] = Math.max(0, o.data[k] + d); paint(o); saveLocal(); }
   function clockCtl(id, action) { const o = get(id); if (!o) return; if (action === 'toggle') o.data.running = !o.data.running; if (action === 'reset') { o.data.clock = 0; o.data.running = false; } paint(o); saveLocal(); }
 
-  function renderAll() { if (!host) return; host.innerHTML = ''; overlays.forEach(renderOne); }
+  function ovHTML(type) {
+    switch (type) {
+      case 'image': return '<img alt="">';
+      case 'scoreboard': return '<div class="sb"><img class="sb-logo sb-hl" alt=""><span class="sb-team sb-h"><span class="sb-nm"></span></span><span class="sb-score sb-hs"></span><span class="sb-mid"><span class="sb-stage"></span><span class="sb-clock"></span><span class="sb-added"></span></span><span class="sb-score sb-as"></span><span class="sb-team sb-a"><span class="sb-nm"></span></span><img class="sb-logo sb-al" alt=""><span class="sb-comp"></span></div>';
+      case 'ticker': return '<div class="tk"><div class="tk-move"><span></span><span></span></div></div>';
+      case 'slideshow': return '<img class="ss-img" alt="">';
+      case 'template': return '<div class="tpl"><img class="tpl-art" alt=""><div class="tpl-fields"></div></div>';
+      case 'text': return '<div class="ovt"></div>';
+      case 'video': return '<video class="ov-vid" autoplay playsinline muted></video><span class="ov-vid-ph">Escolha a fonte ▸</span>';
+    }
+    return '';
+  }
+  function renderAll() { if (!host) return; host.innerHTML = ''; if (hostV) hostV.innerHTML = ''; overlays.forEach(renderOne); applyPreview(); }
   function renderOne(ov) {
     if (!host) return;
     const el = document.createElement('div');
@@ -198,31 +218,31 @@ const Graphics = (function () {
     el.style.left = ov.x + '%'; el.style.top = ov.y + '%';
     if (ov.w) el.style.width = ov.w + '%';
     if (!ownedShow(ov)) el.style.display = 'none';
-    ov.el = el;
-    if (ov.type === 'image') el.innerHTML = '<img alt="">';
-    else if (ov.type === 'scoreboard') el.innerHTML = '<div class="sb"><img class="sb-logo sb-hl" alt=""><span class="sb-team sb-h"><span class="sb-nm"></span></span><span class="sb-score sb-hs"></span><span class="sb-mid"><span class="sb-stage"></span><span class="sb-clock"></span><span class="sb-added"></span></span><span class="sb-score sb-as"></span><span class="sb-team sb-a"><span class="sb-nm"></span></span><img class="sb-logo sb-al" alt=""><span class="sb-comp"></span></div>';
-    else if (ov.type === 'ticker') el.innerHTML = '<div class="tk"><div class="tk-move"><span></span><span></span></div></div>';
-    else if (ov.type === 'slideshow') el.innerHTML = '<img class="ss-img" alt="">';
-    else if (ov.type === 'template') el.innerHTML = '<div class="tpl"><img class="tpl-art" alt=""><div class="tpl-fields"></div></div>';
-    else if (ov.type === 'text') el.innerHTML = '<div class="ovt"></div>';
-    else if (ov.type === 'video') el.innerHTML = '<video class="ov-vid" autoplay playsinline muted></video><span class="ov-vid-ph">Escolha a fonte ▸</span>';
+    ov.el = el; el.innerHTML = ovHTML(ov.type);
     applyTransform(ov);
     applyCrop(ov);
     makeDraggable(ov);
     host.appendChild(el);
+    if (hostV) {   // gêmeo no monitor PREVIEW (render paralelo, sem edição)
+      const elv = document.createElement('div'); elv.className = 'ov ovv ov-' + ov.type;
+      if (ov.w) elv.style.width = ov.w + '%';
+      elv.innerHTML = ovHTML(ov.type); ov.elv = elv; hostV.appendChild(elv);
+    }
     if (ov.id === selectedId) select(ov.id);
     paint(ov);
+    applyPreviewOne(ov);
   }
 
-  function paint(ov) {
-    if (!ov.el) return;
+  function paint(ov) { if (ov.el) paintRoot(ov, ov.el); if (ov.elv) paintRoot(ov, ov.elv); }
+  function paintRoot(ov, root) {
+    if (!root) return;
     if (ov.type === 'image') {
-      const img = ov.el.querySelector('img');
+      const img = root.querySelector('img');
       img.src = ov.data.src || ''; img.style.display = ov.data.src ? '' : 'none';
-      ov.el.classList.toggle('empty', !ov.data.src);
+      root.classList.toggle('empty', !ov.data.src);
     } else if (ov.type === 'scoreboard') {
-      const q = s => ov.el.querySelector(s); const d = ov.data;
-      ov.el.querySelector('.sb').className = 'sb sb-' + (d.design || 'modern');
+      const q = s => root.querySelector(s); const d = ov.data;
+      root.querySelector('.sb').className = 'sb sb-' + (d.design || 'modern');
       q('.sb-h .sb-nm').textContent = d.home; q('.sb-a .sb-nm').textContent = d.away;
       q('.sb-hs').textContent = d.hs; q('.sb-as').textContent = d.as;
       q('.sb-h').style.setProperty('--tc', d.ch); q('.sb-a').style.setProperty('--tc', d.ca);
@@ -234,24 +254,25 @@ const Graphics = (function () {
       hl.src = d.homeLogo || ''; hl.style.display = d.homeLogo ? '' : 'none';
       al.src = d.awayLogo || ''; al.style.display = d.awayLogo ? '' : 'none';
     } else if (ov.type === 'ticker') {
-      ov.el.querySelectorAll('.tk-move span').forEach(s => s.textContent = ov.data.text);
-      ov.el.querySelector('.tk-move').style.animationDuration = ov.data.speed + 's';
+      root.querySelectorAll('.tk-move span').forEach(s => s.textContent = ov.data.text);
+      root.querySelector('.tk-move').style.animationDuration = ov.data.speed + 's';
     } else if (ov.type === 'slideshow') {
-      const img = ov.el.querySelector('.ss-img'); const imgs = ov.data.images || [];
-      if (imgs.length) { ov.data.i = ov.data.i % imgs.length; img.src = imgs[ov.data.i]; img.style.display = ''; img.style.opacity = '1'; ov.el.classList.remove('empty'); }
-      else { img.removeAttribute('src'); img.style.display = 'none'; ov.el.classList.add('empty'); }
+      const img = root.querySelector('.ss-img'); const imgs = ov.data.images || [];
+      if (imgs.length) { ov.data.i = ov.data.i % imgs.length; img.src = imgs[ov.data.i]; img.style.display = ''; img.style.opacity = '1'; root.classList.remove('empty'); }
+      else { img.removeAttribute('src'); img.style.display = 'none'; root.classList.add('empty'); }
       ov._t = 0;
-    } else if (ov.type === 'template') { paintTemplate(ov); }
+    } else if (ov.type === 'template') { paintTemplateRoot(ov, root); }
     else if (ov.type === 'text') {
-      const t = ov.el.querySelector('.ovt'); const d = ov.data;
+      const t = root.querySelector('.ovt'); const d = ov.data;
       t.textContent = d.text || ''; t.style.fontSize = (d.size || 32) + 'px'; t.style.color = d.color || '#fff';
       t.style.fontWeight = d.weight || 800; t.style.textAlign = d.align || 'center';
       t.style.background = d.bg || 'transparent'; t.style.padding = (d.bg ? '8px 14px' : '0');
-    } else if (ov.type === 'video') { paintVideo(ov); }
+    } else if (ov.type === 'video') { paintVideoRoot(ov, root); }
   }
   function fmtClock(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ':' + String(ss).padStart(2, '0'); }
-  function paintVideo(ov) {
-    const v = ov.el && ov.el.querySelector('.ov-vid'), ph = ov.el && ov.el.querySelector('.ov-vid-ph'); if (!v) return;
+  function paintVideo(ov) { if (ov.el) paintVideoRoot(ov, ov.el); if (ov.elv) paintVideoRoot(ov, ov.elv); }
+  function paintVideoRoot(ov, root) {
+    const v = root && root.querySelector('.ov-vid'), ph = root && root.querySelector('.ov-vid-ph'); if (!v) return;
     let stream = null;
     try { const s = window.Studio.sourcesInfo().list.find(x => x.id === ov.data.sourceId); stream = s ? s.stream : null; } catch {}
     if (stream) { if (v.srcObject !== stream) { v.srcObject = stream; v.play && v.play().catch(() => {}); } v.style.display = ''; if (ph) ph.style.display = 'none'; }
@@ -383,8 +404,9 @@ const Graphics = (function () {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
+    setPreviewScene, getPreviewScene,
     setTime, clearTime, getAnim, setAnim, clearAnim, addKeyframe, removeKeyframe,
-    boot() { const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
+    boot() { hostV = document.getElementById('prevOverlay'); const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
   };
 })();
 window.Graphics = Graphics;
