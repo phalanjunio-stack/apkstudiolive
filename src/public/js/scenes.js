@@ -131,7 +131,8 @@
 
   // ===== TIMELINE (entra/sai + fade + keyframes) — etapas 1-3 =====
   let tlT = 0, tlDur = 15, tlPlaying = false, tlRaf = 0, tlPrev = 0;
-  function tlMedia() { try { return (window.Studio.sourceMedia && modalScene) ? window.Studio.sourceMedia(modalScene.program) : null; } catch (e) { return null; } }
+  function vidCtl(id) { try { const v = window.Studio.mediaElFor && window.Studio.mediaElFor(id); if (!v || typeof v.play !== 'function') return null; return { t: () => v.currentTime || 0, dur: () => (isFinite(v.duration) ? v.duration : 0), play: () => { try { v.play(); } catch (e) {} }, pause: () => { try { v.pause(); } catch (e) {} }, seek: (s) => { if (isFinite(v.duration)) try { v.currentTime = Math.max(0, Math.min(v.duration, s)); } catch (e) {} } }; } catch (e) { return null; } }
+  function tlMedia() { return modalScene ? vidCtl(modalScene.program) : null; }
   function tlPos(t) { return Math.max(0, Math.min(100, (t / tlDur) * 100)); }
   function tlRender() {
     const body = document.getElementById('seTlBody'); if (!body || !modalScene) return;
@@ -188,7 +189,10 @@
     const b = document.getElementById('sePlay'); if (b) b.innerHTML = '&#10074;&#10074;';
     const m = tlMedia(); if (m && m.play) m.play();
     tlPrev = (window.performance ? performance.now() : Date.now());
-    const loop = ts => { if (!tlPlaying) return; const dt = (ts - tlPrev) / 1000; tlPrev = ts; let nt = tlT + dt; if (nt >= tlDur) nt = 0; tlSeek(nt); tlRaf = requestAnimationFrame(loop); };
+    const loop = ts => { if (!tlPlaying) return; const m = tlMedia(); let nt;
+      if (m) { nt = m.t(); if (nt >= tlDur - 0.04) nt = (m.dur() > tlDur ? tlDur : 0); }       // segue o tempo real do video
+      else { const dt = (ts - tlPrev) / 1000; tlPrev = ts; nt = tlT + dt; if (nt >= tlDur) nt = 0; }
+      tlSeek(nt); tlRaf = requestAnimationFrame(loop); };
     tlRaf = requestAnimationFrame(loop);
   }
   function tlPause() {
@@ -268,6 +272,23 @@
     const m = document.getElementById('seModal'); if (m) m.remove();
     if (seVid) { try { seVid.srcObject = null; } catch {} }
     modalScene = null; seVid = seHost = seSide = null;
+  }
+
+  // ===== etapa 4: tocar a timeline NO AR (sincronizada com o tempo do vídeo do PROGRAM) =====
+  let airRaf = 0, airOn = false;
+  function sceneHasAnim(id) {
+    if (!G().listForScene) return false;
+    const list = G().listForScene(id).concat(G().globals ? G().globals() : []);
+    return list.some(o => { const a = o.data && o.data.anim; return a && ((a.keys && a.keys.length) || a.tout != null || a.fin || a.fout); });
+  }
+  function airLoop() {
+    airRaf = requestAnimationFrame(airLoop);
+    if (modalScene) return;                                   // editor aberto = ele controla o tempo
+    if (!activeId || !sceneHasAnim(activeId)) { if (airOn) { if (G().clearTime) G().clearTime(); airOn = false; } return; }
+    const sc = load().find(x => x.id === activeId);
+    const v = (sc && window.Studio.mediaElFor) ? window.Studio.mediaElFor(sc.program) : null;
+    if (v && typeof v.play === 'function') { if (G().setTime) G().setTime(v.currentTime || 0, false); airOn = true; }
+    else if (airOn) { if (G().clearTime) G().clearTime(); airOn = false; }
   }
 
   // ---- painel: as camadas de UMA cena (vídeo + gráficos próprios + globais) ----
@@ -353,6 +374,7 @@
     lastProg = String(progId() || '');
     if (G() && G().onChange) G().onChange(() => { if (modalScene) { seRender(); tlRender(); } });   // editor aberto acompanha mudanças
     if (!tick) tick = setInterval(autoSave, 1500);
+    if (!airRaf) airRaf = requestAnimationFrame(airLoop);   // etapa 4: toca a timeline no ar
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
