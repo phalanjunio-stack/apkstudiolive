@@ -201,6 +201,8 @@
     const m = tlMedia(); if (m && m.pause) m.pause();
     if (G().setTime) G().setTime(tlT, true);
   }
+  function saveLoop(sc) { const l = load(); const i = l.findIndex(x => x.id === sc.id); if (i >= 0) { l[i].loop = sc.loop; save(l); } }
+  function applyLoop(sc) { try { const v = window.Studio.mediaElFor && window.Studio.mediaElFor(sc.program); if (v) v.loop = !!sc.loop; } catch (e) {} }
   function tlInit(sc) {
     tlPlaying = false; tlT = 0; tlRaf = 0;
     let dur = 15; const m = tlMedia(); try { if (m && m.dur && m.dur() > 0) dur = m.dur(); } catch (e) {}
@@ -210,6 +212,8 @@
     const seKfClr = document.getElementById('seKfClr'); if (seKfClr) seKfClr.onclick = () => { const s = G().selected && G().selected(); if (s == null) return toast('Selecione uma camada'); G().clearAnim(s); tlRender(); };
     const fi = document.getElementById('seFin'); if (fi) fi.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fin: +fi.value || 0 }); };
     const fo = document.getElementById('seFout'); if (fo) fo.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fout: +fo.value || 0 }); };
+    const lp = document.getElementById('seLoop'); if (lp) { lp.classList.toggle('on', !!sc.loop); lp.onclick = () => { sc.loop = !sc.loop; lp.classList.toggle('on', sc.loop); saveLoop(sc); applyLoop(sc); }; }
+    applyLoop(sc);
     tlRender(); tlSeek(0);
   }
   function seRender() {
@@ -231,7 +235,7 @@
       + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
       + '<div class="se-empty" id="seEmpty">Sem fonte — escolha ao lado &#9656;</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
       + '</div></div><div class="se-side" id="seSide"></div></div>'
-      + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><span class="se-time" id="seTime">0.0s</span><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-tl-h">barras = entra/sai &middot; &#9670; grava posição no tempo (camada selecionada) &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
+      + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-tl-h">barras = entra/sai &middot; &#9670; grava posição no tempo (camada selecionada) &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
       + '</div>';
     document.body.appendChild(ov);
     ov.querySelector('.se-nm').textContent = sc.name;
@@ -254,6 +258,7 @@
     if (G() && G().setHost) G().setHost(document.getElementById('pgmOverlay'));   // devolve as camadas pro PROGRAM
     if (G() && G().setActiveScene) G().setActiveScene(sc.id);
     if (sc.program != null && window.Studio && window.Studio.setProgram) window.Studio.setProgram(sc.program);
+    applyLoop(sc);
     activeId = sc.id; try { localStorage.setItem(AKEY, sc.id); } catch {}
     lastProg = String(sc.program || '');
     toast('▶ Cena "' + sc.name + '" no ar'); teardown(); render();
