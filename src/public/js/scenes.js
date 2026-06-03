@@ -110,6 +110,24 @@
     if (stream) { if (seVid.srcObject !== stream) { seVid.srcObject = stream; seVid.play && seVid.play().catch(() => {}); } seVid.style.display = ''; if (emp) emp.style.display = 'none'; }
     else { if (seVid.srcObject) seVid.srcObject = null; seVid.style.display = 'none'; if (emp) emp.style.display = 'flex'; }
   }
+  // o VÍDEO da cena também é controlável: arrasta = move, scroll = zoom, 2 cliques = reseta (por cena)
+  function applyVidT(sc) { if (!seVid || !sc) return; const v = sc.vid || {}; seVid.style.transformOrigin = 'center'; seVid.style.transform = 'translate(' + (v.x || 0) + '%,' + (v.y || 0) + '%) scale(' + (v.scale || 1) + ')'; }
+  function saveVid(sc) { const l = load(); const i = l.findIndex(x => x.id === sc.id); if (i >= 0) { l[i].vid = sc.vid; save(l); } }
+  function bindVideoTransform(sc) {
+    if (!seVid || !sc) return;
+    if (!sc.vid) sc.vid = { x: 0, y: 0, scale: 1 };
+    applyVidT(sc); seVid.style.cursor = 'move'; seVid.title = 'Arraste pra mover · scroll = zoom · 2 cliques = resetar';
+    seVid.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const sr = document.getElementById('seStage').getBoundingClientRect();
+      const x0 = sc.vid.x || 0, y0 = sc.vid.y || 0, px = e.clientX, py = e.clientY;
+      const move = (ev) => { sc.vid.x = x0 + (ev.clientX - px) / sr.width * 100; sc.vid.y = y0 + (ev.clientY - py) / sr.height * 100; applyVidT(sc); };
+      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); saveVid(sc); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+    });
+    seVid.addEventListener('wheel', (e) => { e.preventDefault(); const f = e.deltaY < 0 ? 1.06 : 0.94; sc.vid.scale = Math.max(0.2, Math.min(6, (sc.vid.scale || 1) * f)); applyVidT(sc); saveVid(sc); }, { passive: false });
+    seVid.addEventListener('dblclick', () => { sc.vid = { x: 0, y: 0, scale: 1 }; applyVidT(sc); saveVid(sc); });
+  }
   function seRender() {
     if (!seSide || !modalScene) return;
     modalScene = load().find(x => x.id === modalScene.id) || modalScene;
@@ -141,6 +159,7 @@
     if (G() && G().setHost) G().setHost(seHost);            // camadas vão pro canvas do modal (fora do PROGRAM)
     if (G() && G().setActiveScene) G().setActiveScene(sc.id);
     seRender();
+    bindVideoTransform(sc);
     if (!seTick) seTick = setInterval(seRefreshVid, 700);
   }
   function putOnAir() {
