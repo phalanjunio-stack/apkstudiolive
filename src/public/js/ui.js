@@ -461,11 +461,13 @@
   function renderGraficos() {
     const c = el('div', 'page-card');
     const add = el('div', 'set-actions');
-    [['+ Logo / Imagem', () => { const o = window.Graphics.add('image'); pickImageFor(o.id); }],
+    [['+ Vídeo / Fonte', (e) => { if (window.Studio && window.Studio.openAddMenu) window.Studio.openAddMenu(e); }],
+     ['+ Logo / Imagem', () => { const o = window.Graphics.add('image'); pickImageFor(o.id); }],
      ['+ Placar (futebol)', () => window.Graphics.add('scoreboard')],
      ['+ Rodapé animado', () => window.Graphics.add('ticker')],
-     ['+ Logos em slide', () => window.Graphics.add('slideshow')]].forEach(([l, fn]) => { const b = el('button', 'btn-soft'); b.textContent = l; b.onclick = fn; add.appendChild(b); });
+     ['+ Logos em slide', () => window.Graphics.add('slideshow')]].forEach(([l, fn]) => { const b = el('button', 'btn-soft' + (l.indexOf('Vídeo') >= 0 ? ' gfx-src' : '')); b.textContent = l; b.onclick = fn; add.appendChild(b); });
     c.appendChild(add);
+    const vh = el('p', 'hint'); vh.innerHTML = '🎥 <b>Vídeo</b> entra como <b>FONTE</b> (vai pro PROGRAM e vira o vídeo da cena). Logo, placar e rodapé são <b>sobreposições</b> por cima.'; c.appendChild(vh);
     const listWrap = el('div', 'ov-list'); c.appendChild(listWrap);
     const hint = el('p', 'hint'); hint.textContent = 'Arraste cada elemento direto no monitor PROGRAM para posicionar e use a alça do canto para redimensionar.'; c.appendChild(hint);
     function repaint() {

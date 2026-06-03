@@ -98,3 +98,8 @@ html[data-theme="light"]{
 .sc-lsec{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:5px;padding-left:2px}
 .sc-global{opacity:.85}
 .sc-global .lp-nm{font-style:italic}
+
+/* botão "+ Vídeo / Fonte" no painel Gráficos: destaca que é FONTE (não sobreposição) */
+.gfx-src{background:linear-gradient(180deg,rgba(var(--accent-rgb),.18),rgba(var(--accent-rgb),.06));
+  border-color:rgba(var(--accent-rgb),.45);color:#dbe8ff}
+.gfx-src:hover{border-color:var(--accent);filter:brightness(1.06)}
