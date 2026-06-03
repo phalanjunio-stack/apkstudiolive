@@ -239,14 +239,14 @@ const Graphics = (function () {
       const hr = host.getBoundingClientRect();
       const x0 = ov.x, y0 = ov.y, px = e.clientX, py = e.clientY; // arraste por delta (sem pulo)
       el.classList.add('dragging');
-      try { el.setPointerCapture(e.pointerId); } catch {}
+      e.preventDefault();
       const move = (ev) => {
         ov.x = Math.max(-20, Math.min(110, x0 + (ev.clientX - px) / hr.width * 100));
         ov.y = Math.max(-20, Math.min(110, y0 + (ev.clientY - py) / hr.height * 100));
         el.style.left = ov.x + '%'; el.style.top = ov.y + '%';
       };
-      const up = () => { el.classList.remove('dragging'); el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); saveLocal(); };
-      el.addEventListener('pointermove', move); el.addEventListener('pointerup', up);
+      const up = () => { el.classList.remove('dragging'); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); saveLocal(); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
   }
   // ===== EDITOR: selecionar + alças (mover/redimensionar/recortar/girar) =====
@@ -291,8 +291,8 @@ const Graphics = (function () {
           ov.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop, patch); applyCrop(ov);
         } else { ov.scale = Math.max(0.15, Math.min(8, s0 * Math.hypot(ev.clientX - cx, ev.clientY - cy) / d0)); applyTransform(ov); }
       };
-      const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); saveLocal(); };
-      h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
+      const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); saveLocal(); };
+      window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
   }
   function bindCrop(h, ov, edge) {
@@ -309,8 +309,8 @@ const Graphics = (function () {
         else if (edge === 'n') val = c0.t + dy / H * 100; else val = c0.b - dy / H * 100;
         ov.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop, { [side]: clampc(val, c0[OPP[side]]) }); applyCrop(ov);
       };
-      const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); saveLocal(); };
-      h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
+      const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); saveLocal(); };
+      window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
   }
   function bindRotate(h, ov) {
@@ -320,8 +320,8 @@ const Graphics = (function () {
       const a0 = Math.atan2(e.clientY - cy, e.clientX - cx), r0 = ov.rotation || 0;
       try { h.setPointerCapture(e.pointerId); } catch {}
       const mv = (ev) => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); ov.rotation = r0 + (a - a0) * 180 / Math.PI; applyTransform(ov); };
-      const up = () => { h.removeEventListener('pointermove', mv); h.removeEventListener('pointerup', up); saveLocal(); };
-      h.addEventListener('pointermove', mv); h.addEventListener('pointerup', up);
+      const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); saveLocal(); };
+      window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
   }
 
