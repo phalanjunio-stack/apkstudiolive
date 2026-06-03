@@ -618,7 +618,7 @@ h1,h2,h3,.brand,.fb-bigscore b{letter-spacing:-.01em}
 }
 
 .lower{
-  grid-template-columns:minmax(320px,1.35fr) minmax(250px,.95fr) minmax(250px,.95fr);
+  grid-template-columns:minmax(340px,1.3fr) minmax(300px,1fr);
 }
 
 .rightcol{
