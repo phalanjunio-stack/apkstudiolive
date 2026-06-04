@@ -284,11 +284,45 @@
     const r = document.getElementById('seFtRes'); if (r) r.textContent = res + ' (' + fmt + ')';
     const d = document.getElementById('seFtDur'); if (d) d.textContent = (tlDur || 0).toFixed(1) + 's';
   }
-  function propsPanel(sc) {   // etapa 2 preenche os campos numéricos
+  function numRow(label, val, step, fn) {
+    const r = el('div', 'se-prow'); r.appendChild(el('label', '', label));
+    const i = document.createElement('input'); i.type = 'number'; i.step = step || 1; i.value = (val === '' ? '' : Math.round((val || 0) * 100) / 100);
+    i.onchange = () => fn(parseFloat(i.value) || 0); r.appendChild(i); return r;
+  }
+  function propsPanel(sc) {
     const box = el('div', 'se-props');
     const id = G().selected && G().selected(); const o = (id != null && G().get) ? G().get(id) : null;
-    if (!o) { box.appendChild(el('div', 'lp-empty', 'Selecione uma camada pra editar as propriedades.')); return box; }
-    box.appendChild(el('div', 'se-props-soon', 'Propriedades de "' + layerName(o) + '" — campos numéricos chegam na etapa 2.'));
+    if (!o) { box.appendChild(el('div', 'lp-empty', 'Selecione uma camada (no palco ou na lista) pra editar as propriedades.')); return box; }
+    box.appendChild(el('div', 'se-ptitle', layerName(o)));
+    const a = (o.data && o.data.anim) || {};
+    box.appendChild(el('div', 'se-psec', 'Transformar'));
+    const grid = el('div', 'se-pgrid');
+    grid.appendChild(numRow('X (%)', o.x, 0.5, v => { G().setPos && G().setPos(o.id, v, o.y); }));
+    grid.appendChild(numRow('Y (%)', o.y, 0.5, v => { G().setPos && G().setPos(o.id, o.x, v); }));
+    grid.appendChild(numRow('Largura (%)', o.w, 0.5, v => { G().setWidth && G().setWidth(o.id, v); }));
+    grid.appendChild(numRow('Altura (%)', (o.h == null ? '' : o.h), 0.5, v => { G().setHeight && G().setHeight(o.id, v); }));
+    grid.appendChild(numRow('Escala', o.scale || 1, 0.05, v => { G().setScale && G().setScale(o.id, v); }));
+    grid.appendChild(numRow('Rotação°', o.rotation || 0, 1, v => { G().setRotation && G().setRotation(o.id, v); }));
+    box.appendChild(grid);
+    const oprow = el('div', 'se-prow se-prow-op'); oprow.appendChild(el('label', '', 'Opacidade'));
+    const op = document.createElement('input'); op.type = 'range'; op.min = 0; op.max = 100; op.value = Math.round((o.opacity == null ? 1 : o.opacity) * 100);
+    const opv = el('span', 'se-opv', op.value + '%'); op.oninput = () => { opv.textContent = op.value + '%'; G().setOpacity && G().setOpacity(o.id, (+op.value) / 100); };
+    oprow.append(op, opv); box.appendChild(oprow);
+    box.appendChild(el('div', 'se-psec', 'Tempo (timeline)'));
+    const tg = el('div', 'se-pgrid');
+    tg.appendChild(numRow('Entrada (s)', a.tin || 0, 0.1, v => { G().setAnim && G().setAnim(o.id, { tin: v }); tlRender(); }));
+    tg.appendChild(numRow('Saída (s)', (a.tout == null ? tlDur : a.tout), 0.1, v => { G().setAnim && G().setAnim(o.id, { tout: v }); tlRender(); }));
+    tg.appendChild(numRow('Fade in (s)', a.fin || 0, 0.1, v => { G().setAnim && G().setAnim(o.id, { fin: v }); }));
+    tg.appendChild(numRow('Fade out (s)', a.fout || 0, 0.1, v => { G().setAnim && G().setAnim(o.id, { fout: v }); }));
+    box.appendChild(tg);
+    const btns = el('div', 'se-pbtns');
+    const mk = (t, fn, cls) => { const b = el('button', 'se-pbtn' + (cls ? ' ' + cls : ''), t); b.onclick = fn; btns.appendChild(b); };
+    mk('⧉ Duplicar', () => { G().duplicate && G().duplicate(o.id, o.scene); seRender(); tlRender(); });
+    mk('▲ Frente', () => { G().raise && G().raise(o.id); seRender(); });
+    mk('▼ Trás', () => { G().lower && G().lower(o.id); seRender(); });
+    mk(o.locked ? '🔓 Destravar' : '🔒 Travar', () => { G().setLocked && G().setLocked(o.id, !o.locked); seRender(); });
+    mk('× Excluir', () => { G().remove && G().remove(o.id); seRender(); tlRender(); }, 'danger');
+    box.appendChild(btns);
     return box;
   }
   function libraryPanel(panel) {   // etapa 3 vira a bandeja de mídia (arrastar pro palco)

@@ -183,8 +183,9 @@ const Graphics = (function () {
     }
     emit();
   }
-  function setWidth(id, w) { const o = get(id); if (!o) return; o.w = w; if (o.el) o.el.style.width = w + '%'; saveLocal(); }
-  function setPos(id, x, y) { const o = get(id); if (!o) return; o.x = Math.max(-20, Math.min(110, x)); o.y = Math.max(-20, Math.min(110, y)); if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } saveLocal(); }
+  function setWidth(id, w) { const o = get(id); if (!o) return; o.w = w; if (o.el) o.el.style.width = w + '%'; if (o.elv) o.elv.style.width = w + '%'; saveLocal(); }
+  function setHeight(id, h) { const o = get(id); if (!o) return; o.h = h; if (o.el) o.el.style.height = h + '%'; if (o.elv) o.elv.style.height = h + '%'; saveLocal(); }
+  function setPos(id, x, y) { const o = get(id); if (!o) return; o.x = Math.max(-20, Math.min(110, x)); o.y = Math.max(-20, Math.min(110, y)); if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } if (o.elv) { o.elv.style.left = o.x + '%'; o.elv.style.top = o.y + '%'; } saveLocal(); }
   function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); if (o.elv) applyTransformV(o); }
   // ===== PREVIEW: render paralelo no monitor PREVIEW (cena diferente do PROGRAM, só leitura) =====
   function applyTransformV(o) { if (!o.elv) return; o.elv.style.transformOrigin = 'center center'; o.elv.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.elv.style.opacity = (o.opacity == null ? 1 : o.opacity); o.elv.style.left = o.x + '%'; o.elv.style.top = o.y + '%'; }
@@ -483,7 +484,7 @@ const Graphics = (function () {
 
   load();
   return {
-    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, reorderLayers, update, score, clockCtl,
+    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, setHeight, raise, lower, reorderLayers, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene,
