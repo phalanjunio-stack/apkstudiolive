@@ -772,7 +772,8 @@ function updateMediaBar() {
   const e = previewId && sources.get(previewId), bar = $('mediaBar');
   if (!bar) return;
   let ctl = null;
-  if (e && e.kind === 'youtube' && e.yt) ctl = ytCtl(e.yt); // vídeo comum agora usa a PROGBAR (controle completo)
+  if (e && e.kind === 'youtube' && e.yt) ctl = ytCtl(e.yt);
+  else if (e && e.mediaEl) ctl = videoCtl(e.mediaEl); // vídeo (arquivo/URL) no PREVIEW também tem controle (play/seek antes do ar)
   mediaCur = ctl;
   if (ctl) { bar.classList.remove('is-hidden'); $('mName').textContent = e.label; $('mLoop').style.display = ctl.loopable ? '' : 'none'; $('mMute').innerHTML = ctl.muted() ? '&#128263;' : '&#128266;'; }
   else bar.classList.add('is-hidden');
