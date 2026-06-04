@@ -249,6 +249,15 @@ html[data-theme="light"]{
 .se-libic{font-size:18px;line-height:1}
 .se-libnm{white-space:nowrap}
 .se-libhint{margin-top:10px}
+/* Canvas pro: réguas, área segura, guias */
+.se-canvasframe{position:relative;display:inline-block;padding:16px 0 0 16px;max-width:100%}
+.se-corner{position:absolute;left:0;top:0;width:16px;height:16px;background:#0a1320;border-right:1px solid var(--line);border-bottom:1px solid var(--line);z-index:2}
+.se-ruler-h{position:absolute;top:0;left:16px;right:0;height:16px;border-bottom:1px solid var(--line);background-color:#0a1320;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 1px,transparent 1px 5%)}
+.se-ruler-v{position:absolute;left:0;top:16px;bottom:0;width:16px;border-right:1px solid var(--line);background-color:#0a1320;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.22) 0 1px,transparent 1px 5%)}
+.se-safe{position:absolute;inset:5%;border:1px dashed rgba(255,255,255,.2);border-radius:2px;pointer-events:none;z-index:7}
+.se-guide{position:absolute;background:rgba(var(--accent-rgb),.22);pointer-events:none;z-index:7}
+.se-guide-x{left:0;right:0;top:50%;height:1px}
+.se-guide-y{top:0;bottom:0;left:50%;width:1px}
 
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}

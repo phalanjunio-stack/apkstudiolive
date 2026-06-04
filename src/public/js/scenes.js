@@ -117,7 +117,7 @@
   function fmtRatioNum() { try { return ({ '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1, '4:5': 4 / 5 })[document.querySelector('.dash').dataset.format] || (16 / 9); } catch (e) { return 16 / 9; } }
   function seFitStage() {   // dimensiona o palco por cálculo (cabe certinho em qualquer formato, sem esticar)
     const stage = document.getElementById('seStage'); if (!stage) return;
-    const wrap = stage.parentElement; const aw = (wrap ? wrap.clientWidth : 800) - 16; const ah = (wrap ? wrap.clientHeight : 500) - 44;
+    const wrap = document.querySelector('#seModal .se-stagewrap') || stage.parentElement; const aw = (wrap ? wrap.clientWidth : 800) - 36; const ah = (wrap ? wrap.clientHeight : 500) - 66;
     const r = fmtRatioNum(); let w = aw, h = w / r; if (h > ah) { h = ah; w = h * r; }
     stage.style.aspectRatio = ''; stage.style.width = Math.round(w) + 'px'; stage.style.height = Math.round(h) + 'px';
   }
@@ -363,7 +363,7 @@
       + '<div class="se-library" id="seLibrary"></div>'
       + '<div class="se-center"><div class="se-upper"><div class="se-stagewrap">'
       + '<div class="se-canvas-tools"><span class="se-czoom" id="seCZoom">Ajuste automático</span><button class="se-ctool" id="seFit" title="Levar a camada pro canto (0,0)">&#9633;</button><button class="se-ctool" id="seCenter" title="Centralizar a camada">&#9678;</button></div>'
-      + '<div class="se-stage" id="seStage"><video class="se-vid" id="seVid" playsinline muted></video><div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div></div>'
+      + '<div class="se-canvasframe"><span class="se-corner"></span><div class="se-ruler-h"></div><div class="se-ruler-v"></div><div class="se-stage" id="seStage"><video class="se-vid" id="seVid" playsinline muted></video><div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div><div class="se-safe"></div><span class="se-guide se-guide-x"></span><span class="se-guide se-guide-y"></span></div></div>'
       + '</div></div>'
       + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-cut" id="seCut" title="Cortar/dividir o clipe no cursor (selecione a camada)">&#9986; cortar</button><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-zoom" title="Zoom da timeline"><button id="seZoomOut">&minus;</button><span id="seZoomLbl">1x</span><button id="seZoomIn">+</button></span><span class="se-tl-h">arraste o clipe = mover &middot; pontas = aparar &middot; &#9986; corta no cursor &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
       + '</div>'
