@@ -142,6 +142,22 @@ html[data-theme="light"]{
   animation:kg-orbit 4.5s linear infinite}
 .sc-chip.active::after{background:conic-gradient(from var(--kg-ang),#ff5d6c,#ff9a4d,#ffd24d,#ff5d6c,#c01f2a,#ff5d6c)}
 .sc-chip.preview::after{background:conic-gradient(from var(--kg-ang),var(--accent2),#6fe0ff,var(--accent),var(--accent2));opacity:.85;animation-duration:5.5s}
+/* ===== UPLIFT PROFISSIONAL (refs sitelocal / NOVODESIGN) ===== */
+/* inputs & selects premium — alguns ficavam BRANCOS (amador), agora dark com foco em glow */
+input[type=text],input[type=number],input[type=search],input[type=time],input[type=date],input[type=tel],input[type=url],input:not([type]),select,textarea{
+  background:var(--inset);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;
+  transition:border-color .15s ease,box-shadow .18s ease}
+input[type=text]:focus,input[type=number]:focus,input[type=search]:focus,input[type=time]:focus,input[type=date]:focus,input:not([type]):focus,select:focus,textarea:focus{
+  border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(var(--accent-rgb),.2)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+/* abertura "sensacional": borda conic girando em TODOS os modais (.modal-card), reaproveitando glow-orbit */
+.modal-card{isolation:isolate}
+.modal-card::before{content:"";position:absolute;inset:-1.5px;border-radius:17px;z-index:-1;pointer-events:none;
+  background:conic-gradient(from var(--glow-angle,0deg),transparent 0 40deg,rgba(0,128,255,.18) 78deg,rgba(45,212,255,.9) 104deg,rgba(123,87,255,.85) 126deg,rgba(45,212,255,.8) 150deg,rgba(0,128,255,.16) 190deg,transparent 236deg 360deg);
+  animation:glow-orbit 4.6s linear infinite}
+/* botão primário: pop sutil no hover (easing do sitelocal) */
+.fb-prim,.btn-primary,.btn-soft.fb-prim{transition:filter .15s ease,transform .18s cubic-bezier(.34,1.4,.64,1),box-shadow .2s ease}
+.fb-prim:hover,.btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
 .sc-lvid{cursor:pointer}
 .sc-lvid:hover{border-color:var(--accent)}
 
