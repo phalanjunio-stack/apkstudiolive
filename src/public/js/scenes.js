@@ -29,6 +29,28 @@
   const EYEOFF = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.9 17.9A10 10 0 0 1 12 19C5 19 1 12 1 12a18 18 0 0 1 5-5.9M9.9 4.2A9 9 0 0 1 12 4c7 0 11 7 11 7a18 18 0 0 1-2.2 3.2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
   const LTYPE = { image: 'Logo / Imagem', scoreboard: 'Placar', slideshow: 'Slideshow', ticker: 'Rodapé', template: 'Modelo', text: 'Escrita', video: 'Vídeo (PiP)' };
   const layerName = o => (o.type === 'template' && o.data && o.data.name) ? o.data.name : (LTYPE[o.type] || 'Camada');
+  // ícones de linha (estilo Lucide) — sem emoji, look broadcast
+  const SEIC = {
+    media: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+    text: '<path d="M4 7V4h16v3"/><path d="M12 4v16"/><path d="M9 20h6"/>',
+    stickers: '<path d="M15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10l6-6V5a2 2 0 0 0-2-2Z"/><path d="M15 21v-4a2 2 0 0 1 2-2h4"/>',
+    elements: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><circle cx="17.5" cy="6.5" r="3.5"/>',
+    transitions: '<path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/><path d="M3 12h18"/>',
+    filters: '<path d="M3 4h18l-7 8v6l-4 2v-8L3 4Z"/>',
+    layers: '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+    audio: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    config: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
+    image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 21"/>',
+    video: '<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+    camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3.5"/>',
+    trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M6 4v6a6 6 0 0 0 12 0V4Z"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+    ticker: '<rect x="2" y="13" width="20" height="7" rx="1.5"/><path d="M5 16.5h7"/>',
+    template: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>',
+    slideshow: '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="m10 9 5 3-5 3V9Z"/>',
+    fit: '<path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M16 4h3a1 1 0 0 1 1 1v3"/><path d="M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M8 20H5a1 1 0 0 1-1-1v-3"/>',
+    center: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/>'
+  };
+  function seIcon(name) { return '<svg class="se-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (SEIC[name] || '') + '</svg>'; }
 
   // ---- ativa uma cena: mostra as camadas dela (+ globais); opcionalmente troca a fonte (vai ao ar) ----
   function setActive(id, air) {
@@ -333,17 +355,17 @@
     if (panel !== 'media' && panel !== 'text' && panel !== 'layers' && panel !== 'elements') { box.appendChild(el('div', 'lp-empty', 'Em construção — em breve.')); return box; }
     box.appendChild(el('div', 'se-libsec', 'Importar'));
     const imp = el('div', 'se-libgrid');
-    imp.appendChild(libCard('🖼️', 'Imagem', () => { const o = seAdd('image'); if (o) pickImg(o.id); }));
-    imp.appendChild(libCard('🎬', 'Vídeo', () => { const o = seAdd('video'); if (o) pickVideoFile(o.id); }));
-    imp.appendChild(libCard('📷', 'Câmera', (e) => pickCamera(e, t => seAdd(t))));
+    imp.appendChild(libCard(seIcon('image'), 'Imagem', () => { const o = seAdd('image'); if (o) pickImg(o.id); }));
+    imp.appendChild(libCard(seIcon('video'), 'Vídeo', () => { const o = seAdd('video'); if (o) pickVideoFile(o.id); }));
+    imp.appendChild(libCard(seIcon('camera'), 'Câmera', (e) => pickCamera(e, t => seAdd(t))));
     box.appendChild(imp);
     box.appendChild(el('div', 'se-libsec', 'Overlays & gráficos'));
     const g = el('div', 'se-libgrid');
-    g.appendChild(libCard('✍️', 'Texto', () => seAdd('text')));
-    g.appendChild(libCard('🏆', 'Placar', () => seAdd('scoreboard')));
-    g.appendChild(libCard('📊', 'Rodapé', () => seAdd('ticker')));
-    g.appendChild(libCard('🗂️', 'Modelo', () => seAdd('template')));
-    g.appendChild(libCard('🎞️', 'Slides', () => seAdd('slideshow')));
+    g.appendChild(libCard(seIcon('text'), 'Texto', () => seAdd('text')));
+    g.appendChild(libCard(seIcon('trophy'), 'Placar', () => seAdd('scoreboard')));
+    g.appendChild(libCard(seIcon('ticker'), 'Rodapé', () => seAdd('ticker')));
+    g.appendChild(libCard(seIcon('template'), 'Modelo', () => seAdd('template')));
+    g.appendChild(libCard(seIcon('slideshow'), 'Slides', () => seAdd('slideshow')));
     box.appendChild(g);
     box.appendChild(el('div', 'lp-empty se-libhint', 'Clique pra adicionar a camada no palco.'));
     return box;
@@ -353,7 +375,7 @@
     if (modalScene) closeEditor();
     modalScene = sc; prevActive = activeId;
     const RAIL = [['Mídia', 'media', '▦'], ['Texto', 'text', 'T'], ['Stickers', 'stickers', '✦'], ['Elementos', 'elements', '◆'], ['Transições', 'transitions', '⇄'], ['Filtros', 'filters', '◑'], ['Camadas', 'layers', '☰'], ['Áudio', 'audio', '♪'], ['Config', 'config', '⚙']];
-    const railHTML = RAIL.map(function (r) { return '<button class="se-railb' + (r[1] === 'media' ? ' on' : '') + '" data-panel="' + r[1] + '"><span class="se-railic">' + r[2] + '</span><span class="se-raill">' + r[0] + '</span></button>'; }).join('');
+    const railHTML = RAIL.map(function (r) { return '<button class="se-railb' + (r[1] === 'media' ? ' on' : '') + '" data-panel="' + r[1] + '"><span class="se-railic">' + seIcon(r[1]) + '</span><span class="se-raill">' + r[0] + '</span></button>'; }).join('');
     const ov = el('div', 'modal-overlay se-overlay'); ov.id = 'seModal';
     ov.innerHTML = '<div class="se-fs">'
       + '<div class="se-topbar"><div class="se-tb-l"><span class="se-logo">KIVO STUDIO</span><span class="se-mode">Montar cena &#9662;</span><span class="se-nm se-scene"></span></div>'
@@ -362,7 +384,7 @@
       + '<div class="se-main"><div class="se-rail" id="seRail">' + railHTML + '</div>'
       + '<div class="se-library" id="seLibrary"></div>'
       + '<div class="se-center"><div class="se-upper"><div class="se-stagewrap">'
-      + '<div class="se-canvas-tools"><span class="se-czoom" id="seCZoom">Ajuste automático</span><button class="se-ctool" id="seFit" title="Levar a camada pro canto (0,0)">&#9633;</button><button class="se-ctool" id="seCenter" title="Centralizar a camada">&#9678;</button></div>'
+      + '<div class="se-canvas-tools"><span class="se-czoom" id="seCZoom">Ajuste automático</span><button class="se-ctool" id="seFit" title="Levar a camada pro canto (0,0)">' + seIcon('fit') + '</button><button class="se-ctool" id="seCenter" title="Centralizar a camada">' + seIcon('center') + '</button></div>'
       + '<div class="se-canvasframe"><span class="se-corner"></span><div class="se-ruler-h"></div><div class="se-ruler-v"></div><div class="se-stage" id="seStage"><video class="se-vid" id="seVid" playsinline muted></video><div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div><div class="se-safe"></div><span class="se-guide se-guide-x"></span><span class="se-guide se-guide-y"></span></div></div>'
       + '</div></div>'
       + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-cut" id="seCut" title="Cortar/dividir o clipe no cursor (selecione a camada)">&#9986; cortar</button><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-zoom" title="Zoom da timeline"><button id="seZoomOut">&minus;</button><span id="seZoomLbl">1x</span><button id="seZoomIn">+</button></span><span class="se-tl-h">arraste o clipe = mover &middot; pontas = aparar &middot; &#9986; corta no cursor &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
