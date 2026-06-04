@@ -4,7 +4,7 @@
 // Obs: por enquanto renderiza no monitor PROGRAM; entra no stream/gravação na fatia de saída.
 const Graphics = (function () {
   const KEY = 'sl-overlays';
-  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null, hostV = null, previewScene = null;
+  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null, hostV = null, previewScene = null, editing = false;
   function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
@@ -46,7 +46,7 @@ const Graphics = (function () {
   }
 
   function saveLocal() {
-    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: o.data })))); } catch {}
+    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, locked: o.locked, scene: (o.scene == null ? null : o.scene), data: o.data })))); } catch {}
   }
   function emit() { saveLocal(); notify(); applyPreview(); }
   function load() {
@@ -66,7 +66,7 @@ const Graphics = (function () {
   function flash(id, ms) { setVisible(id, true); setTimeout(() => setVisible(id, false), ms || 6000); }
   function selected() { return selectedId; }
   // exporta/importa o conjunto de camadas (pra CENAS guardarem a sua montagem)
-  function exportOverlays() { return overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: JSON.parse(JSON.stringify(o.data || {})) })); }
+  function exportOverlays() { return overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, locked: o.locked, scene: (o.scene == null ? null : o.scene), data: JSON.parse(JSON.stringify(o.data || {})) })); }
   function importOverlays(arr) {
     selectedId = null;
     overlays.forEach(o => { try { o.el && o.el.remove(); } catch {} });
@@ -116,6 +116,14 @@ const Graphics = (function () {
       const base = (o.scene == null || o.scene === activeScene) && o.visible !== false;
       const show = base && (edit || inWindow(o, t));   // edit = sempre visível p/ poder editar; play = respeita janela
       o.el.style.display = show ? '' : 'none';
+      if (o.type === 'video' && o.data && o.data.src) {   // PLAY/scrub controla o vídeo (não toca sozinho)
+        const av = o.data.anim, vtin = av ? (av.tin || 0) : 0, inw = inWindow(o, t);
+        [o.el, o.elv].forEach(r => { const vv = r && r.querySelector('.ov-vid'); if (!vv) return;
+          if (!inw) { try { vv.pause(); } catch (e) {} }
+          else if (edit) { try { vv.pause(); if (isFinite(vv.duration) && vv.duration > 0) vv.currentTime = Math.max(0, Math.min(vv.duration, t - vtin)); } catch (e) {} }
+          else { try { if (vv.paused) vv.play().catch(() => {}); } catch (e) {} }
+        });
+      }
       if (!show) return;
       const a = o.data && o.data.anim;
       let op = (o.opacity == null ? 1 : o.opacity);
@@ -131,7 +139,7 @@ const Graphics = (function () {
       } else { applyTransform(o); o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; o.el.style.opacity = op; }
     });
   }
-  function clearTime() { animT = null; applyVisibility(); overlays.forEach(o => { if (o.el) { applyTransform(o); o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } }); }
+  function clearTime() { animT = null; applyVisibility(); overlays.forEach(o => { if (o.el) { applyTransform(o); o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } if (editing && o.type === 'video' && o.data && o.data.src) { [o.el, o.elv].forEach(r => { const vv = r && r.querySelector('.ov-vid'); if (vv) try { vv.pause(); } catch (e) {} }); } }); }
   function ensureAnim(o) { if (!o.data.anim) o.data.anim = { tin: 0, tout: null, fin: 0, fout: 0, keys: [] }; return o.data.anim; }
   function getAnim(id) { const o = get(id); return o && o.data ? (o.data.anim || null) : null; }
   function setAnim(id, patch) { const o = get(id); if (!o) return; Object.assign(ensureAnim(o), patch); saveLocal(); notify(); }
@@ -188,7 +196,22 @@ const Graphics = (function () {
   function getPreviewScene() { return previewScene; }
   // recorte (Alt-crop estilo OBS) — clip-path no conteúdo, sem mudar tamanho/posição
   function cropCss(c) { c = c || {}; const t = c.t || 0, r = c.r || 0, b = c.b || 0, l = c.l || 0; return (t < 0.2 && r < 0.2 && b < 0.2 && l < 0.2) ? '' : 'inset(' + t + '% ' + r + '% ' + b + '% ' + l + '%)'; }
-  function applyCrop(o) { if (!o || !o.el) return; const c = o.el.firstElementChild; if (c) c.style.clipPath = cropCss(o.data && o.data.crop); }
+  function positionHandles(o) {   // alças/marcadores acompanham o recorte (crop)
+    if (!o || !o.el) return; const c = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, o.data && o.data.crop);
+    const cx = (c.l + (100 - c.r)) / 2, cy = (c.t + (100 - c.b)) / 2;
+    const S = (sel, st) => { const e = o.el.querySelector(sel); if (e) Object.assign(e.style, st); };
+    S('.ovh-c-nw', { left: 'calc(' + c.l + '% - 7px)', top: 'calc(' + c.t + '% - 7px)', right: 'auto', bottom: 'auto' });
+    S('.ovh-c-ne', { right: 'calc(' + c.r + '% - 7px)', top: 'calc(' + c.t + '% - 7px)', left: 'auto', bottom: 'auto' });
+    S('.ovh-c-se', { right: 'calc(' + c.r + '% - 7px)', bottom: 'calc(' + c.b + '% - 7px)', left: 'auto', top: 'auto' });
+    S('.ovh-c-sw', { left: 'calc(' + c.l + '% - 7px)', bottom: 'calc(' + c.b + '% - 7px)', right: 'auto', top: 'auto' });
+    S('.ovh-e-n', { top: 'calc(' + c.t + '% - 5px)', left: cx + '%' });
+    S('.ovh-e-s', { bottom: 'calc(' + c.b + '% - 5px)', left: cx + '%' });
+    S('.ovh-e-e', { right: 'calc(' + c.r + '% - 5px)', top: cy + '%' });
+    S('.ovh-e-w', { left: 'calc(' + c.l + '% - 5px)', top: cy + '%' });
+    S('.ovh-rot', { top: 'calc(' + c.t + '% - 30px)', left: cx + '%' });
+  }
+  function applyCrop(o) { if (!o || !o.el) return; const c = o.el.firstElementChild; if (c) c.style.clipPath = cropCss(o.data && o.data.crop); positionHandles(o); }
+  function setLocked(id, b) { const o = get(id); if (!o) return; o.locked = !!b; if (o.id === selectedId) { removeHandles(o); if (!b) ensureHandles(o); } saveLocal(); notify(); }
   function setCrop(id, patch) { const o = get(id); if (!o) return; o.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, o.data.crop, patch); applyCrop(o); saveLocal(); }
   function setScale(id, s) { const o = get(id); if (!o) return; o.scale = Math.max(0.15, Math.min(8, s)); applyTransform(o); saveLocal(); }
   function setRotation(id, deg) { const o = get(id); if (!o) return; o.rotation = ((deg % 360) + 360) % 360; applyTransform(o); saveLocal(); }
@@ -207,7 +230,7 @@ const Graphics = (function () {
       case 'slideshow': return '<img class="ss-img" alt="">';
       case 'template': return '<div class="tpl"><img class="tpl-art" alt=""><div class="tpl-fields"></div></div>';
       case 'text': return '<div class="ovt"></div>';
-      case 'video': return '<video class="ov-vid" autoplay playsinline muted></video><span class="ov-vid-ph">Escolha a fonte ▸</span>';
+      case 'video': return '<video class="ov-vid" playsinline muted preload="auto"></video><span class="ov-vid-ph">Escolha a fonte ▸</span>';
     }
     return '';
   }
@@ -284,14 +307,17 @@ const Graphics = (function () {
       .catch(() => { ov._camPending = false; });
   }
   function paintVideo(ov) { if (ov.el) paintVideoRoot(ov, ov.el); if (ov.elv) paintVideoRoot(ov, ov.elv); }
+  function setEditing(b) { editing = !!b; overlays.forEach(o => { if (o.type === 'video' && o.data && o.data.src) paintVideo(o); }); }
   function paintVideoRoot(ov, root) {
     const v = root && root.querySelector('.ov-vid'), ph = root && root.querySelector('.ov-vid-ph'); if (!v) return;
     v.style.objectFit = (ov.data && ov.data.fit === 'contain') ? 'contain' : 'cover';   // preencher (cover) x caber (contain)
     const d = ov.data;
     if (d.src) {   // VÍDEO PRÓPRIO da cena (arquivo escolhido) — não vem das FONTES
       if (v.srcObject) { try { v.srcObject = null; } catch (e) {} }
-      if (v.getAttribute('src') !== d.src) { v.src = d.src; v.play && v.play().catch(() => {}); }
-      v.loop = (d.loop !== false); v.muted = true; v.style.display = ''; if (ph) ph.style.display = 'none'; return;
+      if (v.getAttribute('src') !== d.src) { v.src = d.src; }
+      v.loop = (d.loop !== false); v.muted = true;
+      if (editing) { try { v.pause(); } catch (e) {} } else { v.play && v.play().catch(() => {}); }   // editor = parado no 1o frame; no ar = toca
+      v.style.display = ''; if (ph) ph.style.display = 'none'; return;
     }
     if (d.device != null) {   // CÂMERA própria da camada
       ensureCam(ov);
@@ -336,6 +362,7 @@ const Graphics = (function () {
     el.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button, input, .ovh')) return;
       if (selectedId !== ov.id) select(ov.id);
+      if (ov.locked) return;   // travada: seleciona mas não arrasta
       const hr = host.getBoundingClientRect();
       const x0 = ov.x, y0 = ov.y, px = e.clientX, py = e.clientY; // arraste por delta (sem pulo)
       el.classList.add('dragging');
@@ -360,6 +387,7 @@ const Graphics = (function () {
   function deselect() { if (selectedId != null) select(null); }
   function ensureHandles(ov) {
     const el = ov.el; if (!el || el.querySelector('.ovh-rot')) return;
+    if (ov.locked) return;   // camada travada: sem alças (Photoshop)
     ['n', 'e', 's', 'w'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-e ovh-e-' + c; bindCrop(h, ov, c); el.appendChild(h); });
     ['nw', 'ne', 'se', 'sw'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-c ovh-c-' + c; bindResize(h, ov, c); el.appendChild(h); });
     const rot = document.createElement('span'); rot.className = 'ovh ovh-rot'; bindRotate(rot, ov); el.appendChild(rot);
@@ -376,7 +404,7 @@ const Graphics = (function () {
       mk('⤢', 'Tela cheia (preencher o quadro)', () => { ov.x = 0; ov.y = 0; ov.w = 100; ov.h = 100; setVideoBox(ov); saveLocal(); });
       mk('▣', 'Preencher ↔ Caber', () => { ov.data.fit = (ov.data.fit === 'contain' ? 'cover' : 'contain'); paint(ov); saveLocal(); });
     }
-    el.appendChild(tb);
+    el.appendChild(tb); positionHandles(ov);
   }
   function removeHandles(ov) { if (ov.el) ov.el.querySelectorAll('.ovh').forEach(n => n.remove()); }
   function bindResize(h, ov, corner) {
@@ -442,7 +470,7 @@ const Graphics = (function () {
   load();
   return {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
-    select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays,
+    select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene,
     setTime, clearTime, getAnim, setAnim, clearAnim, addKeyframe, removeKeyframe,

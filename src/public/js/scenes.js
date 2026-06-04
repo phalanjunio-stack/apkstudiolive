@@ -273,6 +273,7 @@
     seVid = ov.querySelector('#seVid'); seHost = ov.querySelector('#seOvs'); seSide = ov.querySelector('#seSide');
     if (G() && G().setHost) G().setHost(seHost);            // camadas vão pro canvas do modal (fora do PROGRAM)
     if (G() && G().setActiveScene) G().setActiveScene(sc.id);
+    if (G() && G().setEditing) G().setEditing(true);        // editor: vídeos entram PARADOS (só tocam no PLAY)
     seRender();
     bindVideoTransform(sc);
     tlInit(sc);
@@ -297,6 +298,7 @@
   function teardown() {
     tlPlaying = false; if (tlRaf) cancelAnimationFrame(tlRaf); tlRaf = 0;
     window.removeEventListener('resize', seFitStage);
+    if (G() && G().setEditing) G().setEditing(false);       // saiu do editor: vídeos voltam a tocar (no ar)
     if (G() && G().clearTime) G().clearTime();
     if (seTick) { clearInterval(seTick); seTick = null; }
     document.removeEventListener('keydown', seEsc, true);
