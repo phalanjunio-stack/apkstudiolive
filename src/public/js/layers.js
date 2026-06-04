@@ -13,12 +13,19 @@
   function render() {
     if (!host) return;
     const G = window.Graphics; if (!G) return;
-    // CAMADAS NO AR = só o que está NO AR (cena que recebeu TAKE) + globais. O que está sendo montado fica no PREVIEW.
-    const air = (window.Scenes && window.Scenes.active) ? window.Scenes.active() : null;
-    const list = (air != null && G.listForScene) ? G.listForScene(air).concat(G.globals ? G.globals() : []) : (G.globals ? G.globals() : (G.list ? G.list() : []));
+    // CAMADAS = o que está no PREVIEW (montagem). "Pôr no ar" manda pro PROGRAM. Tudo novo entra aqui primeiro.
+    const prev = G.getPreviewScene ? G.getPreviewScene() : null;
+    const list = (prev != null && G.listForScene) ? G.listForScene(prev).concat(G.globals ? G.globals() : []) : (G.globals ? G.globals() : (G.list ? G.list() : []));
     const sel = G.selected ? G.selected() : null;
     host.innerHTML = '';
-    if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Nada no ar. Adicione em Gráficos, Futebol ou Modelos.')); return; }
+    const airBar = el('div', 'lp-air');
+    const airBtn = el('button', 'lp-airbtn', '&#9654; Pôr no ar'); airBtn.title = 'Manda as camadas do preview pro PROGRAM (no ar)';
+    airBtn.onclick = () => { if (G.takeOverlays) G.takeOverlays(localStorage.getItem('sl-take-clear') === '1'); };
+    const tg = el('label', 'lp-airtg'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = localStorage.getItem('sl-take-clear') === '1';
+    cb.onchange = () => localStorage.setItem('sl-take-clear', cb.checked ? '1' : '0');
+    tg.append(cb, document.createTextNode(' limpar preview'));
+    airBar.append(airBtn, tg); host.appendChild(airBar);
+    if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Preview vazio. Adicione em Gráficos, Futebol ou Modelos — entra aqui primeiro.')); return; }
     [...list].reverse().forEach(o => {
       const row = el('div', 'lp-row' + (o.id === sel ? ' sel' : '') + (o.visible === false ? ' off' : ''));
       const eye = el('button', 'lp-eye'); eye.innerHTML = o.visible === false ? EYEOFF : EYE; eye.title = 'Mostrar / ocultar';

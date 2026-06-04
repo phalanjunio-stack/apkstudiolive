@@ -309,6 +309,12 @@ html[data-theme="light"]{
 .tl-lanes{position:relative;display:flex;flex-direction:column;gap:4px;min-width:100%}
 .tl-lane{position:relative;height:24px;background:var(--inset);border:1px solid var(--line);border-radius:6px;cursor:pointer}
 .tl-lane.sel{border-color:var(--accent2)}
+/* CAMADAS (preview): botão Pôr no ar + toggle */
+.lp-air{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.lp-airbtn{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,80,80,.5);background:linear-gradient(180deg,rgba(224,21,43,.92),rgba(170,14,31,.92));color:#fff;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 0 14px -5px rgba(224,21,43,.7)}
+.lp-airbtn:hover{filter:brightness(1.08)}
+.lp-airtg{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--muted);white-space:nowrap;cursor:pointer}
+.lp-airtg input{margin:0}
 
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}

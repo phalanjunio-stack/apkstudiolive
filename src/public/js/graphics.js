@@ -4,7 +4,7 @@
 // Obs: por enquanto renderiza no monitor PROGRAM; entra no stream/gravação na fatia de saída.
 const Graphics = (function () {
   const KEY = 'sl-overlays';
-  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null, hostV = null, previewScene = null, editing = false, cropMode = false;
+  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null, hostV = null, previewScene = null, editing = false, cropMode = false, _stageSeq = 0;
   function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
@@ -155,7 +155,7 @@ const Graphics = (function () {
 
   function add(type) {
     if (!DEF[type]) return;
-    const ov = Object.assign({ id: seq++, type, visible: true, scene: activeScene }, DEF[type]());
+    const ov = Object.assign({ id: seq++, type, visible: true, scene: (editing ? activeScene : (previewScene != null ? previewScene : activeScene)) }, DEF[type]());   // dashboard: novas camadas entram no PREVIEW; editor: na cena editada
     overlays.push(ov); renderOne(ov); emit(); return ov;
   }
   // duplica uma camada. toSceneId omitido = mesma cena (leve deslocamento p/ não sobrepor).
@@ -194,6 +194,19 @@ const Graphics = (function () {
   function applyPreviewOne(o) { if (!o.elv) return; o.elv.style.display = previewShow(o) ? '' : 'none'; applyTransformV(o); }
   function applyPreview() { overlays.forEach(applyPreviewOne); }
   function setPreviewScene(id) { previewScene = (id == null ? null : id); applyPreview(); }
+  // PÔR NO AR (camadas do PREVIEW → PROGRAM). clearPrev=true: move (limpa o preview); false: snapshot (continua editando o preview)
+  function takeOverlays(clearPrev) {
+    if (previewScene == null) return;
+    if (clearPrev) { const taken = previewScene; setPreviewScene('__prev' + (++_stageSeq) + '__'); setActiveScene(taken); }
+    else {
+      const prog = '__prog__';
+      overlays.filter(o => o.scene === prog).slice().forEach(o => { o.el && o.el.remove(); o.elv && o.elv.remove(); });
+      overlays = overlays.filter(o => o.scene !== prog);
+      overlays.filter(o => o.scene === previewScene).slice().forEach(o => duplicate(o.id, prog));
+      setActiveScene(prog);
+    }
+    emit();
+  }
   function getPreviewScene() { return previewScene; }
   // recorte (Alt-crop estilo OBS) — clip-path no conteúdo, sem mudar tamanho/posição
   function cropCss(c) { c = c || {}; const t = c.t || 0, r = c.r || 0, b = c.b || 0, l = c.l || 0; return (t < 0.2 && r < 0.2 && b < 0.2 && l < 0.2) ? '' : 'inset(' + t + '% ' + r + '% ' + b + '% ' + l + '%)'; }
@@ -497,7 +510,7 @@ const Graphics = (function () {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, setHeight, raise, lower, reorderLayers, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
-    setPreviewScene, getPreviewScene,
+    setPreviewScene, getPreviewScene, takeOverlays,
     setTime, clearTime, getAnim, setAnim, clearAnim, addKeyframe, removeKeyframe,
     boot() { hostV = document.getElementById('prevOverlay'); const h = document.getElementById('pgmOverlay'); if (h) mount(h); },
   };

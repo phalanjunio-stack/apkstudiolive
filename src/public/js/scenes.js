@@ -599,6 +599,7 @@
   function init() {
     host = document.getElementById('scenesPanel'); if (!host) return;
     if (G() && G().setActiveScene) G().setActiveScene(activeId);     // restaura a cena ativa ao abrir o Studio
+    if (!activeId && G() && G().getPreviewScene && G().getPreviewScene() == null && G().setPreviewScene) G().setPreviewScene('__prev0__');   // dashboard: camadas novas entram no PREVIEW (staging)
     render();
     lastProg = String(progId() || '');
     if (G() && G().onChange) G().onChange(() => { if (modalScene) { seRender(); tlRender(); } });   // editor aberto acompanha mudanças
