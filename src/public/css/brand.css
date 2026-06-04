@@ -128,6 +128,20 @@ html[data-theme="light"]{
 .sc-air-btn{color:#ff9aa0;border-color:rgba(255,89,100,.35)}
 .sc-air-btn:hover{background:linear-gradient(180deg,#e0454e,#c01f2a);color:#fff;border-color:transparent}
 .sc-chip.active .sc-air-btn{background:linear-gradient(180deg,#e0454e,#c01f2a);color:#fff;border-color:transparent}
+/* chip de cena PRO: ícones SVG + traçado girando as cores (estilo sitelocal) */
+.sc-mini{display:inline-flex;align-items:center;justify-content:center}
+.sc-mini svg{width:15px;height:15px;display:block}
+.sc-air-btn svg{filter:drop-shadow(0 0 4px rgba(255,89,100,.55))}
+.sc-edit-btn:hover{border-color:var(--accent);color:var(--accent)}
+@property --kg-ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes kg-orbit{to{--kg-ang:360deg}}
+.sc-chip{position:relative}
+.sc-chip.active{box-shadow:0 0 18px -5px rgba(224,21,43,.6)}
+.sc-chip.active::after,.sc-chip.preview::after{content:"";position:absolute;inset:-1.5px;border-radius:10px;padding:1.5px;pointer-events:none;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:kg-orbit 4.5s linear infinite}
+.sc-chip.active::after{background:conic-gradient(from var(--kg-ang),#ff5d6c,#ff9a4d,#ffd24d,#ff5d6c,#c01f2a,#ff5d6c)}
+.sc-chip.preview::after{background:conic-gradient(from var(--kg-ang),var(--accent2),#6fe0ff,var(--accent),var(--accent2));opacity:.85;animation-duration:5.5s}
 .sc-lvid{cursor:pointer}
 .sc-lvid:hover{border-color:var(--accent)}
 

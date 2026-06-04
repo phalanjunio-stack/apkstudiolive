@@ -61,7 +61,9 @@
     full: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
     grid: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
     lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-    unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
+    unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+    broadcast: '<circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/>',
+    pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/>'
   };
   function seIcon(name) { return '<svg class="se-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (SEIC[name] || '') + '</svg>'; }
 
@@ -95,7 +97,8 @@
     if (!previewId) return toast('Clique numa cena pra carregar no PREVIEW primeiro');
     setActive(previewId, true); render();
   }
-  function editScene(id) { openEditor(id); }                                                                      // duplo-clique → editor (modal, fora do ar)
+  function editScene(id) { openMontarCena(id); }   // duplo-clique → editor "Montar Cena"
+  function openMontarCena(id) { try { localStorage.setItem('sl-edit-scene', id || ''); } catch (e) {} location.href = 'montar-cena.html?scene=' + encodeURIComponent(id || ''); }
 
   // ---- menu flutuante simples (reaproveita o estilo .add-menu) ----
   function miniMenu(ev, items) {
@@ -570,9 +573,9 @@
       let ct = null;
       go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => loadToPreview(s.id), 230); };
       go.ondblclick = () => { clearTimeout(ct); editScene(s.id); };
-      const air = el('button', 'sc-mini sc-air-btn', '▶'); air.title = 'Pôr ESTA cena no ar (PROGRAM)'; air.onclick = e => { e.stopPropagation(); setActive(s.id, true); render(); };
-      const ed = el('button', 'sc-mini', '▤'); ed.title = 'Abrir editor da cena'; ed.onclick = e => { e.stopPropagation(); editScene(s.id); };
-      const ren = el('button', 'sc-mini', '✎'); ren.title = 'Renomear'; ren.onclick = e => { e.stopPropagation(); const n = prompt('Nome da cena:', s.name); if (n != null) { const l = load(); const j = l.findIndex(x => x.id === s.id); if (j >= 0) { l[j].name = n || s.name; save(l); render(); } } };
+      const air = el('button', 'sc-mini sc-air-btn', seIcon('broadcast')); air.title = 'Pôr ESTA cena no ar (PROGRAM)'; air.onclick = e => { e.stopPropagation(); setActive(s.id, true); render(); };
+      const ed = el('button', 'sc-mini sc-edit-btn', seIcon('layers')); ed.title = 'Montar Cena (abrir editor)'; ed.onclick = e => { e.stopPropagation(); openMontarCena(s.id); };
+      const ren = el('button', 'sc-mini', seIcon('pencil')); ren.title = 'Renomear'; ren.onclick = e => { e.stopPropagation(); const n = prompt('Nome da cena:', s.name); if (n != null) { const l = load(); const j = l.findIndex(x => x.id === s.id); if (j >= 0) { l[j].name = n || s.name; save(l); render(); } } };
       const x = el('button', 'sc-x', '×'); x.title = 'Remover cena'; x.onclick = e => {
         e.stopPropagation();
         if (!confirm('Remover a cena "' + s.name + '"? As camadas dela viram globais (continuam, aparecendo em todas).')) return;
