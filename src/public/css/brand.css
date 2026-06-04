@@ -172,6 +172,11 @@ html[data-theme="light"]{
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}
 .ovv .ovh,.ovv .ov-tools-bar{display:none !important}
+/* Ferramenta de RECORTE (Photoshop): botão ✂ ativo + modo recorte em âmbar */
+.crop-btn.on{background:#ffb020 !important;border-color:#ffb020 !important;color:#1a1205 !important}
+.ov-cropping.ov-selected{outline-color:#ffb020 !important}
+.ov-cropping .ovh-c,.ov-cropping .ovh-e{background:#fff;border-color:#ff9800;box-shadow:0 0 0 2px rgba(255,176,32,.35)}
+.ov-cropping .ov-vid,.ov-cropping img{outline:1px dashed rgba(255,176,32,.6);outline-offset:-1px}
 .se-actions{display:flex;gap:8px;align-items:center}
 .se-prev,.se-air{padding:8px 15px;border-radius:9px;font-weight:700;letter-spacing:.02em;cursor:pointer;font-size:12.5px}
 .se-prev{background:linear-gradient(180deg,var(--panel2),var(--inset));border:1px solid rgba(var(--accent2-rgb),.5);color:#cfe4ff}

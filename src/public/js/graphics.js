@@ -4,7 +4,7 @@
 // Obs: por enquanto renderiza no monitor PROGRAM; entra no stream/gravação na fatia de saída.
 const Graphics = (function () {
   const KEY = 'sl-overlays';
-  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null, hostV = null, previewScene = null, editing = false;
+  let host = null, overlays = [], seq = 1, clockTimer = null, subs = [], selectedId = null, activeScene = null, hostV = null, previewScene = null, editing = false, cropMode = false;
   function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
@@ -212,6 +212,8 @@ const Graphics = (function () {
   }
   function applyCrop(o) { if (!o || !o.el) return; const c = o.el.firstElementChild; if (c) c.style.clipPath = cropCss(o.data && o.data.crop); positionHandles(o); }
   function setLocked(id, b) { const o = get(id); if (!o) return; o.locked = !!b; if (o.id === selectedId) { removeHandles(o); if (!b) ensureHandles(o); } saveLocal(); notify(); }
+  function setCropMode(b) { cropMode = !!b; const o = get(selectedId); if (o && o.el) { o.el.classList.toggle('ov-cropping', cropMode); const cb = o.el.querySelector('.ov-tools-bar .crop-btn'); if (cb) cb.classList.toggle('on', cropMode); } notify(); }
+  function getCropMode() { return cropMode; }
   function setCrop(id, patch) { const o = get(id); if (!o) return; o.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, o.data.crop, patch); applyCrop(o); saveLocal(); }
   function setScale(id, s) { const o = get(id); if (!o) return; o.scale = Math.max(0.15, Math.min(8, s)); applyTransform(o); saveLocal(); }
   function setRotation(id, deg) { const o = get(id); if (!o) return; o.rotation = ((deg % 360) + 360) % 360; applyTransform(o); saveLocal(); }
@@ -379,8 +381,8 @@ const Graphics = (function () {
   // ===== EDITOR: selecionar + alças (mover/redimensionar/recortar/girar) =====
   function clampc(v, opp) { return Math.max(0, Math.min(95 - (opp || 0), v)); }
   function select(id) {
-    selectedId = id;
-    overlays.forEach(o => { if (!o.el) return; const on = o.id === id && o.visible !== false; o.el.classList.toggle('ov-selected', on); if (on) ensureHandles(o); else removeHandles(o); });
+    selectedId = id; cropMode = false;
+    overlays.forEach(o => { if (!o.el) return; const on = o.id === id && o.visible !== false; o.el.classList.toggle('ov-selected', on); o.el.classList.toggle('ov-cropping', false); if (on) ensureHandles(o); else removeHandles(o); });
     if (host && host.parentElement) host.parentElement.classList.toggle('ov-editing', id != null); // libera overflow p/ as alças
     notify();
   }
@@ -404,6 +406,8 @@ const Graphics = (function () {
       mk('⤢', 'Tela cheia (preencher o quadro)', () => { ov.x = 0; ov.y = 0; ov.w = 100; ov.h = 100; setVideoBox(ov); saveLocal(); });
       mk('▣', 'Preencher ↔ Caber', () => { ov.data.fit = (ov.data.fit === 'contain' ? 'cover' : 'contain'); paint(ov); saveLocal(); });
     }
+    const cropB = document.createElement('button'); cropB.className = 'crop-btn'; cropB.textContent = '✂'; cropB.title = 'Recortar bordas — clique e arraste as alças (Alt também corta)'; cropB.classList.toggle('on', cropMode);
+    cropB.onpointerdown = e => e.stopPropagation(); cropB.onclick = e => { e.stopPropagation(); setCropMode(!cropMode); }; tb.appendChild(cropB);
     el.appendChild(tb); positionHandles(ov);
   }
   function removeHandles(ov) { if (ov.el) ov.el.querySelectorAll('.ovh').forEach(n => n.remove()); }
@@ -416,7 +420,7 @@ const Graphics = (function () {
       const c0 = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop);
       try { h.setPointerCapture(e.pointerId); } catch {}
       const mv = (ev) => {
-        if (ev.altKey) {
+        if (ev.altKey || cropMode) {
           const cn = CN[corner], patch = {};
           patch[cn.x] = clampc(c0[cn.x] + (ev.clientX - px) * cn.sx / W * 100, c0[cn.x === 'l' ? 'r' : 'l']);
           patch[cn.y] = clampc(c0[cn.y] + (ev.clientY - py) * cn.sy / H * 100, c0[cn.y === 't' ? 'b' : 't']);
@@ -470,7 +474,7 @@ const Graphics = (function () {
   load();
   return {
     mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
-    select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing,
+    select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene,
     setTime, clearTime, getAnim, setAnim, clearAnim, addKeyframe, removeKeyframe,
