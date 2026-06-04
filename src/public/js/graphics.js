@@ -414,7 +414,7 @@ const Graphics = (function () {
     ['n', 'e', 's', 'w'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-e ovh-e-' + c; bindCrop(h, ov, c); el.appendChild(h); });
     ['nw', 'ne', 'se', 'sw'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-c ovh-c-' + c; bindResize(h, ov, c); el.appendChild(h); });
     const rot = document.createElement('span'); rot.className = 'ovh ovh-rot'; bindRotate(rot, ov); el.appendChild(rot);
-    const tb = document.createElement('div'); tb.className = 'ovh ov-tools-bar';
+    const tb = document.createElement('div'); tb.className = 'ovh ov-tools-bar'; tb.dataset.ov = ov.id;
     const mk = (txt, title, fn) => { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.onpointerdown = (e) => e.stopPropagation(); b.onclick = (e) => { e.stopPropagation(); fn(); }; tb.appendChild(b); };
     mk('↺', 'Girar -15°', () => { ov.rotation = (ov.rotation || 0) - 15; applyTransform(ov); saveLocal(); });
     mk('↻', 'Girar +15°', () => { ov.rotation = (ov.rotation || 0) + 15; applyTransform(ov); saveLocal(); });
@@ -429,9 +429,9 @@ const Graphics = (function () {
     }
     const cropB = document.createElement('button'); cropB.className = 'crop-btn'; cropB.textContent = '✂'; cropB.title = 'Recortar bordas — clique e arraste as alças (Alt também corta)'; cropB.classList.toggle('on', cropMode);
     cropB.onpointerdown = e => e.stopPropagation(); cropB.onclick = e => { e.stopPropagation(); setCropMode(!cropMode); }; tb.appendChild(cropB);
-    el.appendChild(tb); positionHandles(ov);
+    (el.parentElement || el).appendChild(tb); positionHandles(ov);   // barra ancorada no PALCO (não segue a caixa ao redimensionar)
   }
-  function removeHandles(ov) { if (ov.el) ov.el.querySelectorAll('.ovh').forEach(n => n.remove()); }
+  function removeHandles(ov) { if (!ov.el) return; ov.el.querySelectorAll('.ovh').forEach(n => n.remove()); const h = ov.el.parentElement; if (h) h.querySelectorAll('.ov-tools-bar[data-ov="' + ov.id + '"]').forEach(n => n.remove()); }
   function bindResize(h, ov, corner) {
     const CN = { nw: { x: 'l', sx: 1, y: 't', sy: 1 }, ne: { x: 'r', sx: -1, y: 't', sy: 1 }, se: { x: 'r', sx: -1, y: 'b', sy: -1 }, sw: { x: 'l', sx: 1, y: 'b', sy: -1 } };
     h.addEventListener('pointerdown', (e) => {
