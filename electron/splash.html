@@ -4,49 +4,39 @@
   <meta charset="utf-8" />
   <title>Kivo Studio</title>
   <style>
-    @property --ang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
     * { margin: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; user-select: none; }
     body {
-      display: grid; place-items: center; color: #e9effd;
-      font-family: Inter, ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
-      background: radial-gradient(900px 600px at 60% -12%, #0e1c3a 0%, #070d1c 55%, #03070d 100%);
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(130% 100% at 50% 8%, #1a1f4d, #070912 62%);
+      font-family: "Plus Jakarta Sans", Inter, "Segoe UI", system-ui, Arial, sans-serif; color: #eaf1ff;
     }
-    .wrap { display: flex; flex-direction: column; align-items: center; gap: 24px; }
-    .stage { position: relative; width: 168px; height: 168px; display: grid; place-items: center; }
-    .ring { position: absolute; border-radius: 50%; }
-    .r1 { inset: -18px; border: 1px solid rgba(91, 164, 229, .10); }
-    .r2 { inset: 8px; border: 1px dashed rgba(255, 255, 255, .10); animation: spin 26s linear infinite; }
-    .r3 { inset: 32px; border: 1px solid rgba(47, 127, 242, .22); }
-    .arc { position: absolute; inset: -18px; border-radius: 50%; border: 2px solid transparent;
-      border-top-color: rgba(91, 164, 229, .95); border-right-color: rgba(122, 87, 255, .5);
-      animation: spin 1.5s cubic-bezier(.4, 0, .2, 1) infinite; }
-    .core { position: relative; z-index: 3; width: 94px; height: 94px; border-radius: 24px; display: grid; place-items: center;
-      font-weight: 800; font-size: 42px; color: #fff; letter-spacing: -1px;
-      background: linear-gradient(135deg, #3b86f7, #7a57ff);
-      box-shadow: 0 0 40px rgba(91, 164, 229, .55), inset 0 2px 0 rgba(255, 255, 255, .25);
-      animation: breathe 3s ease-in-out infinite; }
-    .title { font-size: 22px; font-weight: 800; letter-spacing: .2em; }
-    .title b { background: linear-gradient(90deg, #5ba4e5, #7a57ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-    .sub { font-size: 10px; letter-spacing: .34em; color: rgba(233, 239, 253, .5); text-transform: uppercase; margin-top: -14px; }
-    .bar { width: 250px; height: 4px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-top: 6px; }
-    .bar i { display: block; height: 100%; width: 42%; border-radius: 99px; background: linear-gradient(90deg, #3b86f7, #7a57ff); animation: load 1.35s ease-in-out infinite; }
-    .foot { position: fixed; bottom: 18px; font-size: 10px; letter-spacing: .12em; color: rgba(233, 239, 253, .34); }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes breathe { 0%, 100% { transform: scale(1); box-shadow: 0 0 36px rgba(91, 164, 229, .5), inset 0 2px 0 rgba(255, 255, 255, .25); } 50% { transform: scale(1.06); box-shadow: 0 0 54px rgba(122, 87, 255, .8), inset 0 2px 0 rgba(255, 255, 255, .3); } }
-    @keyframes load { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+    .ks-card { width: 340px; text-align: center; animation: ks-rise .6s cubic-bezier(.22, 1, .36, 1) both; }
+    .ks-logo { width: 88px; height: 88px; object-fit: contain; filter: drop-shadow(0 10px 30px rgba(108, 86, 255, .55)); animation: ks-pulse 2.4s ease-in-out infinite; }
+    .ks-name { margin-top: 16px; font-size: 30px; font-weight: 600; letter-spacing: .3px; }
+    .ks-name span { color: #9a7bff; font-weight: 500; margin-left: 7px; }
+    .ks-bar { margin-top: 26px; height: 6px; border-radius: 99px; background: rgba(255, 255, 255, .10); overflow: hidden; }
+    .ks-fill { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #3a7bff, #7c54ff); box-shadow: 0 0 14px rgba(108, 86, 255, .6); transition: width .25s ease; }
+    .ks-row { display: flex; justify-content: space-between; align-items: center; margin-top: 11px; font-size: 12px; color: #8fa3c8; }
+    .ks-pct { color: #cfe4ff; font-weight: 600; font-variant-numeric: tabular-nums; }
+    @keyframes ks-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    @keyframes ks-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="stage">
-      <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span><span class="arc"></span>
-      <div class="core">K</div>
-    </div>
-    <div class="title">KIVO <b>STUDIO</b></div>
-    <div class="sub">Live Production</div>
-    <div class="bar"><i></i></div>
+  <div class="ks-card">
+    <img class="ks-logo" src="../src/public/img/kivo-icon.png" alt="Kivo" onerror="this.style.display='none'" />
+    <div class="ks-name">Kivo<span>Studio</span></div>
+    <div class="ks-bar"><div class="ks-fill" id="f"></div></div>
+    <div class="ks-row"><span id="s">Iniciando o motor&hellip;</span><span class="ks-pct" id="p">0%</span></div>
   </div>
-  <div class="foot">Iniciando o estúdio…</div>
+  <script>
+    var f = document.getElementById('f'), p = document.getElementById('p'), s = document.getElementById('s'), v = 0;
+    var steps = ['Iniciando o motor…', 'Carregando gráficos…', 'Conectando áudio…', 'Preparando câmeras…', 'Quase lá…'];
+    setInterval(function () {
+      var t = 95;
+      if (v < t) { v += Math.max(.6, (t - v) * .12); f.style.width = v + '%'; p.textContent = Math.round(v) + '%'; s.textContent = steps[Math.min(steps.length - 1, Math.floor(v / 20))]; }
+    }, 70);
+  </script>
 </body>
 </html>
