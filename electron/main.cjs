@@ -7,6 +7,11 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 const net = require('node:net');
 
+// O servidor é HTTPS com cert self-signed (necessário pros celulares). Como é o NOSSO
+// servidor local, ignoramos o erro de autoridade do cert (mata o spam "handshake failed -202"
+// e deixa o WebSocket/sinalização conectar). Vale só dentro do app desktop.
+app.commandLine.appendSwitch('ignore-certificate-errors');
+
 const ROOT = path.join(__dirname, '..');
 const SERVER = path.join(ROOT, 'src', 'server', 'index.js');
 const PORT = Number(process.env.PORT || 8443);
