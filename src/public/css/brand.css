@@ -241,6 +241,14 @@ html[data-theme="light"]{
 .se-pbtn:hover{border-color:var(--accent)}
 .se-pbtn.danger{grid-column:1/-1;border-color:rgba(255,80,80,.4);color:#ff9b9b}
 .se-pbtn.danger:hover{background:rgba(255,80,80,.14);border-color:#ff5050}
+/* Biblioteca (paleta) */
+.se-libsec{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:10px 0 6px}
+.se-libgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.se-libcard{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 4px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--txt);cursor:pointer;font-size:10px;font-weight:600;transition:transform .12s,border-color .12s}
+.se-libcard:hover{border-color:var(--accent);background:rgba(var(--accent-rgb),.08);transform:translateY(-1px)}
+.se-libic{font-size:18px;line-height:1}
+.se-libnm{white-space:nowrap}
+.se-libhint{margin-top:10px}
 
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}

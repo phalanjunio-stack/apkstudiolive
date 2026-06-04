@@ -325,10 +325,27 @@
     box.appendChild(btns);
     return box;
   }
-  function libraryPanel(panel) {   // etapa 3 vira a bandeja de mídia (arrastar pro palco)
+  function seAdd(type) { if (!modalScene) return null; if (G().setActiveScene) G().setActiveScene(modalScene.id); const o = G().add(type); if (o) G().select(o.id); seRender(); tlRender(); return o; }
+  function libCard(icon, label, fn) { const c = el('button', 'se-libcard'); c.innerHTML = '<span class="se-libic">' + icon + '</span><span class="se-libnm">' + label + '</span>'; c.onclick = e => fn(e); return c; }
+  function libraryPanel(panel) {
     const box = el('div', 'se-lib');
     box.appendChild(el('div', 'se-lib-head', 'Biblioteca'));
-    box.appendChild(el('div', 'lp-empty', panel === 'media' ? 'Arraste mídia pro palco — chega na etapa 3. Por enquanto use "+ camada" no painel Camadas.' : 'Em construção.'));
+    if (panel !== 'media' && panel !== 'text' && panel !== 'layers' && panel !== 'elements') { box.appendChild(el('div', 'lp-empty', 'Em construção — em breve.')); return box; }
+    box.appendChild(el('div', 'se-libsec', 'Importar'));
+    const imp = el('div', 'se-libgrid');
+    imp.appendChild(libCard('🖼️', 'Imagem', () => { const o = seAdd('image'); if (o) pickImg(o.id); }));
+    imp.appendChild(libCard('🎬', 'Vídeo', () => { const o = seAdd('video'); if (o) pickVideoFile(o.id); }));
+    imp.appendChild(libCard('📷', 'Câmera', (e) => pickCamera(e, t => seAdd(t))));
+    box.appendChild(imp);
+    box.appendChild(el('div', 'se-libsec', 'Overlays & gráficos'));
+    const g = el('div', 'se-libgrid');
+    g.appendChild(libCard('✍️', 'Texto', () => seAdd('text')));
+    g.appendChild(libCard('🏆', 'Placar', () => seAdd('scoreboard')));
+    g.appendChild(libCard('📊', 'Rodapé', () => seAdd('ticker')));
+    g.appendChild(libCard('🗂️', 'Modelo', () => seAdd('template')));
+    g.appendChild(libCard('🎞️', 'Slides', () => seAdd('slideshow')));
+    box.appendChild(g);
+    box.appendChild(el('div', 'lp-empty se-libhint', 'Clique pra adicionar a camada no palco.'));
     return box;
   }
   function openEditor(id) {
