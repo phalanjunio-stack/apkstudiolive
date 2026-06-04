@@ -44,9 +44,9 @@
 
   function newScene() {
     const l = load(); const name = prompt('Nome da nova cena:', 'Cena ' + (l.length + 1)); if (name == null) return;
-    const sc = { id: 'sc' + Date.now(), name: name || ('Cena ' + (l.length + 1)), program: progId() };
-    l.push(sc); save(l); openId = sc.id; setActive(sc.id, false); render();
-    toast('Cena criada. Adicione logos/escritas em Gráficos ou Modelos — elas entram nesta cena.');
+    const sc = { id: 'sc' + Date.now(), name: name || ('Cena ' + (l.length + 1)), program: null };
+    l.push(sc); save(l); render(); openEditor(sc.id);   // nova cena abre no EDITOR (preview), NÃO vai pro ar
+    toast('Cena criada — monte as camadas com "+ camada".');
   }
   function selectScene(id) { if (!load().some(x => x.id === id)) return; setActive(id, true); render(); }        // API: manda direto pro ar
   function loadToPreview(id) {                                                                                    // clique simples → PREVIEW (fora do ar)
@@ -114,9 +114,16 @@
   // Enquanto o modal está aberto, as camadas são desenhadas no canvas do modal
   // (Graphics.setHost), não no PROGRAM. "Pôr no ar" devolve pro PROGRAM.
   function fmtRatio() { try { return ({ '16:9': '16/9', '9:16': '9/16', '1:1': '1/1', '4:5': '4/5' })[document.querySelector('.dash').dataset.format] || '16/9'; } catch { return '16/9'; } }
+  function fmtRatioNum() { try { return ({ '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1, '4:5': 4 / 5 })[document.querySelector('.dash').dataset.format] || (16 / 9); } catch (e) { return 16 / 9; } }
+  function seFitStage() {   // dimensiona o palco por cálculo (cabe certinho em qualquer formato, sem esticar)
+    const stage = document.getElementById('seStage'); if (!stage) return;
+    const wrap = stage.parentElement; const aw = (wrap ? wrap.clientWidth : 800) - 4; const ah = window.innerHeight * 0.74;
+    const r = fmtRatioNum(); let w = aw, h = w / r; if (h > ah) { h = ah; w = h * r; }
+    stage.style.aspectRatio = ''; stage.style.width = Math.round(w) + 'px'; stage.style.height = Math.round(h) + 'px';
+  }
   function seSetFormat(fmt) {
     const b = document.querySelector('#fmtSeg button[data-fmt="' + fmt + '"]'); if (b) b.click();   // muda o FORMATO da live inteira (global)
-    const st = document.getElementById('seStage'); if (st) st.style.aspectRatio = fmtRatio();
+    seFitStage();
     document.querySelectorAll('#seModal .se-fmt button').forEach(x => x.classList.toggle('on', x.dataset.fmt === fmt));
   }
   function modalSourceMenu(ev, sc) {
@@ -261,7 +268,7 @@
       + '</div>';
     document.body.appendChild(ov);
     ov.querySelector('.se-nm').textContent = sc.name;
-    ov.querySelector('.se-stage').style.aspectRatio = fmtRatio();
+    requestAnimationFrame(seFitStage); window.addEventListener('resize', seFitStage);
     (function () { var cur; try { cur = document.querySelector('.dash').dataset.format; } catch (e) { cur = '16:9'; } ov.querySelectorAll('.se-fmt button').forEach(function (b) { b.classList.toggle('on', b.dataset.fmt === cur); b.onclick = function () { seSetFormat(b.dataset.fmt); }; }); })();
     ov.querySelector('.se-x').onclick = closeEditor;
     ov.querySelector('.se-air').onclick = putOnAir;
@@ -294,6 +301,7 @@
   }
   function teardown() {
     tlPlaying = false; if (tlRaf) cancelAnimationFrame(tlRaf); tlRaf = 0;
+    window.removeEventListener('resize', seFitStage);
     if (G() && G().clearTime) G().clearTime();
     if (seTick) { clearInterval(seTick); seTick = null; }
     document.removeEventListener('keydown', seEsc, true);

@@ -13,7 +13,9 @@
   function render() {
     if (!host) return;
     const G = window.Graphics; if (!G) return;
-    const list = G.listForActive ? G.listForActive() : (G.list ? G.list() : []);
+    // CAMADAS NO AR = só o que está NO AR (cena que recebeu TAKE) + globais. O que está sendo montado fica no PREVIEW.
+    const air = (window.Scenes && window.Scenes.active) ? window.Scenes.active() : null;
+    const list = (air != null && G.listForScene) ? G.listForScene(air).concat(G.globals ? G.globals() : []) : (G.globals ? G.globals() : (G.list ? G.list() : []));
     const sel = G.selected ? G.selected() : null;
     host.innerHTML = '';
     if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Nada no ar. Adicione em Gráficos, Futebol ou Modelos.')); return; }
