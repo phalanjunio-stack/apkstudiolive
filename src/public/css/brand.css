@@ -158,6 +158,11 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 /* botão primário: pop sutil no hover (easing do sitelocal) */
 .fb-prim,.btn-primary,.btn-soft.fb-prim{transition:filter .15s ease,transform .18s cubic-bezier(.34,1.4,.64,1),box-shadow .2s ease}
 .fb-prim:hover,.btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
+/* traçado de luz girando (azul/roxo, 2px) em volta do app inteiro — estilo sitelocal */
+.kivo-edge{position:fixed;inset:0;z-index:9990;pointer-events:none;padding:2px;border-radius:2px;
+  background:conic-gradient(from var(--glow-angle,0deg),transparent 0deg,#2f7dff 64deg,#7a57ff 130deg,transparent 198deg,#2f7dff 300deg,transparent 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:glow-orbit 5.5s linear infinite;opacity:.9}
 .sc-lvid{cursor:pointer}
 .sc-lvid:hover{border-color:var(--accent)}
 
