@@ -14,7 +14,7 @@ const Graphics = (function () {
     slideshow: () => ({ x: 80, y: 5, w: 18, scale: 1, data: { images: [], interval: 5, transition: 'fade', i: 0 } }),
     template: () => ({ x: 6, y: 6, w: 40, scale: 1, data: { art: '', fields: [], name: 'Modelo' } }),
     text: () => ({ x: 22, y: 70, w: 0, scale: 1, data: { text: 'Escreva aqui', size: 36, color: '#ffffff', weight: 800, align: 'center', bg: '' } }),
-    video: () => ({ x: 60, y: 58, w: 32, scale: 1, data: { sourceId: null, label: 'Vídeo' } }),
+    video: () => ({ x: 0, y: 0, w: 100, scale: 1, data: { src: '', sourceId: null, label: 'Vídeo', loop: true } }),
   };
   function tplValue(f, m) {
     if (!f) return '';
@@ -273,10 +273,16 @@ const Graphics = (function () {
   function paintVideo(ov) { if (ov.el) paintVideoRoot(ov, ov.el); if (ov.elv) paintVideoRoot(ov, ov.elv); }
   function paintVideoRoot(ov, root) {
     const v = root && root.querySelector('.ov-vid'), ph = root && root.querySelector('.ov-vid-ph'); if (!v) return;
+    const d = ov.data;
+    if (d.src) {   // VÍDEO PRÓPRIO da cena (arquivo escolhido) — não vem das FONTES
+      if (v.srcObject) { try { v.srcObject = null; } catch (e) {} }
+      if (v.getAttribute('src') !== d.src) { v.src = d.src; v.play && v.play().catch(() => {}); }
+      v.loop = (d.loop !== false); v.muted = true; v.style.display = ''; if (ph) ph.style.display = 'none'; return;
+    }
     let stream = null;
     try { const s = window.Studio.sourcesInfo().list.find(x => x.id === ov.data.sourceId); stream = s ? s.stream : null; } catch {}
     if (stream) { if (v.srcObject !== stream) { v.srcObject = stream; v.play && v.play().catch(() => {}); } v.style.display = ''; if (ph) ph.style.display = 'none'; }
-    else { if (v.srcObject) v.srcObject = null; v.style.display = 'none'; if (ph) ph.style.display = ''; }
+    else { if (v.getAttribute('src')) v.removeAttribute('src'); if (v.srcObject) v.srcObject = null; v.style.display = 'none'; if (ph) ph.style.display = ''; }
   }
   function showSlide(ov, idx) {
     const imgs = ov.data.images || []; const src = imgs[idx]; if (src == null || !ov.el) return;

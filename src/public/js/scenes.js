@@ -75,6 +75,7 @@
   }
   function saveProgram(id, p) { const l = load(); const i = l.findIndex(x => x.id === id); if (i >= 0) { l[i].program = p; save(l); lastProg = String(p || ''); } }
   function pickImg(id) { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = () => { const f = i.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => G().update(id, { src: rd.result }); rd.readAsDataURL(f); }; i.click(); }
+  function pickVideoFile(id) { const i = document.createElement('input'); i.type = 'file'; i.accept = 'video/*'; i.onchange = () => { const f = i.files[0]; if (!f) return; G().update(id, { src: URL.createObjectURL(f) }); }; i.click(); }
   function sourceMenu(ev, sc) {
     const items = []; let srcs = []; try { srcs = window.Studio.sourcesInfo().list; } catch {}
     srcs.forEach(s => items.push([(s.id === sc.program ? '● ' : '    ') + (s.label || s.id), () => { if (window.Studio.setProgram) window.Studio.setProgram(s.id); saveProgram(sc.id, s.id); render(); }]));
@@ -87,7 +88,7 @@
     miniMenu(ev, [
       ['✍️  Texto / Escrita', () => { A('text'); render(); }],
       ['🖼️  Logo / Imagem', () => { const o = A('image'); pickImg(o.id); render(); }],
-      ['📹  Vídeo PiP', () => { const o = A('video'); const st = window.Studio.state(); G().update(o.id, { sourceId: st.preview || st.program || null }); render(); }],
+      ['🎬  Vídeo (arquivo)', () => { const o = A('video'); pickVideoFile(o.id); render(); }],
       ['🏆  Placar', () => { A('scoreboard'); render(); }],
       ['📊  Rodapé', () => { A('ticker'); render(); }],
     ]);
@@ -310,11 +311,6 @@
   // ---- painel: as camadas de UMA cena (vídeo + gráficos próprios + globais) ----
   function layersPanel(sc, modal) {
     const box = el('div', 'sc-layers');
-    const vid = el('div', 'sc-lrow sc-lvid'); vid.title = 'Escolher / adicionar a fonte desta cena';
-    vid.append(el('span', 'sc-lic', '🎥'), el('span', 'lp-nm', srcLabel(sc.program) || '— escolher fonte —'), el('span', 'sc-ltag', 'trocar ▾'));
-    vid.onclick = (e) => modal ? modalSourceMenu(e, sc) : sourceMenu(e, sc);
-    box.appendChild(vid);
-
     const own = (G() && G().listForScene) ? G().listForScene(sc.id) : [];
     if (!own.length) box.appendChild(el('div', 'lp-empty', 'Sem camadas próprias ainda — use "+ camada" abaixo.'));
     [...own].reverse().forEach(o => {
@@ -349,7 +345,6 @@
   function render() {
     if (!host) return; const list = load(); host.innerHTML = '';
     const add = el('button', 'btn-soft fb-prim sc-save', '+ Nova cena'); add.onclick = newScene; host.appendChild(add);
-    const take = el('button', 'sc-take', '▶ Pôr no ar (TAKE)'); take.title = 'Manda a cena do PREVIEW pro PROGRAM'; take.onclick = takeToAir; if (load().length) host.appendChild(take);
     if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Crie uma cena e monte as camadas dela (logos, escritas, placar). Clique = ao ar · Duplo-clique = abrir as camadas.')); return; }
     const grid = el('div', 'sc-grid');
     list.forEach(s => {
@@ -359,6 +354,7 @@
       let ct = null;
       go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => loadToPreview(s.id), 230); };
       go.ondblclick = () => { clearTimeout(ct); editScene(s.id); };
+      const air = el('button', 'sc-mini sc-air-btn', '▶'); air.title = 'Pôr ESTA cena no ar (PROGRAM)'; air.onclick = e => { e.stopPropagation(); setActive(s.id, true); render(); };
       const ed = el('button', 'sc-mini', '▤'); ed.title = 'Abrir editor da cena'; ed.onclick = e => { e.stopPropagation(); editScene(s.id); };
       const ren = el('button', 'sc-mini', '✎'); ren.title = 'Renomear'; ren.onclick = e => { e.stopPropagation(); const n = prompt('Nome da cena:', s.name); if (n != null) { const l = load(); const j = l.findIndex(x => x.id === s.id); if (j >= 0) { l[j].name = n || s.name; save(l); render(); } } };
       const x = el('button', 'sc-x', '×'); x.title = 'Remover cena'; x.onclick = e => {
@@ -369,7 +365,7 @@
         if (activeId === s.id) setActive(null, false);
         render();
       };
-      chip.append(go, ed, ren, x); wrap.appendChild(chip);
+      chip.append(go, air, ed, ren, x); wrap.appendChild(chip);
       grid.appendChild(wrap);
     });
     host.appendChild(grid);
