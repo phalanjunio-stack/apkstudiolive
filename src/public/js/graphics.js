@@ -120,7 +120,7 @@ const Graphics = (function () {
         const av = o.data.anim, vtin = av ? (av.tin || 0) : 0, inw = inWindow(o, t);
         [o.el, o.elv].forEach(r => { const vv = r && r.querySelector('.ov-vid'); if (!vv) return;
           if (!inw) { try { vv.pause(); } catch (e) {} }
-          else if (edit) { try { vv.pause(); if (isFinite(vv.duration) && vv.duration > 0) vv.currentTime = Math.max(0, Math.min(vv.duration, t - vtin)); } catch (e) {} }
+          else if (edit) { try { vv.pause(); if (isFinite(vv.duration) && vv.duration > 0) vv.currentTime = Math.max(0, Math.min(vv.duration, (t - vtin) + (o.data.srcOffset || 0))); } catch (e) {} }
           else { try { if (vv.paused) vv.play().catch(() => {}); } catch (e) {} }
         });
       }

@@ -156,39 +156,62 @@
   }
 
   // ===== TIMELINE (entra/sai + fade + keyframes) — etapas 1-3 =====
-  let tlT = 0, tlDur = 15, tlPlaying = false, tlRaf = 0, tlPrev = 0;
+  let tlT = 0, tlDur = 15, tlPlaying = false, tlRaf = 0, tlPrev = 0, tlZoom = 1;
   function vidCtl(id) { try { const v = window.Studio.mediaElFor && window.Studio.mediaElFor(id); if (!v || typeof v.play !== 'function') return null; return { t: () => v.currentTime || 0, dur: () => (isFinite(v.duration) ? v.duration : 0), play: () => { try { v.play(); } catch (e) {} }, pause: () => { try { v.pause(); } catch (e) {} }, seek: (s) => { if (isFinite(v.duration)) try { v.currentTime = Math.max(0, Math.min(v.duration, s)); } catch (e) {} } }; } catch (e) { return null; } }
   function tlMedia() { return modalScene ? vidCtl(modalScene.program) : null; }
   function tlPos(t) { return Math.max(0, Math.min(100, (t / tlDur) * 100)); }
+  function fmtT(s) { s = Math.round(s); const m = Math.floor(s / 60), ss = s % 60; return m > 0 ? (m + ':' + String(ss).padStart(2, '0')) : (ss + 's'); }
   function tlRender() {
     const body = document.getElementById('seTlBody'); if (!body || !modalScene) return;
     const own = (G() && G().listForScene) ? G().listForScene(modalScene.id) : [];
     body.innerHTML = '';
+    const inner = el('div', 'tl-inner'); inner.style.width = (tlZoom * 100) + '%'; body.appendChild(inner);   // zoom = largura do conteúdo (rola na horizontal)
     const ruler = el('div', 'tl-ruler');
+    const step = tlDur <= 20 ? 1 : tlDur <= 60 ? 5 : 10;
+    for (let s = 0; s <= tlDur + 0.001; s += step) { const tk = el('span', 'tl-tick', fmtT(s)); tk.style.left = tlPos(s) + '%'; ruler.appendChild(tk); }
     ruler.addEventListener('pointerdown', e => { const r = ruler.getBoundingClientRect(); const sk = ev => tlSeek((ev.clientX - r.left) / r.width * tlDur); sk(e); const up = () => { window.removeEventListener('pointermove', sk); window.removeEventListener('pointerup', up); }; window.addEventListener('pointermove', sk); window.addEventListener('pointerup', up); });
-    body.appendChild(ruler);
-    const ph = el('div', 'tl-ph'); ph.style.left = tlPos(tlT) + '%'; body.appendChild(ph);
-    if (!own.length) body.appendChild(el('div', 'tl-empty', 'Adicione camadas (painel à direita) pra animar.'));
+    inner.appendChild(ruler);
+    const ph = el('div', 'tl-ph'); ph.style.left = tlPos(tlT) + '%'; ph.appendChild(el('span', 'tl-ph-head')); inner.appendChild(ph);
+    if (!own.length) inner.appendChild(el('div', 'tl-empty', 'Adicione camadas (painel à direita) pra animar.'));
     [...own].reverse().forEach(o => {
       const a = o.data && o.data.anim;
       const tin = a ? (a.tin || 0) : 0, tout = (a && a.tout != null) ? a.tout : tlDur;
       const sel = G().selected && G().selected() === o.id;
-      const track = el('div', 'tl-track' + (sel ? ' sel' : ''));   // faixa ocupa a largura toda → alinha com a régua/playhead
-      track.appendChild(el('span', 'tl-lab', layerName(o)));
-      const bar = el('div', 'tl-bar'); bar.style.left = tlPos(tin) + '%'; bar.style.width = Math.max(1, tlPos(tout) - tlPos(tin)) + '%';
+      const track = el('div', 'tl-track' + (sel ? ' sel' : ''));
+      const bar = el('div', 'tl-bar tl-bar-' + o.type); bar.style.left = tlPos(tin) + '%'; bar.style.width = Math.max(1, tlPos(tout) - tlPos(tin)) + '%';
+      if ((o.type === 'image' || o.type === 'template') && o.data && (o.data.src || o.data.art)) { bar.style.backgroundImage = 'url(' + (o.data.src || o.data.art) + ')'; bar.classList.add('tl-bar-thumb'); }
+      bar.appendChild(el('span', 'tl-bar-nm', layerName(o)));
       const hl = el('span', 'tl-h tl-hl'), hr = el('span', 'tl-h tl-hr'); bar.append(hl, hr); track.appendChild(bar);
       if (a && a.keys) a.keys.forEach(k => { const d = el('span', 'tl-kf'); d.style.left = tlPos(k.t) + '%'; d.title = 'keyframe ' + k.t + 's · clique=ir · 2 cliques=remover'; d.onclick = ev => { ev.stopPropagation(); tlSeek(k.t); }; d.ondblclick = ev => { ev.stopPropagation(); G().removeKeyframe(o.id, k.t); tlRender(); }; track.appendChild(d); });
-      track.addEventListener('click', e => { if (e.target === track || e.target.classList.contains('tl-lab')) { if (!G().selected || G().selected() !== o.id) G().select(o.id); } });
+      track.addEventListener('click', e => { if (e.target === track || e.target.classList.contains('tl-lab')) { if (!G().selected || G().selected() !== o.id) { G().select(o.id); seRender(); tlRender(); } } });
       tlDragBar(o, bar, hl, hr, track);
-      body.appendChild(track);
+      inner.appendChild(track);
     });
     const sid = G().selected && G().selected(), an = (sid != null && G().getAnim) ? (G().getAnim(sid) || {}) : {};
     const fi = document.getElementById('seFin'), fo = document.getElementById('seFout');
     if (fi) fi.value = an.fin || 0; if (fo) fo.value = an.fout || 0;
   }
+  // ✂ ferramenta de CORTE (CapCut): divide o clipe da camada selecionada no cursor → dois clipes
+  function tlSplit() {
+    const id = G().selected && G().selected(); if (id == null) return toast('Selecione a camada que quer cortar');
+    const o = G().get && G().get(id); if (!o) return;
+    const a = (o.data && o.data.anim) ? o.data.anim : { tin: 0, tout: tlDur, fin: 0, fout: 0, keys: [] };
+    const tin = a.tin || 0, tout = (a.tout == null ? tlDur : a.tout);
+    if (tlT <= tin + 0.05 || tlT >= tout - 0.05) return toast('Posicione o cursor DENTRO do clipe pra cortar');
+    const cut = Math.round(tlT * 100) / 100;
+    const keysA = (a.keys || []).filter(k => k.t <= cut), keysB = (a.keys || []).filter(k => k.t >= cut);
+    const off = (o.type === 'video') ? ((o.data.srcOffset || 0) + (cut - tin)) : 0;
+    const clone = G().duplicate(id, o.scene);
+    if (clone) { if (G().setPos) G().setPos(clone.id, o.x, o.y); if (o.type === 'video') clone.data.srcOffset = off; G().setAnim(clone.id, { tin: cut, tout: tout, fin: 0, fout: a.fout || 0, keys: keysB }); }
+    G().setAnim(id, { tin: tin, tout: cut, fin: a.fin || 0, fout: 0, keys: keysA });
+    if (clone) G().select(clone.id);
+    tlRender(); seRender(); toast('Clipe cortado em ' + cut.toFixed(1) + 's');
+  }
+  function tlSetZoom(z) { tlZoom = Math.max(1, Math.min(8, z)); const l = document.getElementById('seZoomLbl'); if (l) l.textContent = (Math.round(tlZoom * 10) / 10) + 'x'; tlRender(); tlSeek(tlT); }
   function tlDragBar(o, bar, hl, hr, track) {
     function start(e, mode) {
       e.preventDefault(); e.stopPropagation();
+      if (G().selected && G().selected() !== o.id) { G().select(o.id); seRender(); }   // pegar o clipe = selecionar a camada
       if (!o.data.anim) o.data.anim = { tin: 0, tout: tlDur, fin: 0, fout: 0, keys: [] };
       const a = o.data.anim, t0 = a.tin || 0, t1 = (a.tout == null ? tlDur : a.tout), px = e.clientX, r = track.getBoundingClientRect();
       const move = ev => { const dt = (ev.clientX - px) / r.width * tlDur; let n0 = t0, n1 = t1;
@@ -230,12 +253,15 @@
   function saveLoop(sc) { const l = load(); const i = l.findIndex(x => x.id === sc.id); if (i >= 0) { l[i].loop = sc.loop; save(l); } }
   function applyLoop(sc) { try { const v = window.Studio.mediaElFor && window.Studio.mediaElFor(sc.program); if (v) v.loop = !!sc.loop; } catch (e) {} }
   function tlInit(sc) {
-    tlPlaying = false; tlT = 0; tlRaf = 0;
+    tlPlaying = false; tlT = 0; tlRaf = 0; tlZoom = 1;
     let dur = 15; const m = tlMedia(); try { if (m && m.dur && m.dur() > 0) dur = m.dur(); } catch (e) {}
     tlDur = (isFinite(dur) && dur > 0) ? dur : 15;
     const sePlay = document.getElementById('sePlay'); if (sePlay) sePlay.onclick = tlToggle;
     const seKf = document.getElementById('seKf'); if (seKf) seKf.onclick = () => { const s = G().selected && G().selected(); if (s == null) return toast('Selecione uma camada (clique nela no palco)'); G().addKeyframe(s, tlT); tlRender(); toast('Keyframe @ ' + tlT.toFixed(1) + 's'); };
     const seKfClr = document.getElementById('seKfClr'); if (seKfClr) seKfClr.onclick = () => { const s = G().selected && G().selected(); if (s == null) return toast('Selecione uma camada'); G().clearAnim(s); tlRender(); };
+    const seCut = document.getElementById('seCut'); if (seCut) seCut.onclick = tlSplit;
+    const zi = document.getElementById('seZoomIn'); if (zi) zi.onclick = () => tlSetZoom(tlZoom * 1.5);
+    const zo = document.getElementById('seZoomOut'); if (zo) zo.onclick = () => tlSetZoom(tlZoom / 1.5);
     const fi = document.getElementById('seFin'); if (fi) fi.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fin: +fi.value || 0 }); };
     const fo = document.getElementById('seFout'); if (fo) fo.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fout: +fo.value || 0 }); };
     const lp = document.getElementById('seLoop'); if (lp) { lp.classList.toggle('on', !!sc.loop); lp.onclick = () => { sc.loop = !sc.loop; lp.classList.toggle('on', sc.loop); saveLoop(sc); applyLoop(sc); }; }
@@ -260,7 +286,7 @@
       + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
       + '<div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
       + '</div></div><div class="se-side" id="seSide"></div></div>'
-      + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-tl-h">barras = entra/sai &middot; &#9670; grava posição no tempo (camada selecionada) &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
+      + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-cut" id="seCut" title="Cortar/dividir o clipe no cursor (selecione a camada)">&#9986; cortar</button><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-zoom" title="Zoom da timeline"><button id="seZoomOut">&minus;</button><span id="seZoomLbl">1x</span><button id="seZoomIn">+</button></span><span class="se-tl-h">arraste o clipe = mover &middot; pontas = aparar &middot; &#9986; corta no cursor &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
       + '</div>';
     document.body.appendChild(ov);
     ov.querySelector('.se-nm').textContent = sc.name;
