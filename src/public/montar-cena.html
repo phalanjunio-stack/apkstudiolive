@@ -6,7 +6,11 @@
   <title>Kivo Studio - Montar Cena</title>
   <link rel="icon" type="image/svg+xml" href="img/kivo-icon.svg" />
   <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="css/graphics.css" />
+  <link rel="stylesheet" href="css/futebol.css" />
+  <link rel="stylesheet" href="css/modelos.css" />
   <script src="vendor/lucide.min.js"></script>
+  <script src="js/graphics.js"></script>
   <style>
     @font-face {
       font-family: Inter;
@@ -2701,6 +2705,14 @@
     const previewBtn = $("#previewBtn");
     const airGateStatus = $("#airGateStatus");
     const footerResolution = $("#footerResolution");
+
+    // === FASE 1: liga o canvas no MOTOR real (Graphics). O #sceneCanvas vira o host dos overlays. ===
+    const G = window.Graphics || null;
+    if (G && sceneCanvas) {
+      sceneCanvas.classList.add("pgm-overlay");
+      if (G.setHost) G.setHost(sceneCanvas);
+      if (G.getPreviewScene && G.getPreviewScene() == null && G.setPreviewScene) G.setPreviewScene("__prev0__");
+    }
 
     function icon(name) {
       return `<i data-lucide="${name}"></i>`;
