@@ -10,7 +10,7 @@
 (function () {
   const KEY = 'sl-scenes', AKEY = 'sl-scene-active';
   let host, activeId = null, previewId = null, tick = null, lastProg = '';
-  let modalScene = null, prevActive = null, seVid = null, seHost = null, seSide = null, seTick = null;
+  let modalScene = null, prevActive = null, seVid = null, seHost = null, seSide = null, seTick = null, seTab = 'camadas';
   try { activeId = localStorage.getItem(AKEY) || null; } catch {}
 
   const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; } };
@@ -117,7 +117,7 @@
   function fmtRatioNum() { try { return ({ '16:9': 16 / 9, '9:16': 9 / 16, '1:1': 1, '4:5': 4 / 5 })[document.querySelector('.dash').dataset.format] || (16 / 9); } catch (e) { return 16 / 9; } }
   function seFitStage() {   // dimensiona o palco por cálculo (cabe certinho em qualquer formato, sem esticar)
     const stage = document.getElementById('seStage'); if (!stage) return;
-    const wrap = stage.parentElement; const aw = (wrap ? wrap.clientWidth : 800) - 4; const ah = window.innerHeight * 0.74;
+    const wrap = stage.parentElement; const aw = (wrap ? wrap.clientWidth : 800) - 16; const ah = (wrap ? wrap.clientHeight : 500) - 44;
     const r = fmtRatioNum(); let w = aw, h = w / r; if (h > ah) { h = ah; w = h * r; }
     stage.style.aspectRatio = ''; stage.style.width = Math.round(w) + 'px'; stage.style.height = Math.round(h) + 'px';
   }
@@ -271,32 +271,68 @@
   function seRender() {
     if (!seSide || !modalScene) return;
     modalScene = load().find(x => x.id === modalScene.id) || modalScene;
-    seSide.innerHTML = ''; seSide.appendChild(layersPanel(modalScene, true));
-    seRefreshVid();
+    seSide.innerHTML = ''; seSide.appendChild(seTab === 'props' ? propsPanel(modalScene) : layersPanel(modalScene, true));
+    seRefreshVid(); seFooter();
   }
   function seEsc(e) { if (e.key === 'Escape' && modalScene) { e.stopPropagation(); closeEditor(); } }
+  function seTabSet(t) { seTab = t; const m = document.getElementById('seModal'); if (m) m.querySelectorAll('.se-tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t)); seRender(); }
+  function seRailSet(panel) { const m = document.getElementById('seModal'); if (!m) return; m.querySelectorAll('.se-railb').forEach(b => b.classList.toggle('on', b.dataset.panel === panel)); const lib = document.getElementById('seLibrary'); if (lib) { lib.innerHTML = ''; lib.appendChild(libraryPanel(panel)); } }
+  function seFooter() {
+    const m = document.getElementById('seModal'); if (!m) return;
+    let fmt = '16:9'; try { fmt = document.querySelector('.dash').dataset.format || '16:9'; } catch (e) {}
+    const res = ({ '16:9': '1920×1080', '9:16': '1080×1920', '1:1': '1080×1080', '4:5': '1080×1350' })[fmt] || '1920×1080';
+    const r = document.getElementById('seFtRes'); if (r) r.textContent = res + ' (' + fmt + ')';
+    const d = document.getElementById('seFtDur'); if (d) d.textContent = (tlDur || 0).toFixed(1) + 's';
+  }
+  function propsPanel(sc) {   // etapa 2 preenche os campos numéricos
+    const box = el('div', 'se-props');
+    const id = G().selected && G().selected(); const o = (id != null && G().get) ? G().get(id) : null;
+    if (!o) { box.appendChild(el('div', 'lp-empty', 'Selecione uma camada pra editar as propriedades.')); return box; }
+    box.appendChild(el('div', 'se-props-soon', 'Propriedades de "' + layerName(o) + '" — campos numéricos chegam na etapa 2.'));
+    return box;
+  }
+  function libraryPanel(panel) {   // etapa 3 vira a bandeja de mídia (arrastar pro palco)
+    const box = el('div', 'se-lib');
+    box.appendChild(el('div', 'se-lib-head', 'Biblioteca'));
+    box.appendChild(el('div', 'lp-empty', panel === 'media' ? 'Arraste mídia pro palco — chega na etapa 3. Por enquanto use "+ camada" no painel Camadas.' : 'Em construção.'));
+    return box;
+  }
   function openEditor(id) {
     const sc = load().find(x => x.id === id); if (!sc) return;
     if (modalScene) closeEditor();
     modalScene = sc; prevActive = activeId;
+    const RAIL = [['Mídia', 'media', '▦'], ['Texto', 'text', 'T'], ['Stickers', 'stickers', '✦'], ['Elementos', 'elements', '◆'], ['Transições', 'transitions', '⇄'], ['Filtros', 'filters', '◑'], ['Camadas', 'layers', '☰'], ['Áudio', 'audio', '♪'], ['Config', 'config', '⚙']];
+    const railHTML = RAIL.map(function (r) { return '<button class="se-railb' + (r[1] === 'media' ? ' on' : '') + '" data-panel="' + r[1] + '"><span class="se-railic">' + r[2] + '</span><span class="se-raill">' + r[0] + '</span></button>'; }).join('');
     const ov = el('div', 'modal-overlay se-overlay'); ov.id = 'seModal';
-    ov.innerHTML = '<div class="se-modal"><div class="se-head"><b>Montar cena — <span class="se-nm"></span></b>'
-      + '<div class="se-actions"><button class="se-prev">&#9680; Preview</button><button class="se-air">&#9679; Pôr no ar</button><button class="modal-close se-x" aria-label="Fechar">&times;</button></div></div>'
-      + '<div class="se-body"><div class="se-stagewrap"><div class="se-stage" id="seStage">'
-      + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
-      + '<div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
-      + '</div></div><div class="se-side" id="seSide"></div></div>'
+    ov.innerHTML = '<div class="se-fs">'
+      + '<div class="se-topbar"><div class="se-tb-l"><span class="se-logo">KIVO STUDIO</span><span class="se-mode">Montar cena &#9662;</span><span class="se-nm se-scene"></span></div>'
+      + '<div class="se-tb-c"><button class="se-ico-btn" title="Desfazer">&#8624;</button><button class="se-ico-btn" title="Refazer">&#8625;</button><span class="se-saved" id="seSaved">&#9679; Salvo automaticamente</span></div>'
+      + '<div class="se-tb-r"><button class="se-prev">&#9680; Preview</button><button class="se-air">&#9679; Pôr no ar</button><button class="se-pro">&#10022; Pro</button><button class="modal-close se-x" aria-label="Fechar">&times;</button></div></div>'
+      + '<div class="se-main"><div class="se-rail" id="seRail">' + railHTML + '</div>'
+      + '<div class="se-library" id="seLibrary"></div>'
+      + '<div class="se-center"><div class="se-upper"><div class="se-stagewrap">'
+      + '<div class="se-canvas-tools"><span class="se-czoom" id="seCZoom">Ajuste automático</span><button class="se-ctool" id="seFit" title="Levar a camada pro canto (0,0)">&#9633;</button><button class="se-ctool" id="seCenter" title="Centralizar a camada">&#9678;</button></div>'
+      + '<div class="se-stage" id="seStage"><video class="se-vid" id="seVid" playsinline muted></video><div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div></div>'
+      + '</div></div>'
       + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-cut" id="seCut" title="Cortar/dividir o clipe no cursor (selecione a camada)">&#9986; cortar</button><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-zoom" title="Zoom da timeline"><button id="seZoomOut">&minus;</button><span id="seZoomLbl">1x</span><button id="seZoomIn">+</button></span><span class="se-tl-h">arraste o clipe = mover &middot; pontas = aparar &middot; &#9986; corta no cursor &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
+      + '</div>'
+      + '<div class="se-right"><div class="se-tabs"><button class="se-tab on" data-tab="camadas">Camadas</button><button class="se-tab" data-tab="props">Propriedades</button></div><div class="se-tabbody" id="seSide"></div></div>'
+      + '</div>'
+      + '<div class="se-footer"><span>Projeto: <b class="se-nm"></b></span><span>Resolução: <b id="seFtRes">—</b></span><span>FPS: <b>60</b></span><span>Duração: <b id="seFtDur">—</b></span><span class="se-ft-r">&#9679; Sistema operacional</span></div>'
       + '</div>';
     document.body.appendChild(ov);
-    ov.querySelector('.se-nm').textContent = sc.name;
+    ov.querySelectorAll('.se-nm').forEach(function (n) { n.textContent = sc.name; });
     requestAnimationFrame(seFitStage); window.addEventListener('resize', seFitStage);
     ov.querySelector('.se-x').onclick = closeEditor;
     ov.querySelector('.se-air').onclick = putOnAir;
     ov.querySelector('.se-prev').onclick = () => { const id = modalScene && modalScene.id; closeEditor(); if (id) loadToPreview(id); };
-    ov.addEventListener('pointerdown', e => { if (e.target === ov) closeEditor(); });
+    ov.querySelectorAll('.se-tab').forEach(function (b) { b.onclick = function () { seTabSet(b.dataset.tab); }; });
+    ov.querySelectorAll('.se-railb').forEach(function (b) { b.onclick = function () { seRailSet(b.dataset.panel); }; });
+    const fitB = ov.querySelector('#seFit'); if (fitB) fitB.onclick = function () { const s = G().selected && G().selected(); if (s != null && G().setPos) G().setPos(s, 0, 0); };
+    const cenB = ov.querySelector('#seCenter'); if (cenB) cenB.onclick = function () { const s = G().selected && G().selected(); const o = (s != null && G().get) ? G().get(s) : null; if (o && G().setPos) G().setPos(s, Math.max(0, (100 - (o.w || 20)) / 2), Math.max(0, (100 - (o.h || 20)) / 2)); };
     document.addEventListener('keydown', seEsc, true);
     seVid = ov.querySelector('#seVid'); seHost = ov.querySelector('#seOvs'); seSide = ov.querySelector('#seSide');
+    seRailSet('media');
     if (G() && G().setHost) G().setHost(seHost);            // camadas vão pro canvas do modal (fora do PROGRAM)
     if (G() && G().setActiveScene) G().setActiveScene(sc.id);
     if (G() && G().setEditing) G().setEditing(true);        // editor: vídeos entram PARADOS (só tocam no PLAY)

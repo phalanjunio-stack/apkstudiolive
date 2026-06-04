@@ -185,6 +185,44 @@ html[data-theme="light"]{
 .se-zoom button{width:24px;height:24px;border-radius:6px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
 .se-zoom button:hover{border-color:var(--accent)}
 #seZoomLbl{font-size:10px;color:var(--muted);min-width:24px;text-align:center;font-variant-numeric:tabular-nums}
+/* ===== EDITOR FULL-SCREEN "Montar Cena" (dark premium broadcast) ===== */
+.se-overlay{padding:0}
+.se-fs{position:absolute;inset:0;display:flex;flex-direction:column;background:#03070d;color:var(--txt);font-family:Inter,system-ui,sans-serif}
+.se-topbar{display:flex;align-items:center;gap:14px;padding:8px 14px;background:linear-gradient(180deg,#071323,#040a14);border-bottom:1px solid var(--line);flex:none}
+.se-tb-l,.se-tb-c,.se-tb-r{display:flex;align-items:center;gap:10px}
+.se-tb-c{flex:1;justify-content:center}
+.se-logo{font-weight:800;letter-spacing:.12em;font-size:12px;background:var(--grad-blue);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-transform:uppercase}
+.se-mode{font-size:12px;color:var(--txt);background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:5px 9px}
+.se-scene{font-size:12px;color:var(--muted)}
+.se-ico-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:14px}
+.se-ico-btn:hover{border-color:var(--accent)}
+.se-saved{font-size:11px;color:#5fd08a}
+.se-pro{padding:6px 12px;border-radius:8px;border:1px solid rgba(124,84,255,.5);background:rgba(124,84,255,.16);color:#cdbcff;font-weight:700;font-size:11px;cursor:pointer}
+.se-main{flex:1;display:flex;min-height:0}
+.se-rail{flex:none;width:62px;display:flex;flex-direction:column;gap:2px;padding:8px 4px;background:#02040a;border-right:1px solid var(--line);overflow-y:auto}
+.se-railb{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:8px;font-size:9px}
+.se-railb:hover{background:var(--panel2);color:var(--txt)}
+.se-railb.on{background:rgba(var(--accent-rgb),.16);color:var(--accent)}
+.se-railic{font-size:16px;line-height:1}
+.se-library{flex:none;width:230px;background:#050b16;border-right:1px solid var(--line);overflow-y:auto;padding:11px}
+.se-lib-head,.se-props-soon{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:9px}
+.se-center{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;background:#02040a}
+.se-upper{flex:1;display:flex;min-height:0}
+.se-center .se-stagewrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:0;padding:10px;gap:6px}
+.se-canvas-tools{display:flex;align-items:center;gap:7px;flex:none}
+.se-czoom{font-size:10px;color:var(--muted);background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:3px 8px}
+.se-ctool{width:26px;height:26px;border-radius:6px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:13px}
+.se-ctool:hover{border-color:var(--accent)}
+.se-right{flex:none;width:268px;background:#050b16;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.se-tabs{display:flex;flex:none;border-bottom:1px solid var(--line)}
+.se-tab{flex:1;padding:10px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;border-bottom:2px solid transparent}
+.se-tab.on{color:var(--txt);border-bottom-color:var(--accent)}
+.se-tabbody{flex:1;overflow-y:auto;padding:11px;min-height:0}
+.se-tabbody .sc-layers{margin:0;border:0;background:transparent;padding:0}
+.se-footer{flex:none;display:flex;align-items:center;gap:18px;padding:5px 14px;background:#02040a;border-top:1px solid var(--line);font-size:10.5px;color:var(--muted)}
+.se-footer b{color:var(--txt);font-weight:600}
+.se-ft-r{margin-left:auto;color:#5fd08a}
+.se-center .se-tl{flex:none}
 
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}
