@@ -86,12 +86,22 @@
     if (!modal && activeId !== sc.id) setActive(sc.id, false);
     const A = t => { if (G().setActiveScene) G().setActiveScene(sc.id); return G().add(t); };
     miniMenu(ev, [
-      ['✍️  Texto / Escrita', () => { A('text'); render(); }],
-      ['🖼️  Logo / Imagem', () => { const o = A('image'); pickImg(o.id); render(); }],
+      ['📷  Câmera', () => pickCamera(ev, A)],
       ['🎬  Vídeo (arquivo)', () => { const o = A('video'); pickVideoFile(o.id); render(); }],
+      ['🖼️  Imagem / Logo', () => { const o = A('image'); pickImg(o.id); render(); }],
+      ['✍️  Texto / Escrita', () => { A('text'); render(); }],
       ['🏆  Placar', () => { A('scoreboard'); render(); }],
       ['📊  Rodapé', () => { A('ticker'); render(); }],
     ]);
+  }
+  function pickCamera(ev, A) {
+    (async () => {
+      let cams = [];
+      try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); s.getTracks().forEach(t => t.stop()); cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'); }
+      catch (e) { return toast('Sem acesso à câmera: ' + (e.message || e.name)); }
+      if (!cams.length) return toast('Nenhuma câmera encontrada');
+      miniMenu(ev, cams.map((c, i) => [(c.label || ('Câmera ' + (i + 1))), () => { const o = A('video'); G().update(o.id, { device: c.deviceId, label: c.label || 'Câmera', w: 40, x: 30, y: 25 }); render(); }]));
+    })();
   }
   function dupMenu(ev, o, sc) {
     const scenes = load();
@@ -242,7 +252,7 @@
     const ov = el('div', 'modal-overlay se-overlay'); ov.id = 'seModal';
     ov.innerHTML = '<div class="se-modal"><div class="se-head"><b>Montar cena — <span class="se-nm"></span></b>'
       + '<div class="se-fmt">' + ['16:9', '9:16', '1:1', '4:5'].map(function (f) { return '<button data-fmt="' + f + '">' + f + '</button>'; }).join('') + '</div>'
-      + '<div class="se-actions"><button class="se-air">▸ Pôr no ar</button><button class="modal-close se-x" aria-label="Fechar">&times;</button></div></div>'
+      + '<div class="se-actions"><button class="se-prev">&#9680; Preview</button><button class="se-air">&#9679; Pôr no ar</button><button class="modal-close se-x" aria-label="Fechar">&times;</button></div></div>'
       + '<div class="se-body"><div class="se-stagewrap"><div class="se-stage" id="seStage">'
       + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
       + '<div class="se-empty" id="seEmpty">Sem fonte — escolha ao lado &#9656;</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
@@ -255,6 +265,7 @@
     (function () { var cur; try { cur = document.querySelector('.dash').dataset.format; } catch (e) { cur = '16:9'; } ov.querySelectorAll('.se-fmt button').forEach(function (b) { b.classList.toggle('on', b.dataset.fmt === cur); b.onclick = function () { seSetFormat(b.dataset.fmt); }; }); })();
     ov.querySelector('.se-x').onclick = closeEditor;
     ov.querySelector('.se-air').onclick = putOnAir;
+    ov.querySelector('.se-prev').onclick = () => { const id = modalScene && modalScene.id; closeEditor(); if (id) loadToPreview(id); };
     ov.addEventListener('pointerdown', e => { if (e.target === ov) closeEditor(); });
     document.addEventListener('keydown', seEsc, true);
     seVid = ov.querySelector('#seVid'); seHost = ov.querySelector('#seOvs'); seSide = ov.querySelector('#seSide');

@@ -162,7 +162,7 @@ const Graphics = (function () {
     delete clone._hideT; delete clone._t; delete clone._paintList;
     overlays.push(clone); renderOne(clone); emit(); return clone;
   }
-  function remove(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0) return; overlays[i].el?.remove(); overlays[i].elv?.remove(); overlays.splice(i, 1); emit(); }
+  function remove(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0) return; overlays[i].el?.remove(); overlays[i].elv?.remove(); if (overlays[i]._camStream) { try { overlays[i]._camStream.getTracks().forEach(t => t.stop()); } catch (e) {} } overlays.splice(i, 1); emit(); }
   function setVisible(id, v) {
     const o = get(id); if (!o) return; o.visible = v;
     const show = ownedShow(o);
@@ -270,6 +270,13 @@ const Graphics = (function () {
     } else if (ov.type === 'video') { paintVideoRoot(ov, root); }
   }
   function fmtClock(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ':' + String(ss).padStart(2, '0'); }
+  function ensureCam(ov) {   // câmera própria da camada (getUserMedia uma vez, aplica nos 2 gêmeos)
+    if (ov._camStream || ov._camPending) return;
+    ov._camPending = true; const dev = ov.data.device;
+    navigator.mediaDevices.getUserMedia({ video: dev ? { deviceId: { exact: dev } } : true, audio: false })
+      .then(s => { ov._camPending = false; ov._camStream = s; [ov.el, ov.elv].forEach(r => { if (!r) return; const vv = r.querySelector('.ov-vid'), pp = r.querySelector('.ov-vid-ph'); if (vv) { vv.srcObject = s; vv.muted = true; vv.play && vv.play().catch(() => {}); vv.style.display = ''; } if (pp) pp.style.display = 'none'; }); })
+      .catch(() => { ov._camPending = false; });
+  }
   function paintVideo(ov) { if (ov.el) paintVideoRoot(ov, ov.el); if (ov.elv) paintVideoRoot(ov, ov.elv); }
   function paintVideoRoot(ov, root) {
     const v = root && root.querySelector('.ov-vid'), ph = root && root.querySelector('.ov-vid-ph'); if (!v) return;
@@ -278,6 +285,12 @@ const Graphics = (function () {
       if (v.srcObject) { try { v.srcObject = null; } catch (e) {} }
       if (v.getAttribute('src') !== d.src) { v.src = d.src; v.play && v.play().catch(() => {}); }
       v.loop = (d.loop !== false); v.muted = true; v.style.display = ''; if (ph) ph.style.display = 'none'; return;
+    }
+    if (d.device != null) {   // CÂMERA própria da camada
+      ensureCam(ov);
+      if (ov._camStream) { if (v.srcObject !== ov._camStream) { v.srcObject = ov._camStream; v.muted = true; v.play && v.play().catch(() => {}); } v.style.display = ''; if (ph) ph.style.display = 'none'; }
+      else { v.style.display = 'none'; if (ph) { ph.textContent = 'Câmera…'; ph.style.display = 'flex'; } }
+      return;
     }
     let stream = null;
     try { const s = window.Studio.sourcesInfo().list.find(x => x.id === ov.data.sourceId); stream = s ? s.stream : null; } catch {}
