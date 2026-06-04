@@ -8,7 +8,7 @@ const Graphics = (function () {
   function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
-    image: () => ({ x: 0, y: 0, w: 100, h: 100, scale: 1, data: { src: '', label: 'Imagem', fit: 'contain' } }),
+    image: () => ({ x: 0, y: 0, w: 100, h: 100, scale: 1, data: { src: '', label: 'Imagem', fit: 'contain', autofit: true } }),
     scoreboard: () => ({ x: 4, y: 4, w: 0, scale: 1, data: { home: 'CASA', away: 'VISITANTE', hs: 0, as: 0, clock: 0, running: false, ch: '#1a3a7a', ca: '#7a1a1a', homeLogo: '', awayLogo: '', design: 'modern', stage: '', comp: '', added: 0 } }),
     ticker: () => ({ x: 0, y: 88, w: 100, scale: 1, data: { text: 'Bem-vindo a transmissao  •  Kivo Studio', speed: 18 } }),
     slideshow: () => ({ x: 80, y: 5, w: 18, scale: 1, data: { images: [], interval: 5, transition: 'fade', i: 0 } }),
@@ -278,6 +278,16 @@ const Graphics = (function () {
     if (ov.type === 'image') {
       const img = root.querySelector('img'); const ph = root.querySelector('.ov-vid-ph'); const boxed = ov.h != null;
       img.src = ov.data.src || ''; img.style.display = ov.data.src ? '' : 'none';
+      if (ov.data.src && ov.data.autofit && root === ov.el && img) {   // a CAIXA adota a proporção real da imagem (cabe no palco, sem sobra em volta)
+        const fit = () => { if (!ov.data.autofit || !img.naturalWidth || !img.naturalHeight) return;
+          const host2 = ov.el.parentElement, hr = host2 ? host2.getBoundingClientRect() : null; if (!hr || hr.width < 2 || hr.height < 2) return;
+          const sA = hr.width / hr.height, iA = img.naturalWidth / img.naturalHeight;
+          if (iA >= sA) { ov.w = 100; ov.h = Math.round((sA / iA) * 1000) / 10; } else { ov.h = 100; ov.w = Math.round((iA / sA) * 1000) / 10; }
+          ov.x = Math.round((100 - ov.w) / 2 * 10) / 10; ov.y = Math.round((100 - ov.h) / 2 * 10) / 10;
+          ov.data.autofit = false; setVideoBox(ov); saveLocal(); notify();
+        };
+        if (img.complete && img.naturalWidth) fit(); else img.addEventListener('load', fit, { once: true });
+      }
       if (boxed) { img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = (ov.data.fit === 'cover' ? 'cover' : 'contain'); }
       else { img.style.width = '100%'; img.style.height = 'auto'; img.style.objectFit = ''; }
       if (ph) ph.style.display = (!ov.data.src && boxed) ? 'flex' : 'none';
