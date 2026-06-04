@@ -266,6 +266,29 @@ html[data-theme="light"]{
 .se-libic .se-svg{width:20px;height:20px}
 .se-ctool{display:inline-flex;align-items:center;justify-content:center}
 .se-ctool .se-svg{width:15px;height:15px}
+/* barra inferior do canvas + selo NO AR */
+.se-canvas-bar{display:flex;align-items:center;justify-content:center;gap:8px;flex:none;padding:2px}
+.se-canvas-bar .se-time{min-width:auto;font-weight:700;color:var(--accent)}
+.se-canvas-bar .se-play{width:34px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);cursor:pointer}
+.se-canvas-bar .se-play:hover{border-color:var(--accent)}
+.se-canvas-bar .se-play .se-svg{width:14px;height:14px}
+.se-onair{position:absolute;top:10px;right:10px;z-index:9;font-size:10px;font-weight:800;letter-spacing:.08em;padding:4px 9px;border-radius:6px;background:rgba(255,60,60,.16);border:1px solid rgba(255,60,60,.55);color:#ff9b9b;pointer-events:none}
+.se-onair.live{background:#e0152b;border-color:#ff5066;color:#fff;box-shadow:0 0 14px rgba(224,21,43,.6)}
+.se-stage.hide-guides .se-safe,.se-stage.hide-guides .se-guide{display:none}
+/* timeline: toolbar com ícones */
+.se-addlayer{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:8px;border:1px solid rgba(var(--accent-rgb),.5);background:rgba(var(--accent-rgb),.14);color:#cfe0ff;font-weight:700;font-size:11px;cursor:pointer}
+.se-addlayer:hover{background:rgba(var(--accent-rgb),.24);border-color:var(--accent)}
+.se-addlayer .se-svg{width:14px;height:14px}
+.se-tlsep{width:1px;height:22px;background:var(--line2);margin:0 3px}
+.se-titool{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--line2);background:var(--panel2);color:var(--txt);cursor:pointer}
+.se-titool:hover{border-color:var(--accent);color:var(--accent)}
+.se-titool .se-svg{width:16px;height:16px}
+.se-titool.dim{opacity:.4}
+/* realces azul-neon (premium) */
+.se-railb.on{box-shadow:inset 2px 0 0 var(--accent)}
+.se-tab.on{text-shadow:0 0 10px rgba(var(--accent-rgb),.5)}
+.ps-row.sel,.se-tabbody .lp-row.sel{box-shadow:0 0 0 1px var(--accent),0 0 14px -5px rgba(var(--accent-rgb),.55)}
+.tl-track.sel,.tl-lane.sel{box-shadow:0 0 10px -3px rgba(var(--accent-rgb),.5)}
 
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}

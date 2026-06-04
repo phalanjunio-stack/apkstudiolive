@@ -48,7 +48,18 @@
     template: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>',
     slideshow: '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="m10 9 5 3-5 3V9Z"/>',
     fit: '<path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M16 4h3a1 1 0 0 1 1 1v3"/><path d="M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M8 20H5a1 1 0 0 1-1-1v-3"/>',
-    center: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/>'
+    center: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/>',
+    cut: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88"/><path d="M14.47 14.48 20 20"/><path d="M8.12 8.12 12 12"/>',
+    duplicate: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    keyframe: '<path d="M12 2 22 12 12 22 2 12 12 2Z"/>',
+    magnet: '<path d="M6 3v6a6 6 0 0 0 12 0V3"/><path d="M5 3h3v6H5z"/><path d="M16 3h3v6h-3z"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
+    plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+    play: '<path d="m7 4 13 8-13 8V4Z"/>',
+    pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
+    full: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+    grid: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'
   };
   function seIcon(name) { return '<svg class="se-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (SEIC[name] || '') + '</svg>'; }
 
@@ -257,7 +268,7 @@
   function tlToggle() { tlPlaying ? tlPause() : tlPlay(); }
   function tlPlay() {
     if (tlPlaying || !modalScene) return; tlPlaying = true;
-    const b = document.getElementById('sePlay'); if (b) b.innerHTML = '&#10074;&#10074;';
+    const b = document.getElementById('sePlay'); if (b) b.innerHTML = seIcon('pause');
     const m = tlMedia(); if (m && m.play) m.play();
     tlPrev = (window.performance ? performance.now() : Date.now());
     const loop = ts => { if (!tlPlaying) return; const m = tlMedia(); let nt;
@@ -268,7 +279,7 @@
   }
   function tlPause() {
     tlPlaying = false; if (tlRaf) cancelAnimationFrame(tlRaf); tlRaf = 0;
-    const b = document.getElementById('sePlay'); if (b) b.innerHTML = '&#9654;';
+    const b = document.getElementById('sePlay'); if (b) b.innerHTML = seIcon('play');
     const m = tlMedia(); if (m && m.pause) m.pause();
     if (G().setTime) G().setTime(tlT, true);
   }
@@ -284,6 +295,11 @@
     const seCut = document.getElementById('seCut'); if (seCut) seCut.onclick = tlSplit;
     const zi = document.getElementById('seZoomIn'); if (zi) zi.onclick = () => tlSetZoom(tlZoom * 1.5);
     const zo = document.getElementById('seZoomOut'); if (zo) zo.onclick = () => tlSetZoom(tlZoom / 1.5);
+    const seAdL = document.getElementById('seAddLayer'); if (seAdL) seAdL.onclick = (e) => addLayerMenu(e, sc, true);
+    const seDup = document.getElementById('seDup'); if (seDup) seDup.onclick = () => { const s = G().selected && G().selected(); if (s == null) return toast('Selecione uma camada'); G().duplicate(s, sc.id); seRender(); tlRender(); };
+    const seDel = document.getElementById('seDel'); if (seDel) seDel.onclick = () => { const s = G().selected && G().selected(); if (s == null) return toast('Selecione uma camada'); G().remove(s); seRender(); tlRender(); };
+    const seGrid = document.getElementById('seGrid'); if (seGrid) seGrid.onclick = () => { const st = document.getElementById('seStage'); if (st) st.classList.toggle('hide-guides'); };
+    const seFull = document.getElementById('seFull'); if (seFull) seFull.onclick = () => { try { const fs = document.querySelector('#seModal .se-fs'); if (document.fullscreenElement) document.exitFullscreen(); else if (fs && fs.requestFullscreen) fs.requestFullscreen(); } catch (e) {} };
     const fi = document.getElementById('seFin'); if (fi) fi.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fin: +fi.value || 0 }); };
     const fo = document.getElementById('seFout'); if (fo) fo.onchange = () => { const s = G().selected && G().selected(); if (s != null) G().setAnim(s, { fout: +fo.value || 0 }); };
     const lp = document.getElementById('seLoop'); if (lp) { lp.classList.toggle('on', !!sc.loop); lp.onclick = () => { sc.loop = !sc.loop; lp.classList.toggle('on', sc.loop); saveLoop(sc); applyLoop(sc); }; }
@@ -305,6 +321,7 @@
     const res = ({ '16:9': '1920×1080', '9:16': '1080×1920', '1:1': '1080×1080', '4:5': '1080×1350' })[fmt] || '1920×1080';
     const r = document.getElementById('seFtRes'); if (r) r.textContent = res + ' (' + fmt + ')';
     const d = document.getElementById('seFtDur'); if (d) d.textContent = (tlDur || 0).toFixed(1) + 's';
+    const oa = document.getElementById('seOnAir'); if (oa && modalScene) { const live = (activeId === modalScene.id); oa.className = 'se-onair' + (live ? ' live' : ''); oa.innerHTML = '&#9679; ' + (live ? 'NO AR' : 'PRÉVIA'); }
   }
   function numRow(label, val, step, fn) {
     const r = el('div', 'se-prow'); r.appendChild(el('label', '', label));
@@ -384,10 +401,10 @@
       + '<div class="se-main"><div class="se-rail" id="seRail">' + railHTML + '</div>'
       + '<div class="se-library" id="seLibrary"></div>'
       + '<div class="se-center"><div class="se-upper"><div class="se-stagewrap">'
-      + '<div class="se-canvas-tools"><span class="se-czoom" id="seCZoom">Ajuste automático</span><button class="se-ctool" id="seFit" title="Levar a camada pro canto (0,0)">' + seIcon('fit') + '</button><button class="se-ctool" id="seCenter" title="Centralizar a camada">' + seIcon('center') + '</button></div>'
-      + '<div class="se-canvasframe"><span class="se-corner"></span><div class="se-ruler-h"></div><div class="se-ruler-v"></div><div class="se-stage" id="seStage"><video class="se-vid" id="seVid" playsinline muted></video><div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div><div class="se-safe"></div><span class="se-guide se-guide-x"></span><span class="se-guide se-guide-y"></span></div></div>'
+      + '<div class="se-canvasframe"><span class="se-corner"></span><div class="se-ruler-h"></div><div class="se-ruler-v"></div><div class="se-stage" id="seStage"><video class="se-vid" id="seVid" playsinline muted></video><div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div><div class="se-safe"></div><span class="se-guide se-guide-x"></span><span class="se-guide se-guide-y"></span><div class="se-onair" id="seOnAir">&#9679; NO AR</div></div></div>'
+      + '<div class="se-canvas-bar"><button class="se-ctool" id="seGrid" title="Mostrar/ocultar guias">' + seIcon('grid') + '</button><span class="se-czoom" id="seCZoom">Ajustar</span><span class="se-time" id="seTime">0.0s</span><button class="se-play" id="sePlay" title="Play / pausar">' + seIcon('play') + '</button><button class="se-ctool" id="seFit" title="Camada no canto (0,0)">' + seIcon('fit') + '</button><button class="se-ctool" id="seCenter" title="Centralizar camada">' + seIcon('center') + '</button><button class="se-ctool" id="seFull" title="Tela cheia">' + seIcon('full') + '</button></div>'
       + '</div></div>'
-      + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-cut" id="seCut" title="Cortar/dividir o clipe no cursor (selecione a camada)">&#9986; cortar</button><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-zoom" title="Zoom da timeline"><button id="seZoomOut">&minus;</button><span id="seZoomLbl">1x</span><button id="seZoomIn">+</button></span><span class="se-tl-h">arraste o clipe = mover &middot; pontas = aparar &middot; &#9986; corta no cursor &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
+      + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-addlayer" id="seAddLayer">' + seIcon('plus') + ' Adicionar camada</button><span class="se-tlsep"></span><button class="se-titool" id="seCut" title="Cortar/dividir no cursor (camada selecionada)">' + seIcon('cut') + '</button><button class="se-titool" id="seDup" title="Duplicar camada">' + seIcon('duplicate') + '</button><button class="se-titool" id="seDel" title="Excluir camada">' + seIcon('trash') + '</button><button class="se-titool" id="seKf" title="Keyframe no cursor">' + seIcon('keyframe') + '</button><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-tlsep"></span><button class="se-titool dim" id="seMagnet" title="Magnetismo (em breve)">' + seIcon('magnet') + '</button><button class="se-titool dim" id="seLink" title="Linkar (em breve)">' + seIcon('link') + '</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-zoom" title="Zoom da timeline"><button id="seZoomOut">&minus;</button><span id="seZoomLbl">1x</span><button id="seZoomIn">+</button></span></div><div class="se-tl-body" id="seTlBody"></div></div>'
       + '</div>'
       + '<div class="se-right"><div class="se-tabs"><button class="se-tab on" data-tab="camadas">Camadas</button><button class="se-tab" data-tab="props">Propriedades</button></div><div class="se-tabbody" id="seSide"></div></div>'
       + '</div>'
