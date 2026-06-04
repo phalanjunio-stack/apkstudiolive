@@ -1,0 +1,3213 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kivo Studio - Montar Cena</title>
+  <link rel="icon" type="image/svg+xml" href="img/kivo-icon.svg" />
+  <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
+  <script src="vendor/lucide.min.js"></script>
+  <style>
+    @font-face {
+      font-family: Inter;
+      src: url("fonts/inter.woff2") format("woff2");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --bg: #03070d;
+      --bg-2: #071323;
+      --bg-3: #02040a;
+      --panel: rgba(10, 18, 31, .86);
+      --panel-2: rgba(13, 24, 40, .78);
+      --panel-3: rgba(16, 28, 46, .72);
+      --line: rgba(74, 142, 255, .18);
+      --line-strong: rgba(91, 161, 255, .42);
+      --text: #e7eefb;
+      --muted: #8e9bb1;
+      --muted-2: #68758e;
+      --blue: #2f7dff;
+      --cyan: #32d4ff;
+      --red: #ff363d;
+      --green: #31d17d;
+      --violet: #8a5cff;
+      --amber: #f7b84b;
+      --timeline-h: 270px;
+      --library-w: 268px;
+      --inspector-w: 322px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    @property --ang {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg;
+    }
+
+    @keyframes orbit {
+      to { --ang: 360deg; }
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(14px) scale(.982); }
+      to { opacity: 1; transform: none; }
+    }
+
+    * {
+      box-sizing: border-box;
+      letter-spacing: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(3, 7, 13, .72), rgba(2, 4, 10, .98)),
+        linear-gradient(135deg, #03070d 0%, #071323 47%, #02040a 100%);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .app-shell {
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      background-image:
+        linear-gradient(rgba(87, 158, 255, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(87, 158, 255, .035) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+
+    .studio-modal {
+      position: relative;
+      width: min(1680px, calc(100vw - 20px));
+      height: min(980px, calc(100vh - 20px));
+      min-width: 1060px;
+      min-height: 680px;
+      max-width: calc(100vw - 20px);
+      max-height: calc(100vh - 20px);
+      overflow: hidden;
+      resize: both;
+      isolation: isolate;
+      display: grid;
+      grid-template-rows: 48px minmax(0, 1fr) 30px;
+      border: 1px solid rgba(88, 159, 255, .2);
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(13, 24, 40, .86), rgba(4, 9, 17, .96)),
+        #050b14;
+      box-shadow:
+        0 28px 90px rgba(0, 0, 0, .58),
+        0 0 0 1px rgba(22, 155, 255, .08),
+        0 0 48px rgba(22, 155, 255, .06) inset,
+        inset 0 1px 0 rgba(255, 255, 255, .04);
+      animation: modalIn .32s cubic-bezier(.34, 1.4, .64, 1) both;
+    }
+
+    .studio-modal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      padding: 1px;
+      border-radius: inherit;
+      pointer-events: none;
+      opacity: .72;
+      background: conic-gradient(from var(--ang),
+        transparent 0deg,
+        rgba(22, 155, 255, .65) 68deg,
+        rgba(121, 87, 255, .48) 142deg,
+        transparent 210deg,
+        rgba(22, 155, 255, .42) 298deg,
+        transparent 360deg);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: orbit 5.4s linear infinite;
+    }
+
+    .studio-modal::after {
+      content: "";
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      width: 16px;
+      height: 16px;
+      pointer-events: none;
+      z-index: 4;
+      border-right: 2px solid rgba(119, 180, 255, .42);
+      border-bottom: 2px solid rgba(119, 180, 255, .42);
+      border-radius: 2px;
+    }
+
+    .topbar {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: auto auto minmax(110px, 190px) auto minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      border-bottom: 1px solid rgba(80, 147, 255, .18);
+      background:
+        linear-gradient(180deg, rgba(15, 24, 38, .94), rgba(7, 13, 23, .9)),
+        rgba(4, 8, 14, .9);
+      backdrop-filter: blur(18px);
+      position: relative;
+      z-index: 2;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 136px;
+      color: #f5f8ff;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .brand img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px rgba(50, 145, 255, .5));
+    }
+
+    .select-pill,
+    .scene-name,
+    .mini-btn,
+    .icon-button,
+    .ghost-btn,
+    .tool-btn,
+    .tab-btn,
+    .field,
+    .ratio-btn,
+    .action-btn {
+      border: 1px solid rgba(95, 156, 255, .18);
+      background: rgba(7, 14, 25, .72);
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+    }
+
+    .select-pill {
+      height: 29px;
+      min-width: 124px;
+      padding: 0 10px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #dbe8fb;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .scene-name {
+      height: 29px;
+      border-radius: 8px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      color: #6fa8ff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .top-tools,
+    .status-row,
+    .window-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .window-controls {
+      justify-self: end;
+    }
+
+    .status-row {
+      justify-content: center;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--cyan);
+      box-shadow: 0 0 12px rgba(50, 212, 255, .7);
+    }
+
+    .mini-btn,
+    .icon-button {
+      width: 29px;
+      height: 29px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #b8c7db;
+      transition: .16s var(--ease);
+    }
+
+    .select-pill,
+    .scene-name,
+    .mini-btn,
+    .icon-button,
+    .ghost-btn,
+    .tool-btn,
+    .tab-btn,
+    .ratio-btn,
+    .action-btn,
+    .add-layer,
+    .play-btn {
+      position: relative;
+      overflow: hidden;
+      transition:
+        color .18s ease,
+        background .18s ease,
+        border-color .18s ease,
+        box-shadow .22s ease,
+        transform .22s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    .select-pill::before,
+    .mini-btn::before,
+    .icon-button::before,
+    .ghost-btn::before,
+    .tool-btn::before,
+    .tab-btn::before,
+    .ratio-btn::before,
+    .action-btn::before,
+    .add-layer::before,
+    .play-btn::before {
+      content: "";
+      position: absolute;
+      inset: -18px;
+      pointer-events: none;
+      opacity: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(43, 131, 255, .38), rgba(43, 131, 255, .12) 35%, transparent 72%);
+      filter: blur(5px);
+      transition: opacity .28s ease;
+    }
+
+    .select-pill > *,
+    .mini-btn > *,
+    .icon-button > *,
+    .ghost-btn > *,
+    .tool-btn > *,
+    .tab-btn > *,
+    .ratio-btn > *,
+    .action-btn > *,
+    .add-layer > *,
+    .play-btn > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .mini-btn:hover,
+    .icon-button:hover,
+    .tool-btn:hover,
+    .ghost-btn:hover,
+    .action-btn:hover,
+    .select-pill:hover,
+    .ratio-btn:hover,
+    .tab-btn:hover,
+    .add-layer:hover,
+    .play-btn:hover {
+      border-color: rgba(109, 176, 255, .42);
+      color: #fff;
+      background: rgba(13, 30, 53, .86);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .16),
+        0 0 0 3px rgba(43, 131, 255, .1),
+        0 0 18px rgba(43, 131, 255, .24);
+      transform: translateY(-1px);
+    }
+
+    .mini-btn:hover::before,
+    .icon-button:hover::before,
+    .tool-btn:hover::before,
+    .ghost-btn:hover::before,
+    .action-btn:hover::before,
+    .select-pill:hover::before,
+    .ratio-btn:hover::before,
+    .tab-btn:hover::before,
+    .add-layer:hover::before,
+    .play-btn:hover::before {
+      opacity: 1;
+    }
+
+    .mini-btn i,
+    .icon-button i,
+    .tool-btn i,
+    .ghost-btn i,
+    .action-btn i,
+    .side-item i {
+      width: 17px;
+      height: 17px;
+    }
+
+    .top-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      justify-self: end;
+    }
+
+    .ghost-btn {
+      height: 29px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .preview-btn {
+      border-color: rgba(89, 146, 255, .42);
+      background: linear-gradient(180deg, rgba(23, 48, 86, .86), rgba(9, 18, 34, .86));
+    }
+
+    .preview-btn.active,
+    .icon-button.active {
+      color: #fff;
+      border-color: rgba(50, 212, 255, .5);
+      background: linear-gradient(180deg, rgba(22, 82, 130, .9), rgba(7, 24, 44, .9));
+      box-shadow: 0 0 0 3px rgba(50, 212, 255, .09), 0 0 22px rgba(50, 212, 255, .2);
+    }
+
+    .program-btn {
+      position: relative;
+      border-color: rgba(255, 54, 61, .45);
+      color: #ffb7ba;
+      background: rgba(64, 13, 18, .7);
+    }
+
+    .program-btn::before {
+      background: radial-gradient(circle at 50% 50%, rgba(255, 54, 61, .38), rgba(255, 54, 61, .12) 35%, transparent 72%);
+    }
+
+    .program-btn.locked {
+      opacity: .58;
+      filter: saturate(.65);
+    }
+
+    .program-btn.armed {
+      opacity: 1;
+      color: #fff;
+      background: linear-gradient(180deg, rgba(255, 57, 66, .95), rgba(126, 19, 26, .96));
+      box-shadow: 0 0 0 1px rgba(255, 120, 130, .18), 0 0 22px rgba(255, 54, 61, .22);
+    }
+
+    .program-btn.live {
+      background: linear-gradient(180deg, rgba(255, 54, 61, 1), rgba(170, 0, 12, 1));
+      animation: livePulse 1.25s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      50% { box-shadow: 0 0 0 1px rgba(255, 136, 142, .35), 0 0 30px rgba(255, 54, 61, .38); }
+    }
+
+    .pro-btn {
+      background: rgba(34, 39, 62, .78);
+      border-color: rgba(138, 92, 255, .24);
+    }
+
+    .workspace {
+      min-height: 0;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 74px minmax(218px, var(--library-w)) minmax(0, 1fr) minmax(288px, var(--inspector-w));
+      grid-template-rows: minmax(0, 1fr) 6px minmax(180px, var(--timeline-h));
+      grid-template-areas:
+        "side library center inspector"
+        "side library divider inspector"
+        "side timeline timeline timeline";
+      background: linear-gradient(180deg, rgba(5, 10, 18, .92), rgba(2, 5, 10, .98));
+    }
+
+    .sidebar {
+      grid-area: side;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      padding: 10px 6px;
+      border-right: 1px solid rgba(85, 150, 255, .17);
+      background: linear-gradient(180deg, rgba(5, 11, 20, .94), rgba(2, 6, 12, .94));
+    }
+
+    .side-item {
+      height: 50px;
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #9ca9bc;
+      background: transparent;
+      font-size: 10px;
+      transition: .16s var(--ease);
+    }
+
+    .side-item span {
+      line-height: 1;
+    }
+
+    .side-item:hover {
+      color: #e8f0ff;
+      background: rgba(33, 51, 79, .4);
+    }
+
+    .side-item.active {
+      color: #fff;
+      border-color: rgba(60, 139, 255, .48);
+      background: linear-gradient(180deg, rgba(19, 57, 105, .76), rgba(9, 25, 47, .76));
+      box-shadow: inset 0 0 0 1px rgba(80, 169, 255, .08);
+    }
+
+    .library,
+    .inspector,
+    .timeline,
+    .stage {
+      min-width: 0;
+      min-height: 0;
+      background: rgba(7, 13, 23, .7);
+    }
+
+    .library {
+      grid-area: library;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid rgba(85, 150, 255, .16);
+      background:
+        linear-gradient(180deg, rgba(13, 24, 40, .78), rgba(5, 11, 20, .86)),
+        rgba(7, 13, 23, .9);
+    }
+
+    .panel-head {
+      height: 36px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(85, 150, 255, .15);
+    }
+
+    .panel-title {
+      color: #dbe7f7;
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .library-body,
+    .inspector-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 10px;
+      scrollbar-color: rgba(92, 157, 255, .32) transparent;
+    }
+
+    .library-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr .68fr;
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+
+    .action-btn {
+      height: 29px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      color: #c9d6e8;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .field {
+      width: 100%;
+      height: 29px;
+      min-width: 0;
+      border-radius: 8px;
+      padding: 0 10px;
+      color: #ccd8e8;
+      outline: none;
+      font-size: 11px;
+    }
+
+    .search-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(95, 156, 255, .18);
+      background: rgba(5, 11, 20, .68);
+    }
+
+    .search-field i {
+      width: 15px;
+      height: 15px;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+
+    .search-field input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: #d6e1f1;
+      font-size: 12px;
+    }
+
+    .media-section {
+      margin-bottom: 14px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 7px;
+      color: #d7e2f2;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .section-head button {
+      border: 0;
+      padding: 0;
+      color: #5da2ff;
+      background: transparent;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .media-item {
+      position: relative;
+      min-width: 0;
+      border: 1px solid rgba(91, 153, 255, .16);
+      border-radius: 7px;
+      overflow: hidden;
+      background: rgba(2, 6, 12, .7);
+      cursor: grab;
+      transition: transform .16s var(--ease), border-color .16s var(--ease), box-shadow .16s var(--ease);
+    }
+
+    .media-item:hover {
+      transform: translateY(-1px);
+      border-color: rgba(94, 168, 255, .45);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, .28);
+    }
+
+    .media-thumb {
+      height: 44px;
+      position: relative;
+      overflow: hidden;
+      background: #02040a;
+    }
+
+    .media-thumb::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .86;
+    }
+
+    .thumb-video-a::before {
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, .05), transparent),
+        radial-gradient(circle at 22% 66%, rgba(255, 255, 255, .4), transparent 8%),
+        linear-gradient(120deg, #111b25, #3d241d 42%, #07101f);
+    }
+
+    .thumb-video-b::before {
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255, 255, 255, .8), transparent 6%),
+        radial-gradient(circle at 50% 45%, rgba(255, 74, 62, .45), transparent 26%),
+        linear-gradient(150deg, #161a25, #301924, #07101b);
+    }
+
+    .thumb-logo::before {
+      background:
+        linear-gradient(90deg, rgba(28, 126, 255, .34), rgba(255, 54, 61, .34)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .1) 0 2px, transparent 2px 8px),
+        #07101b;
+    }
+
+    .thumb-sponsor::before {
+      background:
+        linear-gradient(135deg, #111927, #202d40),
+        linear-gradient(90deg, transparent, rgba(255, 255, 255, .14), transparent);
+    }
+
+    .thumb-audio::before {
+      background:
+        radial-gradient(circle at 24% 50%, rgba(49, 209, 125, .35), transparent 19%),
+        repeating-linear-gradient(90deg, rgba(49, 209, 125, .5) 0 2px, transparent 2px 10px),
+        #061018;
+    }
+
+    .thumb-overlay::before {
+      background:
+        linear-gradient(90deg, rgba(15, 31, 55, .8), rgba(23, 72, 137, .45), rgba(15, 31, 55, .8)),
+        linear-gradient(180deg, transparent 38%, rgba(47, 125, 255, .3) 39% 54%, transparent 55%),
+        #03070d;
+    }
+
+    .thumb-label {
+      position: absolute;
+      left: 7px;
+      right: 7px;
+      bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      color: #e7edf8;
+      font-size: 9px;
+      text-shadow: 0 1px 8px #000;
+    }
+
+    .media-name {
+      padding: 5px 7px 6px;
+      color: #aebdd0;
+      font-size: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stage {
+      grid-area: center;
+      display: grid;
+      grid-template-rows: 38px minmax(0, 1fr);
+      border-right: 1px solid rgba(85, 150, 255, .16);
+      background:
+        linear-gradient(180deg, rgba(6, 13, 23, .82), rgba(2, 5, 10, .92)),
+        rgba(4, 8, 15, .9);
+    }
+
+    .stage-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 10px;
+      border-bottom: 1px solid rgba(85, 150, 255, .14);
+      min-width: 0;
+    }
+
+    .ratio-group,
+    .canvas-actions,
+    .timeline-tools {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .ratio-btn {
+      height: 27px;
+      min-width: 42px;
+      padding: 0 9px;
+      border-radius: 8px;
+      color: #9facbd;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .ratio-btn.active {
+      color: #fff;
+      border-color: rgba(50, 212, 255, .48);
+      background: linear-gradient(180deg, rgba(20, 72, 114, .86), rgba(8, 24, 45, .9));
+      box-shadow: inset 0 0 0 1px rgba(61, 183, 255, .08);
+    }
+
+    .tool-btn {
+      height: 28px;
+      min-width: 30px;
+      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border-radius: 8px;
+      color: #aebdd0;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .tool-btn.active {
+      color: #fff;
+      border-color: rgba(50, 212, 255, .52);
+      background: rgba(12, 64, 96, .78);
+    }
+
+    .zoom-select {
+      width: 72px;
+      height: 28px;
+      border-radius: 8px;
+      padding: 0 8px;
+      border: 1px solid rgba(95, 156, 255, .18);
+      color: #dce7f6;
+      background: rgba(8, 15, 27, .78);
+      outline: 0;
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .stage-board {
+      min-height: 0;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      grid-template-rows: 24px minmax(0, 1fr);
+      background: #02040a;
+      overflow: hidden;
+    }
+
+    .corner-ruler {
+      border-right: 1px solid rgba(85, 150, 255, .18);
+      border-bottom: 1px solid rgba(85, 150, 255, .18);
+      background: rgba(9, 15, 25, .88);
+    }
+
+    .ruler-h,
+    .ruler-v {
+      position: relative;
+      overflow: hidden;
+      color: #68758e;
+      font-size: 9px;
+      user-select: none;
+      background:
+        linear-gradient(180deg, rgba(13, 24, 40, .88), rgba(6, 11, 19, .88));
+    }
+
+    .ruler-h {
+      border-bottom: 1px solid rgba(85, 150, 255, .18);
+      background-image:
+        repeating-linear-gradient(90deg, rgba(138, 161, 193, .3) 0 1px, transparent 1px 10px),
+        linear-gradient(180deg, rgba(13, 24, 40, .88), rgba(6, 11, 19, .88));
+    }
+
+    .ruler-h span {
+      position: absolute;
+      top: 4px;
+      transform: translateX(-50%);
+    }
+
+    .ruler-v {
+      border-right: 1px solid rgba(85, 150, 255, .18);
+      background-image:
+        repeating-linear-gradient(180deg, rgba(138, 161, 193, .3) 0 1px, transparent 1px 10px),
+        linear-gradient(180deg, rgba(13, 24, 40, .88), rgba(6, 11, 19, .88));
+    }
+
+    .ruler-v span {
+      position: absolute;
+      left: 5px;
+      transform: translateY(-50%) rotate(-90deg);
+      transform-origin: center;
+    }
+
+    .canvas-viewport {
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        linear-gradient(rgba(74, 142, 255, .045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74, 142, 255, .045) 1px, transparent 1px),
+        #02040a;
+      background-size: 32px 32px;
+    }
+
+    .canvas-scale {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      transform: scale(var(--zoom, 1));
+      transform-origin: center;
+      transition: transform .16s var(--ease);
+    }
+
+    .scene-frame {
+      position: relative;
+      width: min(780px, 86%);
+      aspect-ratio: 16 / 9;
+      min-width: 320px;
+      overflow: hidden;
+      border: 1px solid rgba(91, 153, 255, .32);
+      background: #000;
+      box-shadow:
+        0 24px 70px rgba(0, 0, 0, .68),
+        0 0 0 1px rgba(255, 255, 255, .025),
+        inset 0 0 80px rgba(0, 0, 0, .8);
+    }
+
+    .scene-frame.ratio-9-16 {
+      width: min(306px, 36vw);
+      aspect-ratio: 9 / 16;
+    }
+
+    .scene-frame.ratio-1-1 {
+      width: min(520px, 48vw);
+      aspect-ratio: 1 / 1;
+    }
+
+    .scene-frame.ratio-9-16 .scoreboard {
+      left: 9%;
+      right: 9%;
+      height: 15%;
+      min-height: 74px;
+      grid-template-columns: 50px minmax(0, .8fr) 86px minmax(0, .8fr) 50px;
+    }
+
+    .scene-frame.ratio-9-16 .scoreboard::before {
+      top: -25px;
+      max-width: 126px;
+      text-align: center;
+      white-space: normal;
+      line-height: 1.05;
+      font-size: 8px;
+    }
+
+    .scene-frame.ratio-9-16 .team-name {
+      font-size: 0;
+    }
+
+    .scene-frame.ratio-9-16 .shield {
+      width: 42px;
+      height: 50px;
+      font-size: 13px;
+    }
+
+    .scene-frame.ratio-9-16 .goals {
+      gap: 8px;
+      font-size: 30px;
+    }
+
+    .scene-frame.ratio-9-16 .clock {
+      font-size: 17px;
+    }
+
+    .scene-frame.ratio-9-16 .period-pill {
+      min-width: 104px;
+      bottom: -29px;
+      font-size: 10px;
+    }
+
+    .scene-frame.ratio-9-16 .live-bug {
+      right: 4%;
+      top: 4%;
+    }
+
+    .scene-frame.ratio-9-16 .lower-third {
+      left: 12%;
+      bottom: 7%;
+      width: 76%;
+      min-width: 0;
+      height: 56px;
+      grid-template-columns: 44px minmax(0, 1fr) 50px;
+    }
+
+    .scene-frame.ratio-9-16 .mic-tile i {
+      width: 20px;
+      height: 20px;
+    }
+
+    .scene-frame.ratio-9-16 .lt-copy {
+      padding: 0 10px;
+    }
+
+    .scene-frame.ratio-9-16 .lt-kicker {
+      font-size: 10px;
+    }
+
+    .scene-frame.ratio-9-16 .lt-name {
+      font-size: 13px;
+    }
+
+    .scene-frame.ratio-9-16 .waveform {
+      margin-right: 8px;
+    }
+
+    .scene-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, .26), rgba(0, 0, 0, .8)),
+        radial-gradient(ellipse at 50% 6%, rgba(210, 232, 255, .18), transparent 16%),
+        linear-gradient(150deg, rgba(13, 26, 40, .62), rgba(0, 0, 0, .95) 62%),
+        #000;
+    }
+
+    .scene-bg::before {
+      content: "";
+      position: absolute;
+      left: -10%;
+      right: -10%;
+      top: 42%;
+      height: 26%;
+      opacity: .2;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 28px, rgba(255, 255, 255, .05) 29px 30px),
+        linear-gradient(180deg, rgba(19, 74, 98, .24), transparent);
+      transform: perspective(440px) rotateX(62deg);
+      transform-origin: center bottom;
+    }
+
+    .safe-area {
+      position: absolute;
+      inset: 9%;
+      border: 1px dashed rgba(255, 255, 255, .38);
+      pointer-events: none;
+    }
+
+    .guide {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(50, 212, 255, .52);
+      box-shadow: 0 0 10px rgba(50, 212, 255, .32);
+    }
+
+    .guide.v {
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 1px;
+    }
+
+    .guide.h {
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+    }
+
+    .scene-object {
+      position: absolute;
+      transform-origin: center;
+      transition: opacity .16s var(--ease), filter .16s var(--ease);
+    }
+
+    .scene-object.is-selected {
+      z-index: 20;
+    }
+
+    .scene-object.dimmed {
+      opacity: .32 !important;
+    }
+
+    .scoreboard {
+      top: 8.8%;
+      left: 13%;
+      right: 13%;
+      height: 15%;
+      min-height: 70px;
+      display: grid;
+      grid-template-columns: 74px 1fr 142px 1fr 74px;
+      align-items: center;
+      border: 1px solid rgba(42, 124, 255, .52);
+      border-radius: 6px;
+      background:
+        linear-gradient(180deg, rgba(14, 24, 40, .94), rgba(4, 8, 15, .94)),
+        rgba(0, 0, 0, .86);
+      box-shadow: 0 10px 36px rgba(0, 0, 0, .5), inset 0 0 28px rgba(47, 125, 255, .12);
+    }
+
+    .scoreboard::before {
+      content: "CAMPEONATO MINEIRO";
+      position: absolute;
+      left: 50%;
+      top: -26px;
+      transform: translateX(-50%);
+      padding: 5px 10px;
+      border: 1px solid rgba(79, 149, 255, .34);
+      border-radius: 5px 5px 0 0;
+      color: #cbd8eb;
+      background: rgba(11, 18, 30, .9);
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .team-name {
+      color: #f4f7ff;
+      font-size: clamp(11px, 1.65vw, 18px);
+      font-weight: 900;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .team-name.home {
+      text-align: left;
+    }
+
+    .team-name.away {
+      text-align: right;
+    }
+
+    .score-center {
+      align-self: stretch;
+      display: grid;
+      grid-template-rows: 1fr 28px;
+      border-left: 1px solid rgba(79, 149, 255, .34);
+      border-right: 1px solid rgba(79, 149, 255, .34);
+      background: rgba(0, 0, 0, .42);
+    }
+
+    .goals {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      color: #fff;
+      font-size: clamp(26px, 3.1vw, 44px);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .goals span:nth-child(2) {
+      color: #aab9cf;
+      font-size: .55em;
+      font-weight: 600;
+    }
+
+    .clock {
+      display: grid;
+      place-items: center;
+      border-top: 1px solid rgba(79, 149, 255, .26);
+      color: #f4f7ff;
+      font-size: clamp(14px, 1.5vw, 22px);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .period-pill {
+      position: absolute;
+      left: 50%;
+      bottom: -31px;
+      transform: translateX(-50%);
+      min-width: 116px;
+      padding: 5px 12px;
+      border: 1px solid rgba(47, 125, 255, .62);
+      border-radius: 5px;
+      color: #54a7ff;
+      background: rgba(5, 18, 35, .9);
+      text-align: center;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .shield {
+      width: 54px;
+      height: 62px;
+      margin: auto;
+      display: grid;
+      place-items: center;
+      clip-path: polygon(50% 0, 92% 12%, 86% 74%, 50% 100%, 14% 74%, 8% 12%);
+      border: 1px solid rgba(255, 255, 255, .3);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 950;
+      text-shadow: 0 1px 8px #000;
+      box-shadow: 0 0 18px rgba(0, 0, 0, .5);
+    }
+
+    .shield.home {
+      background:
+        repeating-linear-gradient(90deg, #10161f 0 9px, #f5f7fb 9px 16px),
+        #10161f;
+      color: #111824;
+    }
+
+    .shield.away {
+      background: linear-gradient(145deg, #e02028, #560b13 62%, #10141d);
+      color: #fff;
+    }
+
+    .live-bug {
+      top: 3.5%;
+      right: 3.7%;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 5px;
+      color: #fff;
+      background: linear-gradient(180deg, #ff3037, #bd0712);
+      font-size: 12px;
+      font-weight: 950;
+      text-transform: uppercase;
+      box-shadow: 0 0 18px rgba(255, 48, 55, .34);
+    }
+
+    .live-bug::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 0 8px #fff;
+    }
+
+    .lower-third {
+      left: 27%;
+      bottom: 11.5%;
+      width: 46%;
+      min-width: 250px;
+      height: 68px;
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr) 128px;
+      align-items: center;
+      border: 1px solid rgba(47, 125, 255, .7);
+      border-radius: 5px;
+      background:
+        linear-gradient(90deg, rgba(15, 29, 52, .98), rgba(10, 18, 30, .96)),
+        rgba(3, 7, 13, .96);
+      box-shadow: 0 10px 36px rgba(0, 0, 0, .5), inset 5px 0 0 rgba(47, 125, 255, .85);
+    }
+
+    .mic-tile {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      border-right: 1px solid rgba(71, 142, 255, .28);
+      color: #a8b7cc;
+    }
+
+    .mic-tile i {
+      width: 28px;
+      height: 28px;
+    }
+
+    .lt-copy {
+      min-width: 0;
+      padding: 0 14px;
+    }
+
+    .lt-kicker {
+      color: #9aabc2;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .lt-name {
+      color: #fff;
+      font-size: clamp(14px, 1.6vw, 20px);
+      font-weight: 950;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .waveform {
+      height: 34px;
+      margin-right: 14px;
+      opacity: .9;
+      background:
+        linear-gradient(90deg, transparent, rgba(47, 125, 255, .15), transparent),
+        repeating-linear-gradient(90deg, transparent 0 5px, rgba(47, 125, 255, .92) 5px 7px, transparent 7px 10px);
+      clip-path: polygon(0 46%, 4% 38%, 8% 52%, 12% 26%, 16% 70%, 20% 42%, 24% 56%, 28% 20%, 32% 82%, 36% 36%, 40% 58%, 44% 16%, 48% 86%, 52% 42%, 56% 60%, 60% 26%, 64% 70%, 68% 38%, 72% 56%, 76% 20%, 80% 80%, 84% 36%, 88% 60%, 92% 30%, 96% 68%, 100% 46%, 100% 56%, 96% 74%, 92% 40%, 88% 68%, 84% 44%, 80% 90%, 76% 30%, 72% 66%, 68% 48%, 64% 80%, 60% 36%, 56% 70%, 52% 50%, 48% 96%, 44% 24%, 40% 68%, 36% 46%, 32% 90%, 28% 28%, 24% 66%, 20% 52%, 16% 80%, 12% 36%, 8% 62%, 4% 48%, 0 56%);
+    }
+
+    .bg-overlay {
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, .64), transparent 24%, transparent 76%, rgba(0, 0, 0, .64)),
+        linear-gradient(180deg, rgba(0, 0, 0, .58), transparent 30%, rgba(0, 0, 0, .72));
+      mix-blend-mode: normal;
+    }
+
+    .floating-label {
+      left: 39%;
+      top: 43%;
+      min-width: 160px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(50, 212, 255, .5);
+      border-radius: 5px;
+      color: #fff;
+      background: rgba(5, 22, 38, .82);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .selection-frame {
+      display: none;
+      position: absolute;
+      inset: -6px;
+      border: 1.5px solid #2f9bff;
+      pointer-events: none;
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, .8), 0 0 18px rgba(47, 155, 255, .28);
+    }
+
+    .scene-object.is-selected > .selection-frame {
+      display: block;
+    }
+
+    .handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border: 1px solid #05101c;
+      background: #71c0ff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(47, 155, 255, .55);
+    }
+
+    .handle.nw { left: -5px; top: -5px; cursor: nwse-resize; }
+    .handle.ne { right: -5px; top: -5px; cursor: nesw-resize; }
+    .handle.sw { left: -5px; bottom: -5px; cursor: nesw-resize; }
+    .handle.se { right: -5px; bottom: -5px; cursor: nwse-resize; }
+    .handle.n { left: 50%; top: -5px; transform: translateX(-50%); cursor: ns-resize; }
+    .handle.s { left: 50%; bottom: -5px; transform: translateX(-50%); cursor: ns-resize; }
+    .handle.w { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+    .handle.e { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+
+    .rotate-handle {
+      position: absolute;
+      left: 50%;
+      top: -30px;
+      transform: translateX(-50%);
+      width: 19px;
+      height: 19px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(100, 184, 255, .65);
+      border-radius: 999px;
+      color: #90ccff;
+      background: #06101c;
+    }
+
+    .rotate-handle i {
+      width: 12px;
+      height: 12px;
+    }
+
+    .crop-corner {
+      display: none;
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border-color: #fff;
+      opacity: .95;
+    }
+
+    .crop-corner.tl { left: 4px; top: 4px; border-left: 2px solid; border-top: 2px solid; }
+    .crop-corner.tr { right: 4px; top: 4px; border-right: 2px solid; border-top: 2px solid; }
+    .crop-corner.bl { left: 4px; bottom: 4px; border-left: 2px solid; border-bottom: 2px solid; }
+    .crop-corner.br { right: 4px; bottom: 4px; border-right: 2px solid; border-bottom: 2px solid; }
+
+    .scene-frame.crop-mode .scene-object.is-selected .crop-corner {
+      display: block;
+    }
+
+    .scene-frame.crop-mode .scene-object.is-selected {
+      filter: saturate(1.08);
+    }
+
+    .scene-frame.crop-mode .scene-object.is-selected::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 1px dashed rgba(255, 255, 255, .75);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .drop-mask {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      z-index: 50;
+      color: #e9f4ff;
+      background: rgba(2, 7, 13, .74);
+      border: 2px dashed rgba(50, 212, 255, .7);
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .scene-frame.drag-over .drop-mask {
+      display: grid;
+    }
+
+    .inspector {
+      grid-area: inspector;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid rgba(85, 150, 255, .12);
+      background:
+        linear-gradient(180deg, rgba(12, 22, 38, .78), rgba(5, 11, 19, .92)),
+        rgba(6, 12, 21, .94);
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .tab-btn {
+      height: 28px;
+      min-width: 102px;
+      border-radius: 8px;
+      color: #9cabbf;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      border-color: rgba(79, 149, 255, .5);
+      background: rgba(19, 57, 105, .6);
+    }
+
+    .blend-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+
+    .control-box {
+      min-width: 0;
+      padding: 7px;
+      border: 1px solid rgba(95, 156, 255, .12);
+      border-radius: 8px;
+      background: rgba(4, 10, 18, .58);
+    }
+
+    .control-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 5px;
+      color: #91a0b4;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .range-line {
+      display: grid;
+      grid-template-columns: 1fr 52px;
+      gap: 7px;
+      align-items: center;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--blue);
+    }
+
+    .value-chip {
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(95, 156, 255, .16);
+      border-radius: 7px;
+      color: #dbe6f7;
+      background: rgba(6, 13, 23, .82);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .lock-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 7px;
+      margin-bottom: 8px;
+      color: #9caabe;
+      font-size: 10px;
+    }
+
+    .lock-icons {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lock-icons button {
+      width: 23px;
+      height: 23px;
+      display: grid;
+      place-items: center;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: #a9b7c9;
+      background: transparent;
+    }
+
+    .lock-icons button:hover,
+    .lock-icons button.on {
+      border-color: rgba(95, 156, 255, .24);
+      color: #fff;
+      background: rgba(21, 43, 72, .7);
+    }
+
+    .lock-icons i {
+      width: 15px;
+      height: 15px;
+    }
+
+    .layers-list {
+      border: 1px solid rgba(95, 156, 255, .12);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(4, 10, 18, .46);
+    }
+
+    .layer-row {
+      height: 34px;
+      display: grid;
+      grid-template-columns: 23px 23px 31px minmax(0, 1fr);
+      align-items: center;
+      gap: 5px;
+      padding: 0 8px;
+      border-bottom: 1px solid rgba(95, 156, 255, .1);
+      color: #c8d5e6;
+      background: rgba(13, 24, 40, .34);
+      cursor: pointer;
+      transition: .13s var(--ease);
+    }
+
+    .layer-row:last-child {
+      border-bottom: 0;
+    }
+
+    .layer-row:hover {
+      background: rgba(20, 38, 62, .58);
+    }
+
+    .layer-row.selected {
+      color: #fff;
+      background: linear-gradient(90deg, rgba(19, 80, 150, .82), rgba(14, 39, 72, .75));
+      box-shadow: inset 3px 0 0 #2f9bff;
+    }
+
+    .layer-icon {
+      display: grid;
+      place-items: center;
+      color: #a9b8cb;
+    }
+
+    .layer-icon i {
+      width: 15px;
+      height: 15px;
+    }
+
+    .thumb-mini {
+      height: 20px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, .13);
+      background: rgba(0, 0, 0, .62);
+      overflow: hidden;
+    }
+
+    .thumb-mini.red {
+      background: radial-gradient(circle, #ff363d 0 32%, rgba(255, 54, 61, .22) 34% 100%);
+    }
+
+    .thumb-mini.score {
+      background: linear-gradient(90deg, #101722, #1c64be, #101722);
+    }
+
+    .thumb-mini.text {
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .thumb-mini.logoA {
+      background: repeating-linear-gradient(90deg, #10161f 0 6px, #f3f7ff 6px 10px);
+    }
+
+    .thumb-mini.logoU {
+      background: linear-gradient(145deg, #e02028, #580a13);
+    }
+
+    .thumb-mini.lower {
+      background: linear-gradient(90deg, #113a78, #090d17);
+    }
+
+    .thumb-mini.bg {
+      background: linear-gradient(145deg, #03070d, #2b174c);
+    }
+
+    .layer-name {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .props-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .prop-field {
+      min-width: 0;
+      padding: 7px;
+      border: 1px solid rgba(95, 156, 255, .12);
+      border-radius: 8px;
+      background: rgba(4, 10, 18, .56);
+    }
+
+    .prop-field label {
+      display: block;
+      margin-bottom: 4px;
+      color: #8d9bb0;
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .prop-field input,
+    .prop-field select {
+      width: 100%;
+      height: 26px;
+      border: 1px solid rgba(95, 156, 255, .16);
+      border-radius: 7px;
+      padding: 0 8px;
+      outline: none;
+      color: #e7eefb;
+      background: rgba(6, 13, 23, .9);
+      font-size: 11px;
+    }
+
+    .prop-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .prop-actions .action-btn {
+      justify-content: flex-start;
+      padding: 0 10px;
+    }
+
+    .timeline-divider {
+      grid-area: divider;
+      position: relative;
+      background: rgba(3, 7, 13, .95);
+      border-top: 1px solid rgba(85, 150, 255, .12);
+      border-bottom: 1px solid rgba(85, 150, 255, .12);
+      cursor: row-resize;
+    }
+
+    .timeline-divider::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 74px;
+      height: 2px;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      background: rgba(114, 168, 255, .35);
+    }
+
+    .timeline {
+      grid-area: timeline;
+      display: grid;
+      grid-template-rows: 42px minmax(0, 1fr);
+      border-top: 1px solid rgba(85, 150, 255, .16);
+      background:
+        linear-gradient(180deg, rgba(13, 23, 38, .9), rgba(4, 8, 15, .96)),
+        #050a12;
+    }
+
+    .timeline-head {
+      display: grid;
+      grid-template-columns: minmax(250px, 1fr) auto minmax(300px, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 0 10px;
+      border-bottom: 1px solid rgba(85, 150, 255, .14);
+    }
+
+    .play-cluster {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .play-btn {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(95, 156, 255, .28);
+      border-radius: 9px;
+      color: #fff;
+      background: linear-gradient(180deg, rgba(21, 49, 83, .95), rgba(6, 14, 25, .95));
+    }
+
+    .play-btn.playing {
+      border-color: rgba(49, 209, 125, .42);
+      background: linear-gradient(180deg, rgba(18, 94, 56, .95), rgba(5, 31, 23, .95));
+    }
+
+    .time-readout {
+      color: #a7b5c9;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .time-readout b {
+      color: #55a8ff;
+      font-size: 14px;
+    }
+
+    .add-layer {
+      height: 29px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 8px;
+      border: 1px solid rgba(95, 156, 255, .2);
+      color: #dce8f7;
+      background: rgba(7, 14, 25, .7);
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .timeline-tools {
+      justify-content: flex-end;
+    }
+
+    .timeline-body {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .track-labels {
+      overflow: hidden;
+      border-right: 1px solid rgba(85, 150, 255, .14);
+      background: rgba(4, 9, 16, .64);
+    }
+
+    .track-label-spacer {
+      height: 20px;
+      border-bottom: 1px solid rgba(85, 150, 255, .12);
+      background: rgba(9, 16, 27, .72);
+    }
+
+    .track-label {
+      height: 21px;
+      display: grid;
+      grid-template-columns: 22px 22px minmax(0, 1fr);
+      align-items: center;
+      gap: 6px;
+      padding: 0 9px;
+      border-bottom: 1px solid rgba(85, 150, 255, .08);
+      color: #b5c2d2;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .track-label.selected {
+      color: #fff;
+      background: rgba(39, 94, 166, .3);
+    }
+
+    .track-label i {
+      width: 13px;
+      height: 13px;
+      color: #b7c5d7;
+    }
+
+    .track-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tracks-scroll {
+      position: relative;
+      min-width: 0;
+      overflow: auto hidden;
+      background:
+        repeating-linear-gradient(90deg, transparent 0 79px, rgba(79, 149, 255, .08) 80px 81px),
+        rgba(2, 5, 10, .72);
+    }
+
+    .tracks-inner {
+      position: relative;
+      width: max(100%, 1180px);
+      min-height: 100%;
+    }
+
+    .time-ruler {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      height: 20px;
+      border-bottom: 1px solid rgba(85, 150, 255, .12);
+      background:
+        repeating-linear-gradient(90deg, rgba(139, 160, 190, .22) 0 1px, transparent 1px 16px),
+        rgba(9, 16, 27, .94);
+    }
+
+    .time-tick {
+      position: absolute;
+      top: 4px;
+      transform: translateX(-50%);
+      color: #8d9aad;
+      font-size: 9px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .track-rows {
+      position: relative;
+    }
+
+    .track-row {
+      position: relative;
+      height: 21px;
+      border-bottom: 1px solid rgba(85, 150, 255, .08);
+      background: rgba(255, 255, 255, .018);
+      cursor: pointer;
+    }
+
+    .track-row.selected {
+      background: rgba(47, 125, 255, .08);
+    }
+
+    .clip-block {
+      position: absolute;
+      top: 3px;
+      height: 15px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 48px;
+      padding: 0 8px;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 750;
+      overflow: hidden;
+      white-space: nowrap;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 5px 18px rgba(0, 0, 0, .25);
+    }
+
+    .clip-block.selected {
+      outline: 1px solid rgba(255, 255, 255, .72);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22), 0 0 18px rgba(47, 155, 255, .35);
+    }
+
+    .clip-blue { background: linear-gradient(90deg, #2454c7, #315ee5); }
+    .clip-blue-dark { background: linear-gradient(90deg, #123366, #174b9d); }
+    .clip-red { background: linear-gradient(90deg, #8f2029, #c0373a); }
+    .clip-violet { background: linear-gradient(90deg, #432083, #3c56c7); }
+    .clip-bg { background: linear-gradient(90deg, #10141d, #05070d); }
+    .clip-black { background: linear-gradient(90deg, #05070b, #181d26); }
+
+    .clip-block::before,
+    .clip-block::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 22px;
+      height: 100%;
+      opacity: .3;
+      pointer-events: none;
+    }
+
+    .clip-block::before {
+      left: 0;
+      background: linear-gradient(90deg, rgba(255, 255, 255, .55), transparent);
+    }
+
+    .clip-block::after {
+      right: 0;
+      background: linear-gradient(270deg, rgba(0, 0, 0, .6), transparent);
+    }
+
+    .clip-wave {
+      position: absolute;
+      left: 38%;
+      right: 12px;
+      top: 5px;
+      height: 5px;
+      opacity: .42;
+      background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .6) 0 2px, transparent 2px 8px);
+      clip-path: polygon(0 50%, 5% 15%, 10% 70%, 15% 25%, 20% 84%, 25% 38%, 30% 58%, 35% 18%, 40% 90%, 45% 35%, 50% 70%, 55% 28%, 60% 82%, 65% 42%, 70% 64%, 75% 22%, 80% 86%, 85% 36%, 90% 68%, 95% 28%, 100% 50%, 100% 100%, 0 100%);
+    }
+
+    .keyframe {
+      position: absolute;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      transform: translate(-50%, -50%) rotate(45deg);
+      border: 1px solid rgba(255, 255, 255, .88);
+      background: var(--amber);
+      box-shadow: 0 0 8px rgba(247, 184, 75, .5);
+    }
+
+    .playhead {
+      position: absolute;
+      z-index: 20;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #f1f6ff;
+      box-shadow: 0 0 15px rgba(255, 255, 255, .35);
+      pointer-events: none;
+    }
+
+    .playhead::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 19px;
+      transform: translateX(-50%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid #f1f6ff;
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 0 12px;
+      border-top: 1px solid rgba(85, 150, 255, .16);
+      color: #99a8bd;
+      background: rgba(3, 7, 13, .92);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .footer b {
+      color: #e7eefb;
+      font-weight: 800;
+    }
+
+    .system-ok {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .system-ok::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(49, 209, 125, .6);
+    }
+
+    .toast {
+      position: absolute;
+      left: 50%;
+      top: 58px;
+      z-index: 100;
+      min-width: 260px;
+      max-width: min(600px, 72%);
+      transform: translateX(-50%) translateY(-12px) scale(.96);
+      opacity: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px 10px 12px;
+      border: 1px solid rgba(95, 156, 255, .22);
+      border-radius: 999px;
+      color: #eaf3ff;
+      background: rgba(5, 12, 22, .92);
+      box-shadow:
+        0 18px 54px rgba(0, 0, 0, .46),
+        0 0 0 1px rgba(22, 155, 255, .08),
+        0 0 24px rgba(22, 155, 255, .08);
+      font-size: 12px;
+      font-weight: 650;
+      backdrop-filter: blur(10px) saturate(120%);
+      transition: opacity .24s ease, transform .34s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    .toast::before {
+      content: "";
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 50% 50%, #fff 0 18%, transparent 20%),
+        linear-gradient(135deg, #169bff, #7957ff);
+      box-shadow: 0 0 0 4px rgba(22, 155, 255, .12), 0 4px 14px rgba(22, 155, 255, .32);
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%);
+    }
+
+    .toast.warn {
+      border-color: rgba(255, 184, 75, .42);
+      color: #ffe1ad;
+    }
+
+    .toast.warn::before {
+      background:
+        radial-gradient(circle at 50% 50%, #fff 0 18%, transparent 20%),
+        linear-gradient(135deg, #fbbf24, #d97706);
+      box-shadow: 0 0 0 4px rgba(217, 119, 6, .14), 0 4px 14px rgba(217, 119, 6, .28);
+    }
+
+    .toast.ok {
+      border-color: rgba(49, 209, 125, .42);
+      color: #bff7d7;
+    }
+
+    .toast.ok::before {
+      background:
+        radial-gradient(circle at 50% 50%, #fff 0 18%, transparent 20%),
+        linear-gradient(135deg, #22c55e, #16a34a);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, .14), 0 4px 14px rgba(22, 163, 74, .32);
+    }
+
+    .hidden-panel {
+      display: none;
+    }
+
+    .shake {
+      animation: shake .22s linear 2;
+    }
+
+    @keyframes shake {
+      25% { transform: translateX(-2px); }
+      75% { transform: translateX(2px); }
+    }
+
+    @media (max-width: 1220px) {
+      .studio-modal {
+        min-width: 860px;
+      }
+
+      .workspace {
+        grid-template-columns: 74px minmax(210px, 250px) minmax(0, 1fr);
+        grid-template-areas:
+          "side library center"
+          "side library divider"
+          "side timeline timeline";
+      }
+
+      .inspector {
+        display: none;
+      }
+
+      .topbar {
+        grid-template-columns: auto auto minmax(98px, 150px) auto minmax(0, 1fr) auto;
+      }
+
+      .window-controls {
+        display: none;
+      }
+    }
+
+    @media (max-width: 920px) {
+      .app-shell {
+        padding: 0;
+      }
+
+      .studio-modal {
+        width: 100vw;
+        height: 100vh;
+        min-width: 0;
+        min-height: 0;
+        border-radius: 0;
+      }
+
+      .workspace {
+        grid-template-columns: 64px minmax(0, 1fr);
+        grid-template-areas:
+          "side center"
+          "side divider"
+          "side timeline";
+      }
+
+      .library {
+        display: none;
+      }
+
+      .timeline-body {
+        grid-template-columns: 150px minmax(0, 1fr);
+      }
+
+      .topbar {
+        grid-template-columns: auto auto 1fr auto;
+      }
+
+      .scene-name,
+      .status-row {
+        display: none;
+      }
+
+      .ghost-btn span,
+      .tool-btn span {
+        display: none;
+      }
+
+      .side-item {
+        height: 50px;
+        font-size: 10px;
+      }
+
+      .canvas-viewport {
+        padding: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <main class="studio-modal" id="studioModal">
+      <header class="topbar">
+        <div class="brand">
+          <img src="img/kivo-icon.png" alt="Kivo" />
+          <span>Kivo Studio</span>
+        </div>
+
+        <button class="select-pill" type="button">
+          <i data-lucide="panel-top"></i>
+          Montar cena
+          <i data-lucide="chevron-down"></i>
+        </button>
+
+        <div class="scene-name">Cena 1</div>
+
+        <div class="top-tools">
+          <button class="mini-btn" type="button" title="Desfazer" aria-label="Desfazer"><i data-lucide="undo-2"></i></button>
+          <button class="mini-btn" type="button" title="Refazer" aria-label="Refazer"><i data-lucide="redo-2"></i></button>
+        </div>
+
+        <div class="status-row">
+          <span class="status-dot"></span>
+          <span id="saveStatus">Salvo automaticamente: 22:37:58</span>
+          <span id="airGateStatus">Preview obrigatório</span>
+        </div>
+
+        <div class="top-actions">
+          <button class="ghost-btn preview-btn" type="button" id="previewBtn">
+            <i data-lucide="eye"></i>
+            <span>Preview</span>
+          </button>
+          <button class="ghost-btn program-btn locked" type="button" id="programBtn" aria-disabled="true">
+            <i data-lucide="radio"></i>
+            <span>Pôr no ar</span>
+          </button>
+          <button class="ghost-btn pro-btn" type="button">
+            <i data-lucide="gem"></i>
+            <span>Pro</span>
+          </button>
+          <button class="icon-button" type="button" id="soundToggle" title="Som da interface" aria-label="Som da interface">
+            <i data-lucide="volume-2"></i>
+          </button>
+        </div>
+
+        <div class="window-controls">
+          <button class="icon-button" type="button" title="Minimizar" aria-label="Minimizar"><i data-lucide="minus"></i></button>
+          <button class="icon-button" type="button" title="Maximizar" aria-label="Maximizar"><i data-lucide="square"></i></button>
+          <button class="icon-button" type="button" title="Fechar" aria-label="Fechar"><i data-lucide="x"></i></button>
+        </div>
+      </header>
+
+      <section class="workspace" id="workspace">
+        <aside class="sidebar" aria-label="Menu lateral">
+          <button class="side-item" type="button"><i data-lucide="folder-open"></i><span>Mídia</span></button>
+          <button class="side-item" type="button"><i data-lucide="type"></i><span>Texto</span></button>
+          <button class="side-item" type="button"><i data-lucide="badge-smile"></i><span>Stickers</span></button>
+          <button class="side-item" type="button"><i data-lucide="sparkles"></i><span>Elementos</span></button>
+          <button class="side-item" type="button"><i data-lucide="bow-arrow"></i><span>Transições</span></button>
+          <button class="side-item" type="button"><i data-lucide="blend"></i><span>Filtros</span></button>
+          <button class="side-item active" type="button"><i data-lucide="layers-3"></i><span>Camadas</span></button>
+          <button class="side-item" type="button"><i data-lucide="audio-lines"></i><span>Áudio</span></button>
+          <button class="side-item" type="button"><i data-lucide="settings"></i><span>Configurações</span></button>
+        </aside>
+
+        <aside class="library">
+          <div class="panel-head">
+            <div class="panel-title">Biblioteca</div>
+            <button class="icon-button" type="button" title="Opções da biblioteca" aria-label="Opções da biblioteca"><i data-lucide="sliders-horizontal"></i></button>
+          </div>
+          <div class="library-body">
+            <div class="library-actions">
+              <button class="action-btn" type="button"><i data-lucide="upload"></i>Importar</button>
+              <button class="action-btn" type="button"><i data-lucide="video"></i>Gravar</button>
+              <button class="action-btn" type="button"><i data-lucide="bot"></i>IA</button>
+            </div>
+
+            <div class="filter-row">
+              <select class="field" aria-label="Filtro de mídia">
+                <option>Todos</option>
+                <option>Vídeos</option>
+                <option>Imagens</option>
+                <option>Áudios</option>
+                <option>Overlays</option>
+              </select>
+              <label class="search-field">
+                <i data-lucide="search"></i>
+                <input type="search" placeholder="Buscar mídia" />
+              </label>
+            </div>
+
+            <div class="media-section">
+              <div class="section-head"><span>Vídeos</span><button type="button">Ver tudo</button></div>
+              <div class="media-grid">
+                <article class="media-item" draggable="true" data-media-name="Vídeo 1.mp4" data-media-kind="video">
+                  <div class="media-thumb thumb-video-a"><div class="thumb-label"><span>Cena</span><span>00:15</span></div></div>
+                  <div class="media-name">Vídeo 1.mp4</div>
+                </article>
+                <article class="media-item" draggable="true" data-media-name="Vídeo 2.mp4" data-media-kind="video">
+                  <div class="media-thumb thumb-video-b"><div class="thumb-label"><span>Gol</span><span>00:27</span></div></div>
+                  <div class="media-name">Vídeo 2.mp4</div>
+                </article>
+              </div>
+            </div>
+
+            <div class="media-section">
+              <div class="section-head"><span>Imagens</span><button type="button">Ver tudo</button></div>
+              <div class="media-grid">
+                <article class="media-item" draggable="true" data-media-name="logo.png" data-media-kind="image">
+                  <div class="media-thumb thumb-logo"><div class="thumb-label"><span>Logo</span><span>00:03</span></div></div>
+                  <div class="media-name">logo.png</div>
+                </article>
+                <article class="media-item" draggable="true" data-media-name="patrocinador.png" data-media-kind="image">
+                  <div class="media-thumb thumb-sponsor"><div class="thumb-label"><span>ADBR</span><span></span></div></div>
+                  <div class="media-name">patrocinador.png</div>
+                </article>
+              </div>
+            </div>
+
+            <div class="media-section">
+              <div class="section-head"><span>Áudios</span><button type="button">Ver tudo</button></div>
+              <div class="media-grid">
+                <article class="media-item" draggable="true" data-media-name="vinheta.mp3" data-media-kind="audio">
+                  <div class="media-thumb thumb-audio"><div class="thumb-label"><span></span><span>00:05</span></div></div>
+                  <div class="media-name">vinheta.mp3</div>
+                </article>
+                <article class="media-item" draggable="true" data-media-name="gol.mp3" data-media-kind="audio">
+                  <div class="media-thumb thumb-audio"><div class="thumb-label"><span></span><span>00:03</span></div></div>
+                  <div class="media-name">gol.mp3</div>
+                </article>
+              </div>
+            </div>
+
+            <div class="media-section">
+              <div class="section-head"><span>Overlays</span><button type="button">Ver tudo</button></div>
+              <div class="media-grid">
+                <article class="media-item" draggable="true" data-media-name="placar.png" data-media-kind="overlay">
+                  <div class="media-thumb thumb-overlay"><div class="thumb-label"><span>Placar</span><span></span></div></div>
+                  <div class="media-name">placar.png</div>
+                </article>
+                <article class="media-item" draggable="true" data-media-name="lower-third.png" data-media-kind="overlay">
+                  <div class="media-thumb thumb-overlay"><div class="thumb-label"><span>Lower Third</span><span></span></div></div>
+                  <div class="media-name">lower-third.png</div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="stage">
+          <div class="stage-toolbar">
+            <div class="ratio-group" role="group" aria-label="Proporção da cena">
+              <button class="ratio-btn active" type="button" data-ratio="16:9">16:9</button>
+              <button class="ratio-btn" type="button" data-ratio="9:16">9:16</button>
+              <button class="ratio-btn" type="button" data-ratio="1:1">1:1</button>
+            </div>
+
+            <div class="canvas-actions">
+              <select class="zoom-select" id="zoomSelect" aria-label="Zoom do canvas">
+                <option value="75">75%</option>
+                <option value="100" selected>100%</option>
+                <option value="125">125%</option>
+                <option value="150">150%</option>
+              </select>
+              <button class="tool-btn" type="button" id="fitBtn" title="Encaixar"><i data-lucide="scan"></i><span>Encaixar</span></button>
+              <button class="tool-btn" type="button" id="centerBtn" title="Centralizar"><i data-lucide="crosshair"></i><span>Centralizar</span></button>
+              <button class="tool-btn" type="button" title="Tela cheia"><i data-lucide="maximize"></i></button>
+              <button class="tool-btn" type="button" id="cropBtn" title="Recortar"><i data-lucide="crop"></i><span>Recortar</span></button>
+            </div>
+          </div>
+
+          <div class="stage-board">
+            <div class="corner-ruler"></div>
+            <div class="ruler-h" aria-hidden="true">
+              <span style="left: 6%">00</span>
+              <span style="left: 24%">000</span>
+              <span style="left: 43%">000</span>
+              <span style="left: 62%">60</span>
+              <span style="left: 82%">00:00</span>
+              <span style="left: 98%">000</span>
+            </div>
+            <div class="ruler-v" aria-hidden="true">
+              <span style="top: 8%">0</span>
+              <span style="top: 24%">100</span>
+              <span style="top: 42%">200</span>
+              <span style="top: 62%">300</span>
+              <span style="top: 82%">400</span>
+            </div>
+            <div class="canvas-viewport" id="canvasViewport">
+              <div class="canvas-scale" id="canvasScale">
+                <div class="scene-frame ratio-16-9" id="sceneCanvas">
+                  <div class="scene-object scene-bg" data-object-layer="background"></div>
+                  <div class="scene-object bg-overlay" data-object-layer="bg-overlay"></div>
+                  <div class="safe-area"></div>
+                  <div class="guide v"></div>
+                  <div class="guide h"></div>
+
+                  <div class="scene-object scoreboard" data-object-layer="scoreboard">
+                    <div class="shield home" data-object-layer="logo-atletico">CAM</div>
+                    <div class="team-name home">Atlético FC</div>
+                    <div class="score-center">
+                      <div class="goals"><span>2</span><span>x</span><span>1</span></div>
+                      <div class="clock" data-object-layer="tempo">45:00</div>
+                    </div>
+                    <div class="team-name away">União Esporte</div>
+                    <div class="shield away" data-object-layer="logo-uniao">UE</div>
+                    <div class="period-pill" data-object-layer="competicao">1º Tempo</div>
+                    <div class="selection-frame">
+                      <span class="handle nw"></span><span class="handle n"></span><span class="handle ne"></span>
+                      <span class="handle e"></span><span class="handle se"></span><span class="handle s"></span>
+                      <span class="handle sw"></span><span class="handle w"></span>
+                      <span class="rotate-handle"><i data-lucide="rotate-cw"></i></span>
+                      <span class="crop-corner tl"></span><span class="crop-corner tr"></span><span class="crop-corner bl"></span><span class="crop-corner br"></span>
+                    </div>
+                  </div>
+
+                  <div class="scene-object live-bug" data-object-layer="noar">
+                    NO AR
+                    <div class="selection-frame">
+                      <span class="handle nw"></span><span class="handle ne"></span><span class="handle se"></span><span class="handle sw"></span>
+                      <span class="rotate-handle"><i data-lucide="rotate-cw"></i></span>
+                      <span class="crop-corner tl"></span><span class="crop-corner tr"></span><span class="crop-corner bl"></span><span class="crop-corner br"></span>
+                    </div>
+                  </div>
+
+                  <div class="scene-object lower-third is-selected" data-object-layer="lower-third">
+                    <div class="mic-tile"><i data-lucide="mic"></i></div>
+                    <div class="lt-copy" data-object-layer="narracao">
+                      <div class="lt-kicker">Narração</div>
+                      <div class="lt-name">João Victor</div>
+                    </div>
+                    <div class="waveform"></div>
+                    <div class="selection-frame">
+                      <span class="handle nw"></span><span class="handle n"></span><span class="handle ne"></span>
+                      <span class="handle e"></span><span class="handle se"></span><span class="handle s"></span>
+                      <span class="handle sw"></span><span class="handle w"></span>
+                      <span class="rotate-handle"><i data-lucide="rotate-cw"></i></span>
+                      <span class="crop-corner tl"></span><span class="crop-corner tr"></span><span class="crop-corner bl"></span><span class="crop-corner br"></span>
+                    </div>
+                  </div>
+
+                  <div class="drop-mask">Soltar na cena</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="inspector">
+          <div class="panel-head">
+            <div class="tab-row">
+              <button class="tab-btn active" type="button" data-panel-tab="layers">Camadas</button>
+              <button class="tab-btn" type="button" data-panel-tab="props">Propriedades</button>
+            </div>
+          </div>
+
+          <div class="inspector-body" id="layersPanel">
+            <label class="search-field" style="height: 32px; margin-bottom: 10px;">
+              <i data-lucide="search"></i>
+              <input type="search" id="layerSearch" placeholder="Buscar camada" />
+            </label>
+
+            <div class="blend-grid">
+              <select class="field" aria-label="Modo da camada">
+                <option>Normal</option>
+                <option>Multiplicar</option>
+                <option>Adicionar</option>
+                <option>Screen</option>
+              </select>
+              <div class="control-box" style="padding: 5px 8px;">
+                <div class="range-line">
+                  <input id="opacityRange" type="range" min="0" max="100" value="100" />
+                  <div class="value-chip" id="opacityChip">100%</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="lock-row">
+              <span>Bloq.:</span>
+              <div class="lock-icons" aria-label="Bloqueios de camada">
+                <button type="button" title="Bloquear texto"><i data-lucide="type"></i></button>
+                <button type="button" title="Bloquear mover"><i data-lucide="move"></i></button>
+                <button type="button" title="Bloquear transparência"><i data-lucide="blend"></i></button>
+                <button type="button" title="Cadeado"><i data-lucide="lock"></i></button>
+              </div>
+              <span>Preen.:</span>
+              <div class="value-chip" style="width: 54px;">100%</div>
+            </div>
+
+            <div class="layers-list" id="layersList"></div>
+          </div>
+
+          <div class="inspector-body hidden-panel" id="propsPanel">
+            <div class="control-box" style="margin-bottom: 10px;">
+              <div class="control-label"><span>Camada selecionada</span><span id="selectedLayerName">Lower Third - Narração</span></div>
+              <div class="range-line">
+                <input id="propOpacity" type="range" min="0" max="100" value="100" />
+                <div class="value-chip" id="propOpacityChip">100%</div>
+              </div>
+            </div>
+
+            <div class="props-grid">
+              <div class="prop-field"><label>Posição X</label><input id="propX" value="612" /></div>
+              <div class="prop-field"><label>Posição Y</label><input id="propY" value="429" /></div>
+              <div class="prop-field"><label>Largura</label><input id="propW" value="526" /></div>
+              <div class="prop-field"><label>Altura</label><input id="propH" value="68" /></div>
+              <div class="prop-field"><label>Escala</label><input id="propScale" value="100%" /></div>
+              <div class="prop-field"><label>Rotação</label><input id="propRotation" value="0°" /></div>
+              <div class="prop-field"><label>Ordem</label><input id="propOrder" value="7" /></div>
+              <div class="prop-field"><label>Duração</label><input id="propDuration" value="00:00:43:05" /></div>
+              <div class="prop-field"><label>Entrada</label><select><option>Fade in</option><option>Slide up</option><option>Corte seco</option></select></div>
+              <div class="prop-field"><label>Saída</label><select><option>Fade out</option><option>Slide down</option><option>Corte seco</option></select></div>
+            </div>
+
+            <div class="prop-actions">
+              <button class="action-btn" type="button" id="duplicateLayerBtn"><i data-lucide="copy"></i>Duplicar</button>
+              <button class="action-btn" type="button" id="deleteLayerBtn"><i data-lucide="trash-2"></i>Excluir</button>
+              <button class="action-btn" type="button"><i data-lucide="lock"></i>Bloquear</button>
+              <button class="action-btn" type="button"><i data-lucide="bring-to-front"></i>Frente</button>
+              <button class="action-btn" type="button"><i data-lucide="send-to-back"></i>Trás</button>
+              <button class="action-btn" type="button" id="propCropBtn"><i data-lucide="crop"></i>Recorte</button>
+            </div>
+          </div>
+        </aside>
+
+        <div class="timeline-divider" id="timelineDivider" title="Arrastar para redimensionar timeline"></div>
+
+        <section class="timeline">
+          <div class="timeline-head">
+            <div class="play-cluster">
+              <button class="add-layer" type="button" id="addLayerBtn"><i data-lucide="plus"></i>Adicionar camada</button>
+              <button class="tool-btn" type="button" id="cutTool" title="Cortar"><i data-lucide="scissors"></i></button>
+              <button class="tool-btn" type="button" id="dupTool" title="Duplicar"><i data-lucide="copy"></i></button>
+              <button class="tool-btn" type="button" id="deleteTool" title="Excluir"><i data-lucide="trash-2"></i></button>
+            </div>
+
+            <div class="play-cluster">
+              <button class="play-btn" type="button" id="playBtn" aria-label="Play"><i data-lucide="play"></i></button>
+              <div class="time-readout"><b id="currentTime">00:00:04:09</b> / <span id="totalTime">00:00:43:05</span></div>
+            </div>
+
+            <div class="timeline-tools">
+              <button class="tool-btn" type="button" id="keyframeTool" title="Keyframe"><i data-lucide="diamond"></i></button>
+              <button class="tool-btn active" type="button" title="Magnetismo"><i data-lucide="magnet"></i></button>
+              <button class="tool-btn" type="button" title="Linkar"><i data-lucide="link"></i></button>
+              <button class="tool-btn" type="button" title="Zoom -"><i data-lucide="zoom-out"></i></button>
+              <input id="timelineZoom" type="range" min="0" max="100" value="36" style="width: 90px;" aria-label="Zoom da timeline" />
+              <button class="tool-btn" type="button" title="Zoom +"><i data-lucide="zoom-in"></i></button>
+            </div>
+          </div>
+
+          <div class="timeline-body">
+            <div class="track-labels" id="trackLabels">
+              <div class="track-label-spacer"></div>
+            </div>
+            <div class="tracks-scroll" id="tracksScroll">
+              <div class="tracks-inner" id="tracksInner">
+                <div class="time-ruler" id="timeRuler"></div>
+                <div class="track-rows" id="trackRows"></div>
+                <div class="playhead" id="playhead"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <footer class="footer">
+        <span>Projeto: <b>Cena 1</b></span>
+        <span id="footerResolution">Resolução: 1920x1080 (16:9)</span>
+        <span>FPS: <b>60</b></span>
+        <span>Duração: <b>00:00:43:05</b></span>
+        <span>CPU: <b>12%</b></span>
+        <span>Memória: <b>2.1 GB / 8 GB</b></span>
+        <span class="system-ok">Sistema operacional</span>
+      </footer>
+
+      <div class="toast" id="toast"></div>
+    </main>
+  </div>
+
+  <script>
+    const durationSeconds = 43 + 5 / 60;
+    const timelineSeconds = 45;
+    const fps = 60;
+    let playing = false;
+    let playStart = 0;
+    let currentSeconds = 4 + 9 / 60;
+    let rafId = null;
+    let previewArmed = false;
+    let live = false;
+    let cropMode = false;
+    let newLayerIndex = 1;
+    let currentRatio = "16:9";
+
+    const Sfx = (() => {
+      let ctx = null;
+      let master = null;
+      let gestured = false;
+      let hoverThrottle = 0;
+      let enabled = localStorage.getItem("kivo-scene-sfx") !== "off";
+
+      ["click", "keydown", "pointerdown", "touchstart"].forEach(eventName => {
+        window.addEventListener(eventName, () => { gestured = true; }, { once: true, capture: true });
+      });
+
+      function ac() {
+        if (!gestured) return null;
+        if (!ctx) {
+          try {
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+            master = ctx.createGain();
+            master.gain.value = .24;
+            master.connect(ctx.destination);
+          } catch (error) {
+            return null;
+          }
+        }
+        if (ctx.state === "suspended") ctx.resume().catch(() => {});
+        return ctx;
+      }
+
+      function note(type, freq, start, dur, peak = .16, attack = .006, freqEnd = null) {
+        const audio = ac();
+        if (!audio || !enabled) return;
+        const osc = audio.createOscillator();
+        const gain = audio.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, start);
+        if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, start + dur);
+        gain.gain.setValueAtTime(.0001, start);
+        gain.gain.linearRampToValueAtTime(peak, start + attack);
+        gain.gain.exponentialRampToValueAtTime(.0001, start + dur);
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(start);
+        osc.stop(start + dur + .02);
+      }
+
+      function noise(start, dur, gainValue = .08) {
+        const audio = ac();
+        if (!audio || !enabled) return;
+        const buffer = audio.createBuffer(1, audio.sampleRate * dur, audio.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+        const source = audio.createBufferSource();
+        const gain = audio.createGain();
+        const filter = audio.createBiquadFilter();
+        source.buffer = buffer;
+        filter.type = "lowpass";
+        filter.frequency.value = 1300;
+        gain.gain.setValueAtTime(gainValue, start);
+        gain.gain.exponentialRampToValueAtTime(.0001, start + dur);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(master);
+        source.start(start);
+        source.stop(start + dur + .01);
+      }
+
+      return {
+        hover() {
+          const audio = ac();
+          if (!audio || !enabled) return;
+          const now = Date.now();
+          if (now - hoverThrottle < 90) return;
+          hoverThrottle = now;
+          note("sine", 1568, audio.currentTime, .08, .055);
+        },
+        click() {
+          const audio = ac();
+          if (!audio || !enabled) return;
+          const t = audio.currentTime;
+          note("sine", 880, t, .1, .12);
+          note("sine", 440, t + .002, .14, .07);
+        },
+        open() {
+          const audio = ac();
+          if (!audio || !enabled) return;
+          const t = audio.currentTime;
+          note("sine", 300, t, .16, .2, .04, 620);
+          note("sine", 1760, t + .08, .09, .035);
+        },
+        close() {
+          const audio = ac();
+          if (!audio || !enabled) return;
+          const t = audio.currentTime;
+          note("sine", 620, t, .18, .2, .012, 300);
+        },
+        success() {
+          const audio = ac();
+          if (!audio || !enabled) return;
+          const t = audio.currentTime;
+          note("sine", 523, t, .18, .18);
+          note("sine", 659, t + .08, .2, .18);
+          note("sine", 784, t + .16, .24, .16);
+        },
+        warn() {
+          const audio = ac();
+          if (!audio || !enabled) return;
+          const t = audio.currentTime;
+          note("sine", 740, t, .16, .14);
+          note("triangle", 370, t + .05, .18, .08);
+        },
+        drop() {
+          const audio = ac();
+          if (!audio || !enabled) return;
+          const t = audio.currentTime;
+          note("triangle", 90, t, .24, .2, .005, 54);
+          note("sine", 220, t + .02, .12, .06);
+          noise(t, .045, .12);
+        },
+        toggle() {
+          enabled = !enabled;
+          localStorage.setItem("kivo-scene-sfx", enabled ? "on" : "off");
+          if (enabled) this.success();
+          return enabled;
+        },
+        isEnabled() {
+          return enabled;
+        }
+      };
+    })();
+
+    const layers = [
+      { id: "noar", name: "NO AR", icon: "eye", thumb: "red", object: "noar", opacity: 100, start: 1, duration: 4, color: "clip-red", keyframes: [1.35, 3.8], x: 1120, y: 42, w: 82, h: 28 },
+      { id: "scoreboard", name: "Placar", icon: "eye", thumb: "score", object: "scoreboard", opacity: 100, start: 2.8, duration: 42, color: "clip-blue", keyframes: [4, 14, 32], x: 214, y: 82, w: 772, h: 88 },
+      { id: "tempo", name: "Tempo", icon: "eye", thumb: "text", object: "tempo", opacity: 100, start: 2.8, duration: 42, color: "clip-blue-dark", keyframes: [8, 22], x: 560, y: 150, w: 142, h: 28 },
+      { id: "competicao", name: "Competição", icon: "eye", thumb: "text", object: "competicao", opacity: 100, start: 2.8, duration: 42, color: "clip-blue", keyframes: [7], x: 548, y: 182, w: 116, h: 22 },
+      { id: "logo-atletico", name: "Logo Atlético", icon: "eye", thumb: "logoA", object: "logo-atletico", opacity: 100, start: 14.5, duration: 12, color: "clip-red", keyframes: [16], x: 164, y: 88, w: 54, h: 62 },
+      { id: "logo-uniao", name: "Logo União", icon: "eye", thumb: "logoU", object: "logo-uniao", opacity: 100, start: 25, duration: 6.5, color: "clip-red", keyframes: [26.5], x: 946, y: 88, w: 54, h: 62 },
+      { id: "lower-third", name: "Lower Third - Narração", icon: "eye", thumb: "lower", object: "lower-third", opacity: 100, start: 2.6, duration: 42, color: "clip-violet", keyframes: [3, 17, 36], wave: true, x: 612, y: 429, w: 526, h: 68 },
+      { id: "narracao", name: "Narração", icon: "eye", thumb: "text", object: "narracao", opacity: 100, start: 2.6, duration: 42, color: "clip-blue", keyframes: [5], x: 690, y: 444, w: 210, h: 38 },
+      { id: "bg-overlay", name: "BG Overlay", icon: "eye", thumb: "bg", object: "bg-overlay", opacity: 100, start: 1, duration: 43, color: "clip-violet", keyframes: [12, 28], x: 0, y: 0, w: 1280, h: 720 },
+      { id: "background", name: "Plano de Fundo", icon: "eye", thumb: "bg", object: "background", opacity: 100, start: 1, duration: 43, color: "clip-black", keyframes: [], x: 0, y: 0, w: 1280, h: 720 }
+    ];
+
+    let selectedLayerId = "lower-third";
+
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+    const layersList = $("#layersList");
+    const trackLabels = $("#trackLabels");
+    const trackRows = $("#trackRows");
+    const timeRuler = $("#timeRuler");
+    const playhead = $("#playhead");
+    const playBtn = $("#playBtn");
+    const currentTime = $("#currentTime");
+    const sceneCanvas = $("#sceneCanvas");
+    const canvasScale = $("#canvasScale");
+    const opacityRange = $("#opacityRange");
+    const opacityChip = $("#opacityChip");
+    const propOpacity = $("#propOpacity");
+    const propOpacityChip = $("#propOpacityChip");
+    const selectedLayerName = $("#selectedLayerName");
+    const toast = $("#toast");
+    const programBtn = $("#programBtn");
+    const previewBtn = $("#previewBtn");
+    const airGateStatus = $("#airGateStatus");
+    const footerResolution = $("#footerResolution");
+
+    function icon(name) {
+      return `<i data-lucide="${name}"></i>`;
+    }
+
+    function selectedLayer() {
+      return layers.find(layer => layer.id === selectedLayerId) || layers[0];
+    }
+
+    function framesToTime(seconds) {
+      const totalFrames = Math.max(0, Math.round(seconds * fps));
+      const frames = totalFrames % fps;
+      const totalSeconds = Math.floor(totalFrames / fps);
+      const secs = totalSeconds % 60;
+      const mins = Math.floor(totalSeconds / 60) % 60;
+      const hours = Math.floor(totalSeconds / 3600);
+      return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}:${String(frames).padStart(2, "0")}`;
+    }
+
+    function showToast(message, tone = "") {
+      toast.textContent = message;
+      toast.className = `toast show ${tone}`;
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2600);
+    }
+
+    function renderLayers(filter = "") {
+      const term = filter.trim().toLowerCase();
+      layersList.innerHTML = "";
+      layers
+        .filter(layer => !term || layer.name.toLowerCase().includes(term))
+        .forEach(layer => {
+          const row = document.createElement("button");
+          row.type = "button";
+          row.className = `layer-row ${layer.id === selectedLayerId ? "selected" : ""}`;
+          row.dataset.layerId = layer.id;
+          row.innerHTML = `
+            <span class="layer-icon">${icon(layer.visible === false ? "eye-off" : "eye")}</span>
+            <span class="layer-icon">${icon(layer.locked ? "lock" : "unlock")}</span>
+            <span class="thumb-mini ${layer.thumb}">${layer.thumb === "text" ? "T" : ""}</span>
+            <span class="layer-name">${layer.name}</span>
+          `;
+          row.addEventListener("click", () => selectLayer(layer.id));
+          layersList.appendChild(row);
+        });
+      refreshIcons();
+    }
+
+    function renderTimeline() {
+      trackLabels.innerHTML = `<div class="track-label-spacer"></div>`;
+      trackRows.innerHTML = "";
+      layers.forEach(layer => {
+        const label = document.createElement("button");
+        label.type = "button";
+        label.className = `track-label ${layer.id === selectedLayerId ? "selected" : ""}`;
+        label.dataset.layerId = layer.id;
+        label.innerHTML = `${icon(layer.locked ? "lock" : "unlock")}${icon(layer.visible === false ? "eye-off" : "eye")}<span class="track-name">${layer.name}</span>`;
+        label.addEventListener("click", () => selectLayer(layer.id));
+        trackLabels.appendChild(label);
+
+        const row = document.createElement("div");
+        row.className = `track-row ${layer.id === selectedLayerId ? "selected" : ""}`;
+        row.dataset.layerId = layer.id;
+        row.addEventListener("click", () => selectLayer(layer.id));
+
+        const clip = document.createElement("button");
+        clip.type = "button";
+        clip.className = `clip-block ${layer.color} ${layer.id === selectedLayerId ? "selected" : ""}`;
+        clip.dataset.layerId = layer.id;
+        clip.style.left = `${(layer.start / timelineSeconds) * 100}%`;
+        clip.style.width = `${(layer.duration / timelineSeconds) * 100}%`;
+        clip.innerHTML = `<span>${layer.name}</span>${layer.wave ? '<span class="clip-wave"></span>' : ""}`;
+        clip.addEventListener("click", event => {
+          event.stopPropagation();
+          selectLayer(layer.id);
+        });
+
+        layer.keyframes.forEach(kf => {
+          const marker = document.createElement("span");
+          marker.className = "keyframe";
+          marker.style.left = `${((kf - layer.start) / layer.duration) * 100}%`;
+          clip.appendChild(marker);
+        });
+
+        row.appendChild(clip);
+        trackRows.appendChild(row);
+      });
+      updatePlayhead();
+      refreshIcons();
+    }
+
+    function renderRuler() {
+      timeRuler.innerHTML = "";
+      for (let second = 0; second <= timelineSeconds; second += 5) {
+        const tick = document.createElement("span");
+        tick.className = "time-tick";
+        tick.style.left = `${(second / timelineSeconds) * 100}%`;
+        tick.textContent = second === 0 ? "00:00" : `00:${String(second).padStart(2, "0")}`;
+        timeRuler.appendChild(tick);
+      }
+    }
+
+    function updateSceneSelection() {
+      $$(".scene-object").forEach(object => object.classList.remove("is-selected"));
+      const layer = selectedLayer();
+      let target = $(`[data-object-layer="${layer.object}"]`);
+      if (layer.id === "tempo" || layer.id === "competicao" || layer.id === "logo-atletico" || layer.id === "logo-uniao" || layer.id === "narracao") {
+        target = target.closest(".scene-object") || target;
+      }
+      if (target) target.classList.add("is-selected");
+    }
+
+    function updateProperties() {
+      const layer = selectedLayer();
+      selectedLayerName.textContent = layer.name;
+      opacityRange.value = layer.opacity;
+      propOpacity.value = layer.opacity;
+      opacityChip.textContent = `${layer.opacity}%`;
+      propOpacityChip.textContent = `${layer.opacity}%`;
+      $("#propX").value = layer.x;
+      $("#propY").value = layer.y;
+      $("#propW").value = layer.w;
+      $("#propH").value = layer.h;
+      $("#propOrder").value = layers.findIndex(item => item.id === layer.id) + 1;
+      $("#propDuration").value = framesToTime(layer.duration);
+    }
+
+    function applyOpacity(layer) {
+      const target = $(`[data-object-layer="${layer.object}"]`);
+      if (!target) return;
+      const sceneObject = target.classList.contains("scene-object") ? target : target.closest(".scene-object");
+      if (sceneObject) sceneObject.style.opacity = layer.opacity / 100;
+    }
+
+    function selectLayer(id) {
+      selectedLayerId = id;
+      updateSceneSelection();
+      updateProperties();
+      renderLayers($("#layerSearch").value);
+      renderTimeline();
+    }
+
+    function updateLayerOpacity(value) {
+      const layer = selectedLayer();
+      layer.opacity = Number(value);
+      opacityChip.textContent = `${layer.opacity}%`;
+      propOpacityChip.textContent = `${layer.opacity}%`;
+      opacityRange.value = layer.opacity;
+      propOpacity.value = layer.opacity;
+      applyOpacity(layer);
+    }
+
+    function updatePlayhead() {
+      const pct = Math.min(100, (currentSeconds / timelineSeconds) * 100);
+      playhead.style.left = `${pct}%`;
+      currentTime.textContent = framesToTime(currentSeconds);
+    }
+
+    function tickPlayback(timestamp) {
+      if (!playStart) playStart = timestamp - currentSeconds * 1000;
+      currentSeconds = (timestamp - playStart) / 1000;
+      if (currentSeconds >= durationSeconds) {
+        currentSeconds = durationSeconds;
+        togglePlayback(false);
+      }
+      updatePlayhead();
+      if (playing) rafId = requestAnimationFrame(tickPlayback);
+    }
+
+    function togglePlayback(force) {
+      playing = typeof force === "boolean" ? force : !playing;
+      playBtn.classList.toggle("playing", playing);
+      playBtn.innerHTML = playing ? icon("pause") : icon("play");
+      refreshIcons();
+      if (playing) {
+        if (currentSeconds >= durationSeconds) currentSeconds = 0;
+        playStart = 0;
+        rafId = requestAnimationFrame(tickPlayback);
+      } else if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    }
+
+    function addLayer(name = `Nova Camada ${newLayerIndex++}`, kind = "overlay") {
+      const id = `layer-${Date.now()}-${Math.floor(Math.random() * 99)}`;
+      const layer = {
+        id,
+        name,
+        icon: "eye",
+        thumb: kind === "audio" ? "bg" : kind === "image" ? "score" : "lower",
+        object: id,
+        opacity: 100,
+        start: Math.max(0, Math.min(34, currentSeconds)),
+        duration: 9,
+        color: kind === "audio" ? "clip-violet" : kind === "image" ? "clip-blue" : "clip-blue-dark",
+        keyframes: [Math.max(0.4, currentSeconds + 1.2)],
+        x: 500,
+        y: 320,
+        w: 220,
+        h: 42
+      };
+      layers.splice(1, 0, layer);
+
+      const object = document.createElement("div");
+      object.className = "scene-object floating-label";
+      object.dataset.objectLayer = id;
+      object.textContent = name.replace(/\.[a-z0-9]+$/i, "");
+      object.innerHTML += `
+        <div class="selection-frame">
+          <span class="handle nw"></span><span class="handle n"></span><span class="handle ne"></span>
+          <span class="handle e"></span><span class="handle se"></span><span class="handle s"></span>
+          <span class="handle sw"></span><span class="handle w"></span>
+          <span class="rotate-handle"><i data-lucide="rotate-cw"></i></span>
+          <span class="crop-corner tl"></span><span class="crop-corner tr"></span><span class="crop-corner bl"></span><span class="crop-corner br"></span>
+        </div>
+      `;
+      sceneCanvas.appendChild(object);
+      selectLayer(id);
+      Sfx.open();
+      showToast(`${name} adicionada à cena e à timeline.`, "ok");
+    }
+
+    function duplicateSelected() {
+      const layer = selectedLayer();
+      addLayer(`${layer.name} cópia`, "overlay");
+    }
+
+    function deleteSelected() {
+      if (layers.length <= 1) return;
+      const index = layers.findIndex(layer => layer.id === selectedLayerId);
+      const layer = selectedLayer();
+      if (layer.object === layer.id) {
+        const object = $(`[data-object-layer="${layer.object}"]`);
+        object?.remove();
+      }
+      layers.splice(index, 1);
+      selectedLayerId = layers[Math.max(0, index - 1)].id;
+      selectLayer(selectedLayerId);
+      Sfx.warn();
+      showToast("Camada removida da composição.", "warn");
+    }
+
+    function toggleCrop() {
+      cropMode = !cropMode;
+      sceneCanvas.classList.toggle("crop-mode", cropMode);
+      $("#cropBtn").classList.toggle("active", cropMode);
+      $("#propCropBtn").classList.toggle("active", cropMode);
+      cropMode ? Sfx.open() : Sfx.close();
+      showToast(cropMode ? "Recorte visual ativado para a camada selecionada." : "Recorte visual desativado.", cropMode ? "ok" : "");
+    }
+
+    function addKeyframe() {
+      const layer = selectedLayer();
+      const kf = Math.max(layer.start + .4, Math.min(layer.start + layer.duration - .4, currentSeconds));
+      layer.keyframes.push(kf);
+      layer.keyframes.sort((a, b) => a - b);
+      renderTimeline();
+      Sfx.success();
+      showToast(`Keyframe criado em ${framesToTime(kf)} na camada ${layer.name}.`, "ok");
+    }
+
+    function armPreview() {
+      previewArmed = true;
+      live = false;
+      programBtn.classList.remove("locked", "live");
+      programBtn.classList.add("armed");
+      programBtn.setAttribute("aria-disabled", "false");
+      airGateStatus.textContent = "Cena armada no Preview";
+      previewBtn.classList.add("active");
+      Sfx.success();
+      showToast("Cena 1 enviada ao Preview. Agora o Program está liberado.", "ok");
+    }
+
+    function goProgram() {
+      if (!previewArmed) {
+        programBtn.classList.add("shake");
+        setTimeout(() => programBtn.classList.remove("shake"), 520);
+        Sfx.warn();
+        showToast("Nada vai para Program sem passar antes pelo Preview.", "warn");
+        return;
+      }
+      live = true;
+      previewArmed = false;
+      programBtn.classList.remove("armed");
+      programBtn.classList.add("live");
+      programBtn.querySelector("span").textContent = "No ar";
+      airGateStatus.textContent = "Program: Cena 1";
+      Sfx.drop();
+      showToast("Cena 1 está no ar. Próxima troca também exigirá Preview.", "ok");
+      setTimeout(() => {
+        programBtn.classList.remove("live");
+        programBtn.classList.add("locked");
+        programBtn.setAttribute("aria-disabled", "true");
+        programBtn.querySelector("span").textContent = "Pôr no ar";
+        airGateStatus.textContent = "Preview obrigatório";
+      }, 3600);
+    }
+
+    function fitSceneFrame() {
+      const viewport = $("#canvasViewport");
+      if (!viewport || !sceneCanvas) return;
+      const ratioMap = { "16:9": 16 / 9, "9:16": 9 / 16, "1:1": 1 };
+      const ratio = ratioMap[currentRatio] || ratioMap["16:9"];
+      const maxByProfile = currentRatio === "16:9" ? 860 : currentRatio === "9:16" ? 360 : 600;
+      const availableW = Math.max(300, viewport.clientWidth - 52);
+      const availableH = Math.max(260, viewport.clientHeight - 52);
+      const fittedW = Math.min(maxByProfile, availableW, availableH * ratio);
+      sceneCanvas.style.width = `${Math.round(fittedW)}px`;
+    }
+
+    function setRatio(ratio) {
+      currentRatio = ratio;
+      sceneCanvas.classList.remove("ratio-16-9", "ratio-9-16", "ratio-1-1");
+      sceneCanvas.classList.add(`ratio-${ratio.replace(":", "-")}`);
+      $$(".ratio-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.ratio === ratio));
+      const map = {
+        "16:9": "Resolução: 1920x1080 (16:9)",
+        "9:16": "Resolução: 1080x1920 (9:16)",
+        "1:1": "Resolução: 1080x1080 (1:1)"
+      };
+      footerResolution.textContent = map[ratio];
+      localStorage.setItem("kivo-scene-ratio", ratio);
+      fitSceneFrame();
+      Sfx.open();
+      showToast(`Perfil da cena ajustado para ${ratio}.`, "ok");
+    }
+
+    function refreshIcons() {
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function setupResizer() {
+      const divider = $("#timelineDivider");
+      const workspace = $("#workspace");
+      let startY = 0;
+      let startHeight = 0;
+
+      divider.addEventListener("pointerdown", event => {
+        startY = event.clientY;
+        startHeight = parseFloat(getComputedStyle(workspace).getPropertyValue("--timeline-h")) || 278;
+        divider.setPointerCapture(event.pointerId);
+        document.body.style.cursor = "row-resize";
+      });
+
+      divider.addEventListener("pointermove", event => {
+        if (!divider.hasPointerCapture(event.pointerId)) return;
+        const next = Math.min(460, Math.max(180, startHeight - (event.clientY - startY)));
+        workspace.style.setProperty("--timeline-h", `${next}px`);
+        requestAnimationFrame(fitSceneFrame);
+      });
+
+      divider.addEventListener("pointerup", event => {
+        if (divider.hasPointerCapture(event.pointerId)) divider.releasePointerCapture(event.pointerId);
+        document.body.style.cursor = "";
+      });
+    }
+
+    function setupDragDrop() {
+      $$(".media-item").forEach(item => {
+        item.addEventListener("dragstart", event => {
+          event.dataTransfer.setData("text/plain", JSON.stringify({
+            name: item.dataset.mediaName,
+            kind: item.dataset.mediaKind
+          }));
+          event.dataTransfer.effectAllowed = "copy";
+        });
+      });
+
+      sceneCanvas.addEventListener("dragover", event => {
+        event.preventDefault();
+        sceneCanvas.classList.add("drag-over");
+      });
+
+      sceneCanvas.addEventListener("dragleave", event => {
+        if (!sceneCanvas.contains(event.relatedTarget)) sceneCanvas.classList.remove("drag-over");
+      });
+
+      sceneCanvas.addEventListener("drop", event => {
+        event.preventDefault();
+        sceneCanvas.classList.remove("drag-over");
+        let payload = { name: "Mídia importada", kind: "overlay" };
+        try {
+          payload = JSON.parse(event.dataTransfer.getData("text/plain")) || payload;
+        } catch (error) {
+          payload = { name: "Mídia importada", kind: "overlay" };
+        }
+        addLayer(payload.name, payload.kind);
+      });
+    }
+
+    function setupTabs() {
+      $$("[data-panel-tab]").forEach(button => {
+        button.addEventListener("click", () => {
+          const target = button.dataset.panelTab;
+          $$("[data-panel-tab]").forEach(tab => tab.classList.toggle("active", tab === button));
+          $("#layersPanel").classList.toggle("hidden-panel", target !== "layers");
+          $("#propsPanel").classList.toggle("hidden-panel", target !== "props");
+        });
+      });
+    }
+
+    function updateSoundToggle() {
+      const button = $("#soundToggle");
+      if (!button) return;
+      const enabled = Sfx.isEnabled();
+      button.innerHTML = icon(enabled ? "volume-2" : "volume-x");
+      button.title = enabled ? "Som da interface ativado" : "Som da interface desativado";
+      button.classList.toggle("active", enabled);
+      refreshIcons();
+    }
+
+    function setupSfx() {
+      document.addEventListener("mouseover", event => {
+        if (event.target.closest("button, .media-item, .layer-row, .track-label, .clip-block")) Sfx.hover();
+      }, true);
+
+      document.addEventListener("click", event => {
+        const target = event.target.closest("button, .media-item, .layer-row, .track-label, .clip-block");
+        if (!target || target.id === "soundToggle") return;
+        Sfx.click();
+      }, true);
+
+      $("#soundToggle")?.addEventListener("click", event => {
+        event.stopPropagation();
+        const enabled = Sfx.toggle();
+        updateSoundToggle();
+        showToast(enabled ? "Sons da interface ativados." : "Sons da interface desativados.", enabled ? "ok" : "warn");
+      });
+
+      updateSoundToggle();
+    }
+
+    function boot() {
+      renderRuler();
+      renderLayers();
+      renderTimeline();
+      updateSceneSelection();
+      updateProperties();
+      updatePlayhead();
+      fitSceneFrame();
+      setupResizer();
+      setupDragDrop();
+      setupTabs();
+      setupSfx();
+
+      window.addEventListener("resize", () => requestAnimationFrame(fitSceneFrame));
+      if ("ResizeObserver" in window) {
+        new ResizeObserver(() => requestAnimationFrame(fitSceneFrame)).observe($("#canvasViewport"));
+      }
+
+      const params = new URLSearchParams(location.search);
+      const preferredRatio = params.get("perfil") || params.get("ratio") || localStorage.getItem("kivo-scene-ratio");
+      if (["16:9", "9:16", "1:1"].includes(preferredRatio)) {
+        setRatio(preferredRatio);
+        toast.classList.remove("show");
+      }
+
+      setInterval(() => {
+        const now = new Date();
+        $("#saveStatus").textContent = `Salvo automaticamente: ${now.toLocaleTimeString("pt-BR")}`;
+      }, 1000);
+
+      $("#layerSearch").addEventListener("input", event => renderLayers(event.target.value));
+      opacityRange.addEventListener("input", event => updateLayerOpacity(event.target.value));
+      propOpacity.addEventListener("input", event => updateLayerOpacity(event.target.value));
+      playBtn.addEventListener("click", () => togglePlayback());
+      $("#addLayerBtn").addEventListener("click", () => addLayer());
+      $("#dupTool").addEventListener("click", duplicateSelected);
+      $("#duplicateLayerBtn").addEventListener("click", duplicateSelected);
+      $("#deleteTool").addEventListener("click", deleteSelected);
+      $("#deleteLayerBtn").addEventListener("click", deleteSelected);
+      $("#keyframeTool").addEventListener("click", addKeyframe);
+      $("#cropBtn").addEventListener("click", toggleCrop);
+      $("#propCropBtn").addEventListener("click", toggleCrop);
+      previewBtn.addEventListener("click", armPreview);
+      programBtn.addEventListener("click", goProgram);
+
+      $("#zoomSelect").addEventListener("change", event => {
+        canvasScale.style.setProperty("--zoom", Number(event.target.value) / 100);
+      });
+
+      $("#fitBtn").addEventListener("click", () => {
+        $("#zoomSelect").value = "100";
+        canvasScale.style.setProperty("--zoom", 1);
+        showToast("Canvas encaixado em 100%.", "ok");
+      });
+
+      $("#centerBtn").addEventListener("click", () => {
+        $("#canvasViewport").scrollTo({ left: 0, top: 0, behavior: "smooth" });
+        showToast("Referência centralizada.", "ok");
+      });
+
+      $$(".ratio-btn").forEach(button => {
+        button.addEventListener("click", () => setRatio(button.dataset.ratio));
+      });
+
+      $$(".lock-icons button").forEach(button => {
+        button.addEventListener("click", () => button.classList.toggle("on"));
+      });
+
+      refreshIcons();
+    }
+
+    document.addEventListener("DOMContentLoaded", boot);
+  </script>
+</body>
+</html>
