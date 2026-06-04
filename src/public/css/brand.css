@@ -290,7 +290,8 @@ html[data-theme="light"]{
 .ps-row.sel,.se-tabbody .lp-row.sel{box-shadow:0 0 0 1px var(--accent),0 0 14px -5px rgba(var(--accent-rgb),.55)}
 .tl-track.sel,.tl-lane.sel{box-shadow:0 0 10px -3px rgba(var(--accent-rgb),.5)}
 /* barra de ações da camada: ancorada na base-centro do PALCO (não segue a caixa) */
-.ov-tools-bar{left:50% !important;right:auto !important;top:auto !important;bottom:12px !important;margin:0 !important;transform:translateX(-50%) !important;z-index:10;backdrop-filter:blur(6px);background:rgba(8,14,26,.82) !important}
+.ov-tools-bar{left:50% !important;right:auto !important;top:auto !important;bottom:12px !important;margin:0 !important;transform:translateX(-50%) !important;z-index:10;backdrop-filter:blur(6px);background:rgba(8,14,26,.82) !important;border-radius:0 !important}
+.ov-tools-bar button{border-radius:0 !important}
 
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}
