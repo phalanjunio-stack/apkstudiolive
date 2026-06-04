@@ -8,7 +8,7 @@ const Graphics = (function () {
   function notify() { subs.forEach(f => { try { f(); } catch {} }); }
 
   const DEF = {
-    image: () => ({ x: 80, y: 5, w: 15, scale: 1, data: { src: '', label: 'Logo' } }),
+    image: () => ({ x: 0, y: 0, w: 100, h: 100, scale: 1, data: { src: '', label: 'Imagem', fit: 'contain' } }),
     scoreboard: () => ({ x: 4, y: 4, w: 0, scale: 1, data: { home: 'CASA', away: 'VISITANTE', hs: 0, as: 0, clock: 0, running: false, ch: '#1a3a7a', ca: '#7a1a1a', homeLogo: '', awayLogo: '', design: 'modern', stage: '', comp: '', added: 0 } }),
     ticker: () => ({ x: 0, y: 88, w: 100, scale: 1, data: { text: 'Bem-vindo a transmissao  •  Kivo Studio', speed: 18 } }),
     slideshow: () => ({ x: 80, y: 5, w: 18, scale: 1, data: { images: [], interval: 5, transition: 'fade', i: 0 } }),
@@ -201,7 +201,7 @@ const Graphics = (function () {
 
   function ovHTML(type) {
     switch (type) {
-      case 'image': return '<img alt="">';
+      case 'image': return '<img alt=""><span class="ov-vid-ph">Escolha a imagem &#9656;</span>';
       case 'scoreboard': return '<div class="sb"><img class="sb-logo sb-hl" alt=""><span class="sb-team sb-h"><span class="sb-nm"></span></span><span class="sb-score sb-hs"></span><span class="sb-mid"><span class="sb-stage"></span><span class="sb-clock"></span><span class="sb-added"></span></span><span class="sb-score sb-as"></span><span class="sb-team sb-a"><span class="sb-nm"></span></span><img class="sb-logo sb-al" alt=""><span class="sb-comp"></span></div>';
       case 'ticker': return '<div class="tk"><div class="tk-move"><span></span><span></span></div></div>';
       case 'slideshow': return '<img class="ss-img" alt="">';
@@ -240,9 +240,12 @@ const Graphics = (function () {
   function paintRoot(ov, root) {
     if (!root) return;
     if (ov.type === 'image') {
-      const img = root.querySelector('img');
+      const img = root.querySelector('img'); const ph = root.querySelector('.ov-vid-ph'); const boxed = ov.h != null;
       img.src = ov.data.src || ''; img.style.display = ov.data.src ? '' : 'none';
-      root.classList.toggle('empty', !ov.data.src);
+      if (boxed) { img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = (ov.data.fit === 'cover' ? 'cover' : 'contain'); }
+      else { img.style.width = '100%'; img.style.height = 'auto'; img.style.objectFit = ''; }
+      if (ph) ph.style.display = (!ov.data.src && boxed) ? 'flex' : 'none';
+      root.classList.toggle('empty', !ov.data.src && !boxed);
     } else if (ov.type === 'scoreboard') {
       const q = s => root.querySelector(s); const d = ov.data;
       root.querySelector('.sb').className = 'sb sb-' + (d.design || 'modern');
@@ -369,9 +372,9 @@ const Graphics = (function () {
     mk('↑', 'Trazer p/ frente', () => raise(ov.id));
     mk('↓', 'Mandar p/ trás', () => lower(ov.id));
     mk('✕', 'Remover', () => { remove(ov.id); selectedId = null; });
-    if (ov.type === 'video') {
+    if (ov.type === 'video' || ov.type === 'image') {
       mk('⤢', 'Tela cheia (preencher o quadro)', () => { ov.x = 0; ov.y = 0; ov.w = 100; ov.h = 100; setVideoBox(ov); saveLocal(); });
-      mk('▣', 'Preencher ↔ Caber', () => { ov.data.fit = (ov.data.fit === 'contain' ? 'cover' : 'contain'); paintVideo(ov); saveLocal(); });
+      mk('▣', 'Preencher ↔ Caber', () => { ov.data.fit = (ov.data.fit === 'contain' ? 'cover' : 'contain'); paint(ov); saveLocal(); });
     }
     el.appendChild(tb);
   }
@@ -390,7 +393,7 @@ const Graphics = (function () {
           patch[cn.x] = clampc(c0[cn.x] + (ev.clientX - px) * cn.sx / W * 100, c0[cn.x === 'l' ? 'r' : 'l']);
           patch[cn.y] = clampc(c0[cn.y] + (ev.clientY - py) * cn.sy / H * 100, c0[cn.y === 't' ? 'b' : 't']);
           ov.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop, patch); applyCrop(ov);
-        } else if (ov.type === 'video') {      // VÍDEO: caixa com largura×altura independentes (preencher, lado-a-lado, PiP)
+        } else if ((ov.type === 'video' || ov.type === 'image') && ov.h != null) {      // VÍDEO/IMAGEM: caixa com largura×altura independentes (preencher, lado-a-lado, PiP)
           const cn = CN[corner], hh = host.getBoundingClientRect();
           let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
           if (cn.x === 'l') left = ev.clientX; else right = ev.clientX;

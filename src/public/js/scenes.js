@@ -121,11 +121,7 @@
     const r = fmtRatioNum(); let w = aw, h = w / r; if (h > ah) { h = ah; w = h * r; }
     stage.style.aspectRatio = ''; stage.style.width = Math.round(w) + 'px'; stage.style.height = Math.round(h) + 'px';
   }
-  function seSetFormat(fmt) {
-    const b = document.querySelector('#fmtSeg button[data-fmt="' + fmt + '"]'); if (b) b.click();   // muda o FORMATO da live inteira (global)
-    seFitStage();
-    document.querySelectorAll('#seModal .se-fmt button').forEach(x => x.classList.toggle('on', x.dataset.fmt === fmt));
-  }
+  // (seletor de formato REMOVIDO do editor — formato é global; mexer aqui mudava a live toda. Volta com perfis/salvar.)
   function modalSourceMenu(ev, sc) {
     const items = []; let srcs = []; try { srcs = window.Studio.sourcesInfo().list; } catch {}
     srcs.forEach(s => items.push([(s.id === sc.program ? '● ' : '    ') + (s.label || s.id), () => { saveProgram(sc.id, s.id); seRender(); }]));
@@ -259,7 +255,6 @@
     modalScene = sc; prevActive = activeId;
     const ov = el('div', 'modal-overlay se-overlay'); ov.id = 'seModal';
     ov.innerHTML = '<div class="se-modal"><div class="se-head"><b>Montar cena — <span class="se-nm"></span></b>'
-      + '<div class="se-fmt">' + ['16:9', '9:16', '1:1', '4:5'].map(function (f) { return '<button data-fmt="' + f + '">' + f + '</button>'; }).join('') + '</div>'
       + '<div class="se-actions"><button class="se-prev">&#9680; Preview</button><button class="se-air">&#9679; Pôr no ar</button><button class="modal-close se-x" aria-label="Fechar">&times;</button></div></div>'
       + '<div class="se-body"><div class="se-stagewrap"><div class="se-stage" id="seStage">'
       + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
@@ -270,7 +265,6 @@
     document.body.appendChild(ov);
     ov.querySelector('.se-nm').textContent = sc.name;
     requestAnimationFrame(seFitStage); window.addEventListener('resize', seFitStage);
-    (function () { var cur; try { cur = document.querySelector('.dash').dataset.format; } catch (e) { cur = '16:9'; } ov.querySelectorAll('.se-fmt button').forEach(function (b) { b.classList.toggle('on', b.dataset.fmt === cur); b.onclick = function () { seSetFormat(b.dataset.fmt); }; }); })();
     ov.querySelector('.se-x').onclick = closeEditor;
     ov.querySelector('.se-air').onclick = putOnAir;
     ov.querySelector('.se-prev').onclick = () => { const id = modalScene && modalScene.id; closeEditor(); if (id) loadToPreview(id); };
