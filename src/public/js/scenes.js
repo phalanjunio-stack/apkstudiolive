@@ -59,7 +59,9 @@
     play: '<path d="m7 4 13 8-13 8V4Z"/>',
     pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
     full: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
-    grid: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>'
+    grid: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
+    lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'
   };
   function seIcon(name) { return '<svg class="se-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (SEIC[name] || '') + '</svg>'; }
 
@@ -198,27 +200,37 @@
     const body = document.getElementById('seTlBody'); if (!body || !modalScene) return;
     const own = (G() && G().listForScene) ? G().listForScene(modalScene.id) : [];
     body.innerHTML = '';
-    const inner = el('div', 'tl-inner'); inner.style.width = (tlZoom * 100) + '%'; body.appendChild(inner);   // zoom = largura do conteúdo (rola na horizontal)
+    const wrap = el('div', 'tl-wrap'); body.appendChild(wrap);
+    const heads = el('div', 'tl-heads'); wrap.appendChild(heads);
+    heads.appendChild(el('div', 'tl-headspacer'));                 // alinha os cabeçalhos com a régua
+    const lanesScroll = el('div', 'tl-lanesscroll'); wrap.appendChild(lanesScroll);
+    const lanes = el('div', 'tl-lanes'); lanes.style.width = (tlZoom * 100) + '%'; lanesScroll.appendChild(lanes);
     const ruler = el('div', 'tl-ruler');
     const step = tlDur <= 20 ? 1 : tlDur <= 60 ? 5 : 10;
     for (let s = 0; s <= tlDur + 0.001; s += step) { const tk = el('span', 'tl-tick', fmtT(s)); tk.style.left = tlPos(s) + '%'; ruler.appendChild(tk); }
     ruler.addEventListener('pointerdown', e => { const r = ruler.getBoundingClientRect(); const sk = ev => tlSeek((ev.clientX - r.left) / r.width * tlDur); sk(e); const up = () => { window.removeEventListener('pointermove', sk); window.removeEventListener('pointerup', up); }; window.addEventListener('pointermove', sk); window.addEventListener('pointerup', up); });
-    inner.appendChild(ruler);
-    const ph = el('div', 'tl-ph'); ph.style.left = tlPos(tlT) + '%'; ph.appendChild(el('span', 'tl-ph-head')); inner.appendChild(ph);
-    if (!own.length) inner.appendChild(el('div', 'tl-empty', 'Adicione camadas (painel à direita) pra animar.'));
+    lanes.appendChild(ruler);
+    const ph = el('div', 'tl-ph'); ph.style.left = tlPos(tlT) + '%'; ph.appendChild(el('span', 'tl-ph-head')); lanes.appendChild(ph);
+    if (!own.length) lanes.appendChild(el('div', 'tl-empty', 'Adicione camadas (painel à direita ou "+ Adicionar camada") pra animar.'));
     [...own].reverse().forEach(o => {
       const a = o.data && o.data.anim;
       const tin = a ? (a.tin || 0) : 0, tout = (a && a.tout != null) ? a.tout : tlDur;
       const sel = G().selected && G().selected() === o.id;
-      const track = el('div', 'tl-track' + (sel ? ' sel' : ''));
+      const head = el('div', 'tl-thead' + (sel ? ' sel' : ''));   // cabeçalho da faixa: cadeado + olho + nome (estilo mockup)
+      const lockB = el('button', 'tl-hlock'); lockB.innerHTML = seIcon(o.locked ? 'lock' : 'unlock'); lockB.title = o.locked ? 'Destravar' : 'Travar'; lockB.onclick = e => { e.stopPropagation(); G().setLocked(o.id, !o.locked); tlRender(); seRender(); };
+      const eyeB = el('button', 'tl-heye' + (o.visible === false ? ' off' : '')); eyeB.innerHTML = (o.visible === false ? EYEOFF : EYE); eyeB.title = 'Mostrar / ocultar'; eyeB.onclick = e => { e.stopPropagation(); G().setVisible(o.id, o.visible === false); tlRender(); seRender(); };
+      head.append(lockB, eyeB, el('span', 'tl-hname', layerName(o)));
+      head.addEventListener('click', () => { if (!G().selected || G().selected() !== o.id) { G().select(o.id); seRender(); tlRender(); } });
+      heads.appendChild(head);
+      const lane = el('div', 'tl-lane' + (sel ? ' sel' : ''));
       const bar = el('div', 'tl-bar tl-bar-' + o.type); bar.style.left = tlPos(tin) + '%'; bar.style.width = Math.max(1, tlPos(tout) - tlPos(tin)) + '%';
       if ((o.type === 'image' || o.type === 'template') && o.data && (o.data.src || o.data.art)) { bar.style.backgroundImage = 'url(' + (o.data.src || o.data.art) + ')'; bar.classList.add('tl-bar-thumb'); }
       bar.appendChild(el('span', 'tl-bar-nm', layerName(o)));
-      const hl = el('span', 'tl-h tl-hl'), hr = el('span', 'tl-h tl-hr'); bar.append(hl, hr); track.appendChild(bar);
-      if (a && a.keys) a.keys.forEach(k => { const d = el('span', 'tl-kf'); d.style.left = tlPos(k.t) + '%'; d.title = 'keyframe ' + k.t + 's · clique=ir · 2 cliques=remover'; d.onclick = ev => { ev.stopPropagation(); tlSeek(k.t); }; d.ondblclick = ev => { ev.stopPropagation(); G().removeKeyframe(o.id, k.t); tlRender(); }; track.appendChild(d); });
-      track.addEventListener('click', e => { if (e.target === track || e.target.classList.contains('tl-lab')) { if (!G().selected || G().selected() !== o.id) { G().select(o.id); seRender(); tlRender(); } } });
-      tlDragBar(o, bar, hl, hr, track);
-      inner.appendChild(track);
+      const hl = el('span', 'tl-h tl-hl'), hr = el('span', 'tl-h tl-hr'); bar.append(hl, hr); lane.appendChild(bar);
+      if (a && a.keys) a.keys.forEach(k => { const d = el('span', 'tl-kf'); d.style.left = tlPos(k.t) + '%'; d.title = 'keyframe ' + k.t + 's · clique=ir · 2 cliques=remover'; d.onclick = ev => { ev.stopPropagation(); tlSeek(k.t); }; d.ondblclick = ev => { ev.stopPropagation(); G().removeKeyframe(o.id, k.t); tlRender(); }; lane.appendChild(d); });
+      lane.addEventListener('click', e => { if (e.target === lane) { if (!G().selected || G().selected() !== o.id) { G().select(o.id); seRender(); tlRender(); } } });
+      tlDragBar(o, bar, hl, hr, lane);
+      lanes.appendChild(lane);
     });
     const sid = G().selected && G().selected(), an = (sid != null && G().getAnim) ? (G().getAnim(sid) || {}) : {};
     const fi = document.getElementById('seFin'), fo = document.getElementById('seFout');

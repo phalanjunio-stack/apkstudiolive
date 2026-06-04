@@ -292,6 +292,23 @@ html[data-theme="light"]{
 /* barra de ações da camada: ancorada na base-centro do PALCO (não segue a caixa) */
 .ov-tools-bar{left:50% !important;right:auto !important;top:auto !important;bottom:12px !important;margin:0 !important;transform:translateX(-50%) !important;z-index:10;backdrop-filter:blur(6px);background:rgba(8,14,26,.82) !important;border-radius:0 !important}
 .ov-tools-bar button{border-radius:0 !important}
+/* timeline em 2 colunas: cabeçalhos fixos (lock/olho/nome) | faixas roláveis */
+.se-tl-body{overflow-x:hidden;overflow-y:auto}
+.tl-wrap{display:flex;min-height:0;align-items:flex-start}
+.tl-heads{flex:none;width:150px;display:flex;flex-direction:column;gap:4px;padding-right:7px}
+.tl-headspacer{height:18px;flex:none}
+.tl-thead{height:24px;display:flex;align-items:center;gap:5px;padding:0 7px;background:var(--inset);border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.tl-thead.sel{border-color:var(--accent2);background:rgba(var(--accent-rgb),.1)}
+.tl-hlock,.tl-heye{width:18px;height:18px;flex:none;border:0;background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.tl-hlock:hover,.tl-heye:hover{color:var(--txt)}
+.tl-hlock .se-svg{width:13px;height:13px}
+.tl-heye svg{width:13px;height:13px}
+.tl-heye.off{color:#e06a6a}
+.tl-hname{flex:1;font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#dbe8ff}
+.tl-lanesscroll{flex:1;overflow-x:auto;overflow-y:hidden;min-width:0}
+.tl-lanes{position:relative;display:flex;flex-direction:column;gap:4px;min-width:100%}
+.tl-lane{position:relative;height:24px;background:var(--inset);border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.tl-lane.sel{border-color:var(--accent2)}
 
 /* gêmeo do preview (monitor PREVIEW): só leitura, sem cursor de edição */
 .ovv{pointer-events:none !important;cursor:default !important}
