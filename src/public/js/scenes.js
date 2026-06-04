@@ -324,34 +324,70 @@
     else if (airOn) { if (G().clearTime) G().clearTime(); airOn = false; }
   }
 
-  // ---- painel: as camadas de UMA cena (vídeo + gráficos próprios + globais) ----
+  // ---- painel de CAMADAS estilo Photoshop (miniatura, opacidade, travar, arrastar pra reordenar) ----
+  function layerThumb(o) {
+    const t = el('span', 'lp-thumb');
+    if (o.type === 'image' && o.data && o.data.src) { const im = document.createElement('img'); im.src = o.data.src; t.appendChild(im); }
+    else if (o.type === 'template' && o.data && o.data.art) { const im = document.createElement('img'); im.src = o.data.art; t.appendChild(im); }
+    else { t.classList.add('lp-th-ic'); t.textContent = (o.type === 'video') ? (o.data && o.data.device != null ? '📷' : '🎬') : o.type === 'text' ? 'Aa' : o.type === 'scoreboard' ? '🏆' : o.type === 'ticker' ? '▭' : o.type === 'slideshow' ? '🎞' : o.type === 'template' ? '🖼' : '▦'; if (o.type === 'text' && o.data && o.data.color) t.style.color = o.data.color; }
+    return t;
+  }
+  function bindRowDrag(row, o, sc, modal, listWrap) {
+    row.addEventListener('pointerdown', e => {
+      if (e.target.closest('button, input')) return;
+      const startY = e.clientY; let dragging = false;
+      const onMove = ev => {
+        if (!dragging && Math.abs(ev.clientY - startY) < 5) return;
+        if (!dragging) { dragging = true; row.classList.add('ps-dragging'); }
+        const after = [...listWrap.querySelectorAll('.ps-row')].filter(r => r !== row).find(r => ev.clientY < r.getBoundingClientRect().top + r.offsetHeight / 2);
+        if (after) listWrap.insertBefore(row, after); else listWrap.appendChild(row);
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onUp);
+        row.classList.remove('ps-dragging');
+        if (dragging) { const ids = [...listWrap.querySelectorAll('.ps-row')].map(r => +r.dataset.id); if (G().reorderLayers) G().reorderLayers(ids); seRender(); tlRender(); }
+        else { if (!modal && activeId !== sc.id) setActive(sc.id, false); G().select(o.id); seRender(); tlRender(); }
+      };
+      window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onUp);
+    });
+  }
   function layersPanel(sc, modal) {
-    const box = el('div', 'sc-layers');
+    const box = el('div', 'sc-layers ps-layers');
     const own = (G() && G().listForScene) ? G().listForScene(sc.id) : [];
-    if (!own.length) box.appendChild(el('div', 'lp-empty', 'Sem camadas próprias ainda — use "+ camada" abaixo.'));
+    const gl = (G() && G().globals) ? G().globals() : [];
+    const selId = G().selected && G().selected();
+    const selO = own.concat(gl).find(o => o.id === selId);
+    const opbar = el('div', 'ps-opacity' + (selO ? '' : ' off'));
+    opbar.appendChild(el('span', 'ps-oplab', 'Opacidade'));
+    const op = document.createElement('input'); op.type = 'range'; op.min = 0; op.max = 100; op.step = 1;
+    op.value = selO ? Math.round((selO.opacity == null ? 1 : selO.opacity) * 100) : 100; op.disabled = !selO;
+    const opv = el('span', 'ps-opv', op.value + '%');
+    op.oninput = () => { opv.textContent = op.value + '%'; if (selO) G().setOpacity(selO.id, (+op.value) / 100); };
+    opbar.append(op, opv); box.appendChild(opbar);
+
+    const listWrap = el('div', 'ps-list');
+    if (!own.length) listWrap.appendChild(el('div', 'lp-empty', 'Sem camadas — use "+ camada" abaixo.'));
     [...own].reverse().forEach(o => {
-      const sel = G().selected && G().selected() === o.id;
-      const row = el('div', 'sc-lrow lp-row' + (o.visible === false ? ' off' : '') + (sel ? ' sel' : ''));
-      const eye = el('button', 'lp-eye', o.visible === false ? EYEOFF : EYE); eye.title = 'Mostrar / ocultar';
-      eye.onclick = e => { e.stopPropagation(); G().setVisible(o.id, o.visible === false); };
+      const sel = selId === o.id;
+      const row = el('div', 'sc-lrow ps-row lp-row' + (o.visible === false ? ' off' : '') + (sel ? ' sel' : '') + (o.locked ? ' locked' : '')); row.dataset.id = o.id;
+      const eye = el('button', 'lp-eye', o.visible === false ? EYEOFF : EYE); eye.title = 'Mostrar / ocultar'; eye.onclick = e => { e.stopPropagation(); G().setVisible(o.id, o.visible === false); };
       const nm = el('span', 'lp-nm', layerName(o));
-      const up = el('button', 'lp-mini', '▲'); up.title = 'Frente'; up.onclick = e => { e.stopPropagation(); G().raise(o.id); };
-      const dn = el('button', 'lp-mini', '▼'); dn.title = 'Trás'; dn.onclick = e => { e.stopPropagation(); G().lower(o.id); };
+      const lock = el('button', 'lp-mini lp-lock', o.locked ? '🔒' : '🔓'); lock.title = o.locked ? 'Destravar' : 'Travar (não move)'; lock.onclick = e => { e.stopPropagation(); G().setLocked(o.id, !o.locked); seRender(); };
       const dup = el('button', 'lp-mini', '⧉'); dup.title = 'Duplicar / copiar p/ outra cena'; dup.onclick = e => { e.stopPropagation(); dupMenu(e, o, sc); };
       const x = el('button', 'lp-x', '×'); x.title = 'Remover camada'; x.onclick = e => { e.stopPropagation(); G().remove(o.id); };
-      row.append(eye, nm, up, dn, dup, x);
-      row.onclick = () => { if (!modal && activeId !== sc.id) setActive(sc.id, false); G().select(o.id); };
-      box.appendChild(row);
+      row.append(eye, layerThumb(o), nm, lock, dup, x);
+      bindRowDrag(row, o, sc, modal, listWrap);
+      listWrap.appendChild(row);
     });
+    box.appendChild(listWrap);
     const addb = el('button', 'sc-add'); addb.textContent = '+ camada'; addb.title = 'Adicionar nesta cena'; addb.onclick = (e) => addLayerMenu(e, sc, modal); box.appendChild(addb);
 
-    const gl = (G() && G().globals) ? G().globals() : [];
     if (gl.length) {
       box.appendChild(el('div', 'sc-lsec', 'Em todas as cenas'));
       [...gl].reverse().forEach(o => {
         const row = el('div', 'sc-lrow lp-row sc-global');
         const claim = el('button', 'lp-mini', '↧'); claim.title = 'Trazer só pra esta cena'; claim.onclick = e => { e.stopPropagation(); G().setOverlayScene(o.id, sc.id); render(); };
-        row.append(el('span', 'sc-lic', '🌐'), el('span', 'lp-nm', layerName(o)), claim);
+        row.append(el('span', 'lp-thumb lp-th-ic', '🌐'), el('span', 'lp-nm', layerName(o)), claim);
         box.appendChild(row);
       });
     }

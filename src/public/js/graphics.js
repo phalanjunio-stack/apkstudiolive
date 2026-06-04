@@ -220,6 +220,16 @@ const Graphics = (function () {
   function setOpacity(id, v) { const o = get(id); if (!o) return; o.opacity = Math.max(0, Math.min(1, v)); applyTransform(o); saveLocal(); }
   function raise(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0 || i === overlays.length - 1) return; const [o] = overlays.splice(i, 1); overlays.push(o); if (host && o.el) host.appendChild(o.el); if (hostV && o.elv) hostV.appendChild(o.elv); emit(); }
   function lower(id) { const i = overlays.findIndex(o => o.id === id); if (i <= 0) return; const [o] = overlays.splice(i, 1); overlays.unshift(o); if (host && o.el) host.insertBefore(o.el, host.firstChild); if (hostV && o.elv) hostV.insertBefore(o.elv, hostV.firstChild); emit(); }
+  // reordena z (drag estilo Photoshop): frontToBack = ids do topo (frente) p/ baixo (trás); preserva a posição das demais camadas
+  function reorderLayers(frontToBack) {
+    if (!Array.isArray(frontToBack) || !frontToBack.length) return;
+    const set = new Set(frontToBack), byId = id => overlays.find(o => o.id === id);
+    const slots = []; overlays.forEach((o, i) => { if (set.has(o.id)) slots.push(i); });
+    const backToFront = frontToBack.slice().reverse().map(byId).filter(Boolean);   // resolve ANTES de reatribuir (senão muta o array que o byId lê)
+    slots.forEach((slotIdx, k) => { if (backToFront[k]) overlays[slotIdx] = backToFront[k]; });
+    overlays.forEach(o => { if (host && o.el) host.appendChild(o.el); if (hostV && o.elv) hostV.appendChild(o.elv); });
+    emit();
+  }
   function update(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); paint(o); if (o.type === 'scoreboard') overlays.forEach(t => { if (t.type === 'template') paintTemplate(t); }); saveLocal(); }
   function score(id, side, d) { const o = get(id); if (!o) return; const k = side === 'h' ? 'hs' : 'as'; o.data[k] = Math.max(0, o.data[k] + d); paint(o); saveLocal(); }
   function clockCtl(id, action) { const o = get(id); if (!o) return; if (action === 'toggle') o.data.running = !o.data.running; if (action === 'reset') { o.data.clock = 0; o.data.running = false; } paint(o); saveLocal(); }
@@ -473,7 +483,7 @@ const Graphics = (function () {
 
   load();
   return {
-    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, update, score, clockCtl,
+    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, raise, lower, reorderLayers, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene,
