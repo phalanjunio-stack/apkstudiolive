@@ -136,8 +136,9 @@
     if (!seVid || !modalScene) return;
     let stream = null; try { const s = window.Studio.sourcesInfo().list.find(x => x.id === modalScene.program); stream = s ? s.stream : null; } catch {}
     const emp = document.getElementById('seEmpty');
+    let nLayers = 0; try { nLayers = (G().listForScene ? G().listForScene(modalScene.id) : []).length; } catch (e) {}
     if (stream) { if (seVid.srcObject !== stream) { seVid.srcObject = stream; seVid.play && seVid.play().catch(() => {}); } seVid.style.display = ''; if (emp) emp.style.display = 'none'; }
-    else { if (seVid.srcObject) seVid.srcObject = null; seVid.style.display = 'none'; if (emp) emp.style.display = 'flex'; }
+    else { if (seVid.srcObject) seVid.srcObject = null; seVid.style.display = 'none'; if (emp) emp.style.display = nLayers ? 'none' : 'flex'; }
   }
   // o VÍDEO da cena também é controlável: arrasta = move, scroll = zoom, 2 cliques = reseta (por cena)
   function applyVidT(sc) { if (!seVid || !sc) return; const v = sc.vid || {}; seVid.style.transformOrigin = 'center'; seVid.style.transform = 'translate(' + (v.x || 0) + '%,' + (v.y || 0) + '%) scale(' + (v.scale || 1) + ')'; }
@@ -262,7 +263,7 @@
       + '<div class="se-actions"><button class="se-prev">&#9680; Preview</button><button class="se-air">&#9679; Pôr no ar</button><button class="modal-close se-x" aria-label="Fechar">&times;</button></div></div>'
       + '<div class="se-body"><div class="se-stagewrap"><div class="se-stage" id="seStage">'
       + '<video class="se-vid" id="seVid" autoplay playsinline muted></video>'
-      + '<div class="se-empty" id="seEmpty">Sem fonte — escolha ao lado &#9656;</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
+      + '<div class="se-empty" id="seEmpty">Cena vazia — use <b>+ camada</b> pra montar</div><div class="se-ovs pgm-overlay" id="seOvs"></div>'
       + '</div></div><div class="se-side" id="seSide"></div></div>'
       + '<div class="se-tl" id="seTl"><div class="se-tl-top"><button class="se-play" id="sePlay">&#9654;</button><button class="se-loop" id="seLoop" title="Repetir / loop">&#128257;</button><span class="se-time" id="seTime">0.0s</span><button class="se-kf" id="seKf">&#9670; keyframe</button><span class="se-fade">fade<input type="number" id="seFin" min="0" max="10" step="0.1" value="0" title="fade in (s)"><input type="number" id="seFout" min="0" max="10" step="0.1" value="0" title="fade out (s)"></span><button class="se-kfclr" id="seKfClr">limpar anim</button><span class="se-tl-h">barras = entra/sai &middot; &#9670; grava posição no tempo (camada selecionada) &middot; régua = ir pro tempo</span></div><div class="se-tl-body" id="seTlBody"></div></div>'
       + '</div>';

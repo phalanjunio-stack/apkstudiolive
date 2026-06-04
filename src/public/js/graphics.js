@@ -14,7 +14,7 @@ const Graphics = (function () {
     slideshow: () => ({ x: 80, y: 5, w: 18, scale: 1, data: { images: [], interval: 5, transition: 'fade', i: 0 } }),
     template: () => ({ x: 6, y: 6, w: 40, scale: 1, data: { art: '', fields: [], name: 'Modelo' } }),
     text: () => ({ x: 22, y: 70, w: 0, scale: 1, data: { text: 'Escreva aqui', size: 36, color: '#ffffff', weight: 800, align: 'center', bg: '' } }),
-    video: () => ({ x: 0, y: 0, w: 100, scale: 1, data: { src: '', sourceId: null, label: 'Vídeo', loop: true } }),
+    video: () => ({ x: 0, y: 0, w: 100, h: 100, scale: 1, data: { src: '', sourceId: null, label: 'Vídeo', loop: true, fit: 'cover' } }),
   };
   function tplValue(f, m) {
     if (!f) return '';
@@ -46,12 +46,12 @@ const Graphics = (function () {
   }
 
   function saveLocal() {
-    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: o.data })))); } catch {}
+    try { localStorage.setItem(KEY, JSON.stringify(overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: o.data })))); } catch {}
   }
   function emit() { saveLocal(); notify(); applyPreview(); }
   function load() {
     try { const s = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(s)) overlays = s; } catch {}
-    overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; });
+    overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; if (o.type === 'video') { if (o.h == null) o.h = 100; if (o.data && o.data.fit == null) o.data.fit = 'cover'; } });
   }
 
   function mount(el) {
@@ -66,12 +66,12 @@ const Graphics = (function () {
   function flash(id, ms) { setVisible(id, true); setTimeout(() => setVisible(id, false), ms || 6000); }
   function selected() { return selectedId; }
   // exporta/importa o conjunto de camadas (pra CENAS guardarem a sua montagem)
-  function exportOverlays() { return overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: JSON.parse(JSON.stringify(o.data || {})) })); }
+  function exportOverlays() { return overlays.map(o => ({ id: o.id, type: o.type, x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity), visible: o.visible, scene: (o.scene == null ? null : o.scene), data: JSON.parse(JSON.stringify(o.data || {})) })); }
   function importOverlays(arr) {
     selectedId = null;
     overlays.forEach(o => { try { o.el && o.el.remove(); } catch {} });
     overlays = (Array.isArray(arr) ? arr : []).map(o => Object.assign({}, o, { el: null, data: JSON.parse(JSON.stringify(o.data || {})) }));
-    overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; });
+    overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; if (o.type === 'video') { if (o.h == null) o.h = 100; if (o.data && o.data.fit == null) o.data.fit = 'cover'; } });
     if (host && host.parentElement) host.parentElement.classList.remove('ov-editing');
     renderAll(); emit();
   }
@@ -180,6 +180,7 @@ const Graphics = (function () {
   function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); if (o.elv) applyTransformV(o); }
   // ===== PREVIEW: render paralelo no monitor PREVIEW (cena diferente do PROGRAM, só leitura) =====
   function applyTransformV(o) { if (!o.elv) return; o.elv.style.transformOrigin = 'center center'; o.elv.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.elv.style.opacity = (o.opacity == null ? 1 : o.opacity); o.elv.style.left = o.x + '%'; o.elv.style.top = o.y + '%'; }
+  function setVideoBox(o) { [o.el, o.elv].forEach(e => { if (!e) return; e.style.left = o.x + '%'; e.style.top = o.y + '%'; e.style.width = o.w + '%'; if (o.h != null) e.style.height = o.h + '%'; }); }
   function previewShow(o) { return (o.scene == null || o.scene === previewScene) && o.visible !== false; }
   function applyPreviewOne(o) { if (!o.elv) return; o.elv.style.display = previewShow(o) ? '' : 'none'; applyTransformV(o); }
   function applyPreview() { overlays.forEach(applyPreviewOne); }
@@ -217,6 +218,7 @@ const Graphics = (function () {
     el.className = 'ov ov-' + ov.type;
     el.style.left = ov.x + '%'; el.style.top = ov.y + '%';
     if (ov.w) el.style.width = ov.w + '%';
+    if (ov.h != null) el.style.height = ov.h + '%';
     if (!ownedShow(ov)) el.style.display = 'none';
     ov.el = el; el.innerHTML = ovHTML(ov.type);
     applyTransform(ov);
@@ -226,6 +228,7 @@ const Graphics = (function () {
     if (hostV) {   // gêmeo no monitor PREVIEW (render paralelo, sem edição)
       const elv = document.createElement('div'); elv.className = 'ov ovv ov-' + ov.type;
       if (ov.w) elv.style.width = ov.w + '%';
+      if (ov.h != null) elv.style.height = ov.h + '%';
       elv.innerHTML = ovHTML(ov.type); ov.elv = elv; hostV.appendChild(elv);
     }
     if (ov.id === selectedId) select(ov.id);
@@ -280,6 +283,7 @@ const Graphics = (function () {
   function paintVideo(ov) { if (ov.el) paintVideoRoot(ov, ov.el); if (ov.elv) paintVideoRoot(ov, ov.elv); }
   function paintVideoRoot(ov, root) {
     const v = root && root.querySelector('.ov-vid'), ph = root && root.querySelector('.ov-vid-ph'); if (!v) return;
+    v.style.objectFit = (ov.data && ov.data.fit === 'contain') ? 'contain' : 'cover';   // preencher (cover) x caber (contain)
     const d = ov.data;
     if (d.src) {   // VÍDEO PRÓPRIO da cena (arquivo escolhido) — não vem das FONTES
       if (v.srcObject) { try { v.srcObject = null; } catch (e) {} }
@@ -365,6 +369,10 @@ const Graphics = (function () {
     mk('↑', 'Trazer p/ frente', () => raise(ov.id));
     mk('↓', 'Mandar p/ trás', () => lower(ov.id));
     mk('✕', 'Remover', () => { remove(ov.id); selectedId = null; });
+    if (ov.type === 'video') {
+      mk('⤢', 'Tela cheia (preencher o quadro)', () => { ov.x = 0; ov.y = 0; ov.w = 100; ov.h = 100; setVideoBox(ov); saveLocal(); });
+      mk('▣', 'Preencher ↔ Caber', () => { ov.data.fit = (ov.data.fit === 'contain' ? 'cover' : 'contain'); paintVideo(ov); saveLocal(); });
+    }
     el.appendChild(tb);
   }
   function removeHandles(ov) { if (ov.el) ov.el.querySelectorAll('.ovh').forEach(n => n.remove()); }
@@ -382,6 +390,16 @@ const Graphics = (function () {
           patch[cn.x] = clampc(c0[cn.x] + (ev.clientX - px) * cn.sx / W * 100, c0[cn.x === 'l' ? 'r' : 'l']);
           patch[cn.y] = clampc(c0[cn.y] + (ev.clientY - py) * cn.sy / H * 100, c0[cn.y === 't' ? 'b' : 't']);
           ov.data.crop = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, ov.data.crop, patch); applyCrop(ov);
+        } else if (ov.type === 'video') {      // VÍDEO: caixa com largura×altura independentes (preencher, lado-a-lado, PiP)
+          const cn = CN[corner], hh = host.getBoundingClientRect();
+          let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
+          if (cn.x === 'l') left = ev.clientX; else right = ev.clientX;
+          if (cn.y === 't') top = ev.clientY; else bottom = ev.clientY;
+          ov.w = Math.max(5, Math.abs(right - left) / hh.width * 100);
+          ov.h = Math.max(5, Math.abs(bottom - top) / hh.height * 100);
+          ov.x = (Math.min(left, right) - hh.left) / hh.width * 100;
+          ov.y = (Math.min(top, bottom) - hh.top) / hh.height * 100;
+          setVideoBox(ov);
         } else { ov.scale = Math.max(0.15, Math.min(8, s0 * Math.hypot(ev.clientX - cx, ev.clientY - cy) / d0)); applyTransform(ov); }
       };
       const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); saveLocal(); };
