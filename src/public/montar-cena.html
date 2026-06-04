@@ -4136,7 +4136,7 @@
         <div class="window-controls">
           <button class="icon-button" type="button" title="Minimizar" aria-label="Minimizar"><i data-lucide="minus"></i></button>
           <button class="icon-button" type="button" title="Maximizar" aria-label="Maximizar"><i data-lucide="square"></i></button>
-          <button class="icon-button" type="button" title="Fechar" aria-label="Fechar" onclick="location.href='studio.html'"><i data-lucide="x"></i></button>
+          <button class="icon-button" type="button" title="Fechar" aria-label="Fechar" onclick="window.close(); setTimeout(function(){ if(!window.closed) location.href='studio.html'; }, 150)"><i data-lucide="x"></i></button>
         </div>
       </header>
 

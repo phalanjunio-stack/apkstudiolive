@@ -98,7 +98,7 @@
     setActive(previewId, true); render();
   }
   function editScene(id) { openMontarCena(id); }   // duplo-clique → editor "Montar Cena"
-  function openMontarCena(id) { try { localStorage.setItem('sl-edit-scene', id || ''); } catch (e) {} location.href = 'montar-cena.html?scene=' + encodeURIComponent(id || ''); }
+  function openMontarCena(id) { try { localStorage.setItem('sl-edit-scene', id || ''); } catch (e) {} window.open('montar-cena.html?scene=' + encodeURIComponent(id || ''), 'kivoEditor', 'width=1320,height=860'); }   // janela própria (nativa no Electron → arrastável pro 2º monitor)
 
   // ---- menu flutuante simples (reaproveita o estilo .add-menu) ----
   function miniMenu(ev, items) {
