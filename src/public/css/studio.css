@@ -108,6 +108,10 @@ body.nav-collapsed .nav-sec{font-size:0;letter-spacing:0;padding:0;height:1px;ma
 .badge{background:rgba(0,0,0,.55);padding:3px 7px;border-radius:5px;font-weight:600}
 .meter{flex:1;height:6px;border-radius:3px;opacity:.28;
   background:linear-gradient(90deg,#1f7a32,#caa53a 70%,#c0392b)}
+/* foninho (monitor) dos monitores — tamanho fixo e alinhado nos dois */
+.mon-fone{flex:none;width:28px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--line);background:rgba(0,0,0,.5);color:#cfe0ff;cursor:pointer;font-size:13px;padding:0;line-height:1}
+.mon-fone:hover{border-color:var(--accent)}
+.mon-fone.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .mon-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   color:var(--muted);font-size:13px;text-align:center;padding:10px;background:#000}
 

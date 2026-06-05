@@ -230,10 +230,13 @@ const Mixer = (function () {
   }
   // ----- fone nos monitores (PROGRAM = master · PREVIEW = a fonte que está no preview) -----
   function toggleMasterMon() { masterMon = !masterMon; applyMix(); render(); return masterMon; }
+  function setMasterMon(b) { masterMon = !!b; applyMix(); render(); return masterMon; }
   function getMasterMon() { return masterMon; }
+  function clearMonitors() { channels.forEach(c => { c.monitor = false; }); applyMix(); render(); }   // desliga todos os PFL (fone do preview)
+  function anyMonitor() { return channels.some(c => c.monitor); }
   function monitorByLabel(label, b) { const c = channels.find(c => c.label === label); if (!c) return null; c.monitor = (b == null) ? !c.monitor : !!b; applyMix(); render(); return c.monitor; }
   function getMonitorByLabel(label) { const c = channels.find(c => c.label === label); return c ? !!c.monitor : false; }
-  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, toggleMasterMon, getMasterMon, monitorByLabel, getMonitorByLabel, listAudioDevices, setMonitorOutput, getMonitorOutput, monitorOutputSupported, get programStream() { return programDest ? programDest.stream : null; } };
+  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, toggleMasterMon, setMasterMon, getMasterMon, clearMonitors, anyMonitor, monitorByLabel, getMonitorByLabel, listAudioDevices, setMonitorOutput, getMonitorOutput, monitorOutputSupported, get programStream() { return programDest ? programDest.stream : null; } };
 })();
 window.Mixer = Mixer;
 Mixer.boot();

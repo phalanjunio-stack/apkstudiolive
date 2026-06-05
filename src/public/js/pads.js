@@ -199,8 +199,9 @@
     if (!airHost || !prevHost) return;
     airBtns = buildGrid(airHost, 'air'); prevBtns = buildGrid(prevHost, 'prev');
     fonePrev = document.getElementById('monePrev'); fonePgm = document.getElementById('monePgm');
-    if (fonePgm) fonePgm.onclick = () => { const m = MX(); if (m && m.toggleMasterMon) m.toggleMasterMon(); refresh(); };
-    if (fonePrev) fonePrev.onclick = () => { const m = MX(), lb = prevLabel(); if (!lb) return toast('PREVIEW sem áudio pra monitorar'); if (m && m.monitorByLabel) m.monitorByLabel(lb); refresh(); };
+    // FONE: PROGRAM (master) e PREVIEW são EXCLUSIVOS — ligar um desliga o outro (só se ouve um por vez)
+    if (fonePgm) fonePgm.onclick = () => { const m = MX(); if (!m) return; const on = !m.getMasterMon(); if (on && m.clearMonitors) m.clearMonitors(); if (m.setMasterMon) m.setMasterMon(on); else m.toggleMasterMon(); refresh(); };
+    if (fonePrev) fonePrev.onclick = () => { const m = MX(), lb = prevLabel(); if (!m) return; if (!lb) return toast('PREVIEW sem áudio pra monitorar'); const cur = m.getMonitorByLabel ? m.getMonitorByLabel(lb) : false; if (!cur && m.setMasterMon) m.setMasterMon(false); if (m.monitorByLabel) m.monitorByLabel(lb, !cur); refresh(); };
     const eb = document.getElementById('editAirBtn');
     if (eb) { eb.onclick = () => editing ? applyEditAir(eb) : startEditAir(eb); eb.oncontextmenu = e => { e.preventDefault(); if (editing) cancelEditAir(eb); }; }
     if (G() && G().onChange) G().onChange(refresh);
