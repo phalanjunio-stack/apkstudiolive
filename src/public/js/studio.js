@@ -127,6 +127,8 @@ function setStream(id, stream) {
 
 function removeSource(id) {
   const e = sources.get(id); if (!e) return;
+  // apagar a fonte/vídeo → some também com TODAS as camadas que vieram dela
+  try { const G = window.Graphics; if (G && G.list) { const u = e.url; G.list().slice().forEach(o => { if (o.data && (o.data.sourceId === id || (u && o.data.src === u))) G.remove(o.id); }); } } catch (er) {}
   e.pc?.close();
   if (e.stream) e.stream.getTracks().forEach(t => t.stop());
   try { e.cleanup?.(); } catch {}
@@ -1005,7 +1007,7 @@ function bindMediaBar() {
 }
 function updateMediaBar() {
   const bar = $('mediaBar'); if (!bar) return;
-  let o = null, name = '', onAir = false, srcCtl = null;
+  let o = null, name = '', onAir = false, srcCtl = null, srcOnAir = false;
   try {                                                                     // a CAMADA de vídeo selecionada
     const G = window.Graphics, sel = G && G.selected ? G.selected() : null;
     const ov = (sel != null && G.get) ? G.get(sel) : null;
@@ -1018,14 +1020,16 @@ function updateMediaBar() {
       if (air) { o = air; name = (air.data && air.data.label) || 'Vídeo'; onAir = true; mediaMode = 'air'; }
     } catch (e) {}
   }
-  if (!o) {                                                                 // fonte de vídeo/YouTube direto no PREVIEW (legado)
-    const e = previewId && sources.get(previewId);
-    if (e && e.kind === 'youtube' && e.yt) { srcCtl = ytCtl(e.yt); name = e.label; }
-    else if (e && e.mediaEl) { srcCtl = videoCtl(e.mediaEl); name = e.label; }
+  if (!o) {                                                                 // fonte de vídeo (arquivo/YouTube) NO AR (programa) ou no PREVIEW
+    const pick = (e) => { if (!e) return null; if (e.kind === 'youtube' && e.yt) return ytCtl(e.yt); if (e.mediaEl && e.mediaEl.tagName === 'VIDEO') return videoCtl(e.mediaEl); return null; };
+    const pe = programId && sources.get(programId), pc = pick(pe);
+    if (pc) { srcCtl = pc; name = pe.label; srcOnAir = true; mediaMode = 'air'; }            // vídeo-fonte no ar → controlador aparece
+    else { const ve = previewId && sources.get(previewId), vc = pick(ve); if (vc) { srcCtl = vc; name = ve.label; } }
   }
   if (!o && !srcCtl) { bar.classList.add('is-hidden'); mediaCur = null; return; }
-  const airBtn = $('mModeAir'); if (airBtn) airBtn.style.display = (o && onAir) ? '' : 'none';   // tab AO VIVO só quando a camada está no ar
-  if (!(o && onAir) && mediaMode === 'air') mediaMode = 'prev';
+  const liveNow = (o && onAir) || srcOnAir;
+  const airBtn = $('mModeAir'); if (airBtn) airBtn.style.display = liveNow ? '' : 'none';   // tab AO VIVO só quando há vídeo no ar
+  if (!liveNow && mediaMode === 'air') mediaMode = 'prev';
   mediaCur = o ? overlayVidCtl(o, mediaMode === 'air' ? 'air' : 'prev') : srcCtl;
   $('mModePrev') && $('mModePrev').classList.toggle('on', mediaMode !== 'air');
   $('mModeAir') && $('mModeAir').classList.toggle('on', mediaMode === 'air');

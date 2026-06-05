@@ -25,7 +25,11 @@
   function saveAssets() { try { localStorage.setItem(KEY, JSON.stringify(assets)); } catch {} }
 
   function addImageAsset(name, dataUrl) { const a = { id: seq++, name: name || 'Logo', src: dataUrl }; assets.push(a); saveAssets(); renderAssets(); return a; }
-  function removeAsset(id) { assets = assets.filter(a => a.id !== id); saveAssets(); renderAssets(); }
+  function removeAsset(id) {
+    const a = assets.find(x => x.id === id);
+    try { const g = G(); if (g && g.list && a) { g.list().slice().forEach(o => { if (o.data && (o.data.libId === id || (a.src && o.data.src === a.src))) g.remove(o.id); }); } } catch (e) {}   // apagar da biblioteca → some as camadas dela
+    assets = assets.filter(x => x.id !== id); saveAssets(); renderAssets();
+  }
   function importImages() {
     const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.multiple = true;
     i.onchange = () => { let n = 0; [...i.files].forEach(f => { const r = new FileReader(); r.onload = () => addImageAsset(f.name, r.result); r.readAsDataURL(f); n++; }); if (n) toast(n + (n > 1 ? ' imagens' : ' imagem') + ' na biblioteca — arraste pro PREVIEW.'); };
