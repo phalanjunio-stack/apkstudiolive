@@ -35,6 +35,8 @@
     'ticker': '<rect x="2" y="13" width="20" height="7" rx="1.5"/><path d="M5 16.5h7"/>',
     'template': '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>',
     'slideshow': '<rect x="2" y="4" width="20" height="14" rx="2"/><path d="m10 9 5 3-5 3V9Z"/>',
+    'play': '<path d="m7 4 13 8-13 8V4Z"/>',
+    'pause': '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
   };
   window.kicon = function (name, cls) {
     return '<svg class="kic' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (I[name] || '') + '</svg>';

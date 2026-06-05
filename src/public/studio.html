@@ -28,51 +28,9 @@
   <link rel="stylesheet" href="/css/guests.css" />
   <link rel="stylesheet" href="/css/theme-modern.css" />
   <script src="/js/theme.js"></script>
-  <style>
-    #kivoSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;
-      background:#070912;
-      font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,Arial,sans-serif;transition:opacity .55s ease}
-    #kivoSplash.ks-done{opacity:0;pointer-events:none}
-    #kivoSplash .ks-card{width:min(760px,88vw);text-align:center;animation:ks-rise .6s cubic-bezier(.22,1,.36,1) both}
-    #kivoSplash .ks-video-shell{width:min(720px,86vw);aspect-ratio:3/2;margin:0 auto;display:grid;place-items:center;overflow:hidden;background:#070912}
-    #kivoSplash .ks-video{width:100%;height:100%;display:block;object-fit:contain}
-    #kivoSplash .ks-name{display:none;margin-top:14px;font-size:27px;font-weight:600;color:#eaf1ff;letter-spacing:.3px}
-    #kivoSplash .ks-name span{color:#9a7bff;font-weight:500;margin-left:7px}
-    #kivoSplash .ks-bar{margin-top:24px;height:6px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden}
-    #kivoSplash .ks-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#168bff,#7c54ff);box-shadow:none;transition:width .25s ease}
-    #kivoSplash .ks-row{display:flex;justify-content:space-between;align-items:center;margin-top:11px;font-size:12px;color:#8fa3c8}
-    #kivoSplash .ks-pct{color:#cfe4ff;font-weight:600;font-variant-numeric:tabular-nums}
-    @keyframes ks-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-  </style>
 </head>
 <body class="studio-body">
   <div class="kivo-edge" aria-hidden="true"></div>
-  <div id="kivoSplash">
-    <div class="ks-card">
-      <div class="ks-video-shell">
-        <video class="ks-video" src="/splash/logo3.mp4" autoplay muted playsinline loop preload="auto"></video>
-      </div>
-      <div class="ks-name">Kivo<span>Studio</span></div>
-      <div class="ks-bar"><div class="ks-fill" id="ksFill"></div></div>
-      <div class="ks-row"><span id="ksSub">Iniciando&hellip;</span><span class="ks-pct" id="ksPct">0%</span></div>
-    </div>
-  </div>
-  <script>
-    (function () {
-      var sp = document.getElementById('kivoSplash'); if (!sp) return;
-      var fill = document.getElementById('ksFill'), pct = document.getElementById('ksPct'), sub = document.getElementById('ksSub');
-      var p = 0, loaded = false, start = Date.now();
-      var steps = ['Iniciando motor…', 'Carregando gráficos…', 'Conectando áudio…', 'Preparando câmeras…', 'Quase lá…'];
-      function setP(v) { p = Math.min(100, v); fill.style.width = p + '%'; pct.textContent = Math.round(p) + '%'; var si = Math.min(steps.length - 1, Math.floor(p / 20)); if (sub) sub.textContent = steps[si]; }
-      window.addEventListener('load', function () { loaded = true; });
-      setTimeout(function () { loaded = true; }, 7000); // segurança: nunca trava no splash
-      var iv = setInterval(function () {
-        var target = loaded ? 100 : 90;
-        if (p < target) setP(p + Math.max(0.7, (target - p) * 0.13));
-        if (loaded && p >= 99.4 && Date.now() - start > 1500) { setP(100); clearInterval(iv); setTimeout(function () { sp.classList.add('ks-done'); setTimeout(function () { sp.remove(); }, 650); }, 250); }
-      }, 60);
-    })();
-  </script>
   <div class="dash">
 
     <!-- ===================== TOPO ===================== -->
@@ -171,17 +129,23 @@
       </div>
 
       <div class="media-bar is-hidden" id="mediaBar">
-        <span class="mb-where" id="mWhere">PREVIEW</span>
-        <button id="mStart" class="mb-btn" title="Voltar ao começo">&#9198;</button>
-        <button id="mBack" class="mb-btn" title="Voltar 10s">&#9194;</button>
-        <button id="mPlay" class="mb-btn mb-play" title="Tocar / pausar (espera)">&#9654;</button>
-        <button id="mFwd" class="mb-btn" title="Avançar 10s">&#9193;</button>
-        <input type="range" id="mSeek" min="0" max="1000" value="0" class="mb-seek">
-        <span id="mTime" class="mb-time">0:00 / 0:00</span>
-        <button id="mHold" class="mb-btn mb-hold" title="Deixar em espera: volta ao começo e pausa, pronto pro TAKE">&#9209; Espera</button>
-        <button id="mMute" class="mb-btn">&#128266;</button>
-        <button id="mLoop" class="mb-btn">Loop</button>
-        <span id="mName" class="mb-name"></span>
+        <span class="mb-name" id="mName"></span>
+        <div class="mb-ctl mb-ctl-prev">
+          <span class="mb-tag">PREVIEW</span>
+          <button id="mpStart" class="mb-btn" title="Voltar ao começo">&#9198;</button>
+          <button id="mpPlay" class="mb-btn mb-play" title="Tocar / pausar no PREVIEW">&#9654;</button>
+          <input type="range" id="mpSeek" min="0" max="1000" value="0" class="mb-seek">
+          <span id="mpTime" class="mb-time">0:00 / 0:00</span>
+        </div>
+        <div class="mb-ctl mb-ctl-air">
+          <span class="mb-tag">AO VIVO</span>
+          <button id="maStart" class="mb-btn" title="Voltar ao começo">&#9198;</button>
+          <button id="maPlay" class="mb-btn mb-play" title="Tocar / pausar no AR">&#9654;</button>
+          <input type="range" id="maSeek" min="0" max="1000" value="0" class="mb-seek">
+          <span id="maTime" class="mb-time">0:00 / 0:00</span>
+        </div>
+        <button id="mMute" class="mb-btn" title="Mudo / som">&#128266;</button>
+        <button id="mLoop" class="mb-btn" title="Repetir (loop)">Loop</button>
       </div>
 
       <div class="fontes biblioteca">

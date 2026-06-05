@@ -651,13 +651,10 @@
       let ct = null;
       go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => { if (previewId === s.id) freePreview(); else loadToPreview(s.id); }, 230); };   // clicar na cena ativa = desativar
       go.ondblclick = () => { clearTimeout(ct); editScene(s.id); };
-      // NÚMERO da cena — clique cicla 1-9 (marca pros pads/teclas), único entre cenas
-      const hk = el('button', 'sc-hk' + (s.hotkey ? ' set' : ''), s.hotkey ? String(s.hotkey) : '#');
-      hk.title = 'Número da cena (pad / tecla) — clique pra marcar';
-      hk.onclick = e => { e.stopPropagation(); const l = load(); const j = l.findIndex(x => x.id === s.id); if (j < 0) return; l[j].hotkey = window.Pads ? window.Pads.nextFreeNumber(l[j].hotkey, 'scene', s.id) : (((+l[j].hotkey || 0) + 1) % 10); save(l); render(); if (window.Pads) window.Pads.refresh(); };
-      // pôr no ar / tirar do ar
-      const air = el('button', 'sc-mini sc-air' + (onair ? ' on' : ''), seIcon('broadcast'));
-      air.title = onair ? 'No ar — clique pra tirar' : 'Pôr no ar';
+      // PREVIEW / AO VIVO da cena (sem número — igual às camadas: verde=preview, vermelho=no ar)
+      const prevB = el('button', 'lp-bus lp-bus-prev' + (s.id === previewId ? ' on' : '')); prevB.textContent = 'PREVIEW'; prevB.title = 'Carregar a cena no PREVIEW';
+      prevB.onclick = e => { e.stopPropagation(); if (previewId === s.id) freePreview(); else loadToPreview(s.id); render(); };
+      const air = el('button', 'lp-bus lp-bus-air' + (onair ? ' on' : '')); air.textContent = 'AO VIVO'; air.title = onair ? 'No ar — clique pra tirar' : 'Pôr no ar';
       air.onclick = e => { e.stopPropagation(); if (activeId === s.id) airOff(s.name); else setActive(s.id, true); render(); };
       const ed = el('button', 'sc-mini sc-edit-btn', seIcon('layers')); ed.title = 'Editar cena (abrir editor)'; ed.onclick = e => { e.stopPropagation(); openEditor(s.id); };
       const ren = el('button', 'sc-mini', seIcon('pencil')); ren.title = 'Renomear'; ren.onclick = e => { e.stopPropagation(); kprompt('Nome da cena:', s.name).then(function (n) { if (n != null) { const l = load(); const j = l.findIndex(x => x.id === s.id); if (j >= 0) { l[j].name = n || s.name; save(l); render(); } } }); };
@@ -669,7 +666,7 @@
         if (activeId === s.id) setActive(null, false);
         render();
       };
-      const acts = el('div', 'sc-acts'); acts.append(hk, air, ed, ren, x);
+      const acts = el('div', 'sc-acts'); acts.append(prevB, air, ed, ren, x);
       chip.append(go, acts); wrap.appendChild(chip);
       grid.appendChild(wrap);
     });

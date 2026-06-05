@@ -73,7 +73,7 @@ const Graphics = (function () {
     host = el; renderAll(); ensureClock();
     // clicar FORA da camada E fora de qualquer painel/ferramenta de edição → deseleciona.
     // (antes, clicar nas PROPRIEDADES deselecionava → o card "sumia" ao tentar editar)
-    const KEEP = '.ov,.gfx-dock,.fb-prevstage,#propsPanel,#layersPanel,.rpanel,.ovh-pv,.pv-crop,.pv-croptools,.pv-trimtools,.slot-picker,.lp-row,.lp-props';
+    const KEEP = '.ov,.gfx-dock,.fb-prevstage,#propsPanel,#layersPanel,.rpanel,.ovh-pv,.pv-crop,.pv-croptools,.pv-trimtools,.slot-picker,.lp-row,.lp-props,#mediaBar,.media-bar';
     document.addEventListener('pointerdown', (e) => { if (!e.target.closest(KEEP)) deselect(); }, true);
   }
   function onChange(fn) { subs.push(fn); }
@@ -222,7 +222,15 @@ const Graphics = (function () {
   function setPrevScale(id, s) { setPrev(id, { scale: s }); }
   function setPrevRotation(id, r) { setPrev(id, { rotation: r }); }
   function previewShow(o) { if (o.data && o.data.padManaged) return !!o.data.onPrev && o.visible !== false; return ((o.scene === previewScene) || (o.scene == null && !(o.data && o.data.airOnly))) && o.visible !== false; }   // padManaged: só no preview se onPrev
-  function setBus(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); applyVisibility(); applyPreview(); saveLocal(); notify(); }   // liga/desliga camada no PROGRAMA (onPgm) e/ou PREVIEW (onPrev), independentes
+  function setBus(id, patch) {   // liga/desliga camada no PROGRAMA (onPgm) e/ou PREVIEW (onPrev), independentes
+    const o = get(id); if (!o) return; Object.assign(o.data, patch);
+    if (patch && patch.onPgm && o.data.pv) {   // AO PÔR NO AR: aplica os ajustes feitos no preview (pv→ao vivo) — vai pro ar do jeito que você editou
+      const p = o.data.pv;
+      o.x = p.x; o.y = p.y; if (p.w != null) o.w = p.w; if (p.h != null) o.h = p.h; o.scale = p.scale; o.rotation = p.rotation; o.opacity = p.opacity;
+      o.data.pv = null; applyTransform(o); setVideoBox(o); applyCrop(o);
+    }
+    applyVisibility(); applyPreview(); saveLocal(); notify();
+  }
   // TAKE: publica o que está no PREVIEW (onPrev) no PROGRAMA (onPgm). clear = limpa o preview depois.
   function commitPreviewToProgram(clear) {
     let n = 0;
@@ -288,6 +296,10 @@ const Graphics = (function () {
   function setFilter(id, patch) { const o = get(id); if (!o) return; o.data.filter = Object.assign({ brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0 }, o.data.filter, patch); applyTransform(o); saveLocal(); notify(); }
   function getFilter(id) { const o = get(id); return (o && o.data && o.data.filter) ? o.data.filter : { brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0 }; }
   function clearFilter(id) { const o = get(id); if (!o) return; o.data.filter = null; applyTransform(o); saveLocal(); notify(); }
+  // PLAY no PREVIEW: vídeo no preview fica PARADO (mostra o frame) até dar play; no AR toca sozinho.
+  function setPrevPlay(id, b) { const o = get(id); if (!o) return; o.data._prevPlay = !!b; if (o.type === 'video') paintVideo(o); notify(); }
+  function getPrevPlay(id) { const o = get(id); return !!(o && o.data && o.data._prevPlay); }
+  function setAirPlay(id, b) { const o = get(id); if (!o) return; o.data._airPause = !b; if (o.type === 'video') paintVideo(o); notify(); }   // play/pausa do vídeo NO AR (controlador AO VIVO)
   // MESCLAGEM (blend mode estilo Photoshop): normal/multiply/screen/overlay/lighten/darken/soft-light/difference...
   function applyBlend(o) { const b = (o.data && o.data.blend) || 'normal'; if (o.el) o.el.style.mixBlendMode = b; if (o.elv) o.elv.style.mixBlendMode = b; }
   function setBlend(id, m) { const o = get(id); if (!o) return; o.data.blend = (!m || m === 'normal') ? '' : m; applyBlend(o); saveLocal(); }
@@ -449,7 +461,10 @@ const Graphics = (function () {
         v.addEventListener('canplay', tryPlay);
         v.addEventListener('stalled', tryPlay);
       }
-      if (editing) { try { v.pause(); } catch (e) {} } else { v.play && v.play().catch(() => {}); }   // editor = parado no 1o frame; no ar = toca
+      const isPrevTwin = (root === ov.elv);
+      if (editing) { try { v.pause(); } catch (e) {} }                                                   // editor de cena = parado no 1o frame
+      else if (isPrevTwin) { if (d._prevPlay) { v.play && v.play().catch(() => {}); } else { try { v.pause(); } catch (e) {} } }   // PREVIEW: parado (mostra o frame) até você dar play
+      else { if (d.onPgm && !d._airPause) { v.play && v.play().catch(() => {}); } else { try { v.pause(); } catch (e) {} } }         // AO VIVO: toca sozinho (a não ser que você pause no controlador)
       v.style.display = ''; if (ph) ph.style.display = 'none'; return;
     }
     if (d.device != null) {   // CÂMERA própria da camada
@@ -606,7 +621,7 @@ const Graphics = (function () {
 
   load();
   return {
-    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setBlend, setFit, setTrim, setBus, commitPreviewToProgram, previewCount, revertPreview, setFlip, getFlip, setFilter, getFilter, clearFilter, setPrevPos, setPrevWidth, setPrevHeight, setPrevScale, setPrevRotation, setCrop, setHeight, raise, lower, sendToBack, reorderLayers, update, score, clockCtl,
+    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setBlend, setFit, setTrim, setBus, commitPreviewToProgram, previewCount, revertPreview, setFlip, getFlip, setFilter, getFilter, clearFilter, setPrevPlay, getPrevPlay, setAirPlay, setPrevPos, setPrevWidth, setPrevHeight, setPrevScale, setPrevRotation, setCrop, setHeight, raise, lower, sendToBack, reorderLayers, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene, takeOverlays,

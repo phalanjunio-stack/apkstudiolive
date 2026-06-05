@@ -615,12 +615,22 @@ audio.audi-media{height:54px;background:transparent}
 .vpl-air.act{box-shadow:0 0 12px rgba(255,93,108,.4)}
 
 /* ===== Barra de transporte de midia (video arquivo/URL) ===== */
-.media-bar{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
-.mb-btn{min-width:34px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-weight:700;padding:0 8px;font-size:13px}
+.media-bar{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 14px}
+.mb-name{font-size:12px;font-weight:700;color:var(--txt);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+/* dois controladores: PREVIEW (verde) e AO VIVO (vermelho) */
+.mb-ctl{display:flex;align-items:center;gap:8px;flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:5px 10px;background:var(--inset)}
+.mb-ctl-prev{box-shadow:inset 3px 0 0 #2ea043}
+.mb-ctl-air{box-shadow:inset 3px 0 0 #e5484d}
+.mb-tag{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:6px;white-space:nowrap;flex:none}
+.mb-ctl-prev .mb-tag{color:#bff0cf;background:rgba(46,160,67,.16);border:1px solid rgba(46,160,67,.45)}
+.mb-ctl-air .mb-tag{color:#ffd0d2;background:rgba(229,72,77,.16);border:1px solid rgba(229,72,77,.5)}
+.mb-btn{min-width:32px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-weight:700;padding:0 9px;font-size:13px}
 .mb-btn.on,.mb-btn:hover{border-color:var(--accent)}
-.mb-seek{flex:1;accent-color:var(--accent)}
-.mb-time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:90px}
-.mb-name{font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-play{min-width:40px}
+.mb-seek{flex:1;min-width:56px;accent-color:var(--accent)}
+.mb-ctl-prev .mb-seek{accent-color:#2ea043}
+.mb-ctl-air .mb-seek{accent-color:#e5484d}
+.mb-time{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
 
 /* ===== Player do YouTube (flutuante) ===== */
 .yt-dock{position:fixed;right:12px;bottom:60px;width:360px;max-width:92vw;z-index:200;background:var(--panel);

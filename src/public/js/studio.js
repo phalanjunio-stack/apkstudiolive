@@ -950,61 +950,67 @@ $('ftbBtn').onclick = ftb;
 
 // API pública (usada pela página "Fontes" do menu)
 // ---- barra de mídia: play/pause, seek, tempo, mute, loop (vídeo arquivo/URL e YouTube) ----
-let mediaCur = null;
+let mediaPrev = null, mediaAir = null;   // controladores de mídia: um do PREVIEW, um do AO VIVO
 const fmtT = (s) => { s = Math.floor(s) || 0; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 // controllers unificados pros dois tipos de mídia
 function videoCtl(v) { return { play: () => v.play().catch(() => {}), pause: () => v.pause(), paused: () => v.paused, time: () => v.currentTime || 0, dur: () => v.duration || 0, seek: (f) => { if (v.duration) v.currentTime = v.duration * f; }, muted: () => v.muted, toggleMute: () => { v.muted = !v.muted; }, loopable: true, loop: () => v.loop, toggleLoop: () => { v.loop = !v.loop; } }; }
 function ytCtl(h) { return { play: () => h.play(), pause: () => h.pause(), paused: () => h.paused(), time: () => h.time(), dur: () => h.duration(), seek: (f) => h.seek(f), muted: () => h.muted(), toggleMute: () => { h.muted() ? h.unmute() : h.mute(); }, loopable: false, loop: () => false, toggleLoop: () => {} }; }
 // controlador da CAMADA de vídeo selecionada (modelo "tudo é camada"): mexe nos DOIS gêmeos (preview + program) em sincronia
-function overlayVidCtl(o) {
-  const vp = o.elv && o.elv.querySelector('video');
-  const vl = o.el && o.el.querySelector('video');
-  const ref = vp || vl; if (!ref) return null;                 // tempo/estado lê do gêmeo do PREVIEW
-  const both = [vp, vl].filter(Boolean);
+// controlador de UM gêmeo do vídeo da camada: which='prev' (monitor PREVIEW) ou 'air' (PROGRAM)
+function overlayVidCtl(o, which) {
+  const v = (which === 'air') ? (o.el && o.el.querySelector('video')) : (o.elv && o.elv.querySelector('video'));
+  if (!v) return null;
+  const G = window.Graphics;
   return {
-    play: () => both.forEach(v => v.play && v.play().catch(() => {})),
-    pause: () => both.forEach(v => { try { v.pause(); } catch (e) {} }),
-    paused: () => ref.paused,
-    time: () => ref.currentTime || 0,
-    dur: () => (isFinite(ref.duration) ? ref.duration : 0),
-    seek: (f) => { if (isFinite(ref.duration)) both.forEach(v => { try { v.currentTime = ref.duration * f; } catch (e) {} }); },
-    muted: () => ref.muted,
-    toggleMute: () => { const m = !ref.muted; both.forEach(v => v.muted = m); },
-    loopable: true, loop: () => ref.loop, toggleLoop: () => { const l = !ref.loop; both.forEach(v => v.loop = l); },
+    play: () => { if (which === 'air') { G && G.setAirPlay && G.setAirPlay(o.id, true); } else { G && G.setPrevPlay && G.setPrevPlay(o.id, true); } v.play && v.play().catch(() => {}); },
+    pause: () => { if (which === 'air') { G && G.setAirPlay && G.setAirPlay(o.id, false); } else { G && G.setPrevPlay && G.setPrevPlay(o.id, false); } try { v.pause(); } catch (e) {} },
+    paused: () => v.paused,
+    time: () => v.currentTime || 0,
+    dur: () => (isFinite(v.duration) ? v.duration : 0),
+    seek: (f) => { if (isFinite(v.duration)) { try { v.currentTime = v.duration * f; } catch (e) {} } },
+    muted: () => v.muted, toggleMute: () => { v.muted = !v.muted; },
+    loopable: true, loop: () => v.loop, toggleLoop: () => { v.loop = !v.loop; },
     isOverlay: true
   };
 }
 function bindMediaBar() {
   if (!$('mediaBar')) return;
-  const seekSec = (s) => { if (!mediaCur) return; const d = mediaCur.dur(); if (d > 0) mediaCur.seek(Math.max(0, Math.min(1, s / d))); };
-  $('mPlay').onclick = () => { if (mediaCur) (mediaCur.paused() ? mediaCur.play() : mediaCur.pause()); };
-  $('mStart') && ($('mStart').onclick = () => { if (mediaCur) mediaCur.seek(0); });                                  // voltar ao começo
-  $('mBack') && ($('mBack').onclick = () => { if (mediaCur) seekSec(mediaCur.time() - 10); });                        // -10s
-  $('mFwd') && ($('mFwd').onclick = () => { if (mediaCur) seekSec(mediaCur.time() + 10); });                          // +10s
-  $('mHold') && ($('mHold').onclick = () => { if (mediaCur) { mediaCur.seek(0); mediaCur.pause(); toast('Vídeo em espera — pronto pro TAKE.'); } });   // voltar + pausar (standby)
-  $('mMute').onclick = () => { if (mediaCur) { mediaCur.toggleMute(); $('mMute').innerHTML = mediaCur.muted() ? '&#128263;' : '&#128266;'; } };
-  $('mLoop').onclick = () => { if (mediaCur) { mediaCur.toggleLoop(); $('mLoop').classList.toggle('on', mediaCur.loop()); } };
-  let seeking = false;
-  $('mSeek').oninput = () => { seeking = true; };
-  $('mSeek').onchange = () => { if (mediaCur) mediaCur.seek($('mSeek').value / 1000); seeking = false; };
-  setInterval(() => { if (!mediaCur) { return; } const d = mediaCur.dur(), c = mediaCur.time(); if (!seeking && d) $('mSeek').value = Math.round(c / d * 1000); $('mTime').textContent = fmtT(c) + ' / ' + fmtT(d); $('mPlay').innerHTML = mediaCur.paused() ? '&#9654;' : '&#9208;'; }, 300);
+  const wire = (getCtl, ids) => {
+    let seeking = false;
+    $(ids.play) && ($(ids.play).onclick = () => { const c = getCtl(); if (c) (c.paused() ? c.play() : c.pause()); });
+    $(ids.start) && ($(ids.start).onclick = () => { const c = getCtl(); if (c) c.seek(0); });
+    $(ids.seek) && ($(ids.seek).addEventListener('input', () => { seeking = true; }));
+    $(ids.seek) && ($(ids.seek).addEventListener('change', () => { const c = getCtl(); if (c) c.seek($(ids.seek).value / 1000); seeking = false; }));
+    return () => { const c = getCtl(); if (!c) return; const d = c.dur(), t = c.time(); if (!seeking && d && $(ids.seek)) $(ids.seek).value = Math.round(t / d * 1000); if ($(ids.time)) $(ids.time).textContent = fmtT(t) + ' / ' + fmtT(d); if ($(ids.play)) $(ids.play).innerHTML = c.paused() ? '&#9654;' : '&#9208;'; };
+  };
+  const tickPrev = wire(() => mediaPrev, { play: 'mpPlay', start: 'mpStart', seek: 'mpSeek', time: 'mpTime' });
+  const tickAir = wire(() => mediaAir, { play: 'maPlay', start: 'maStart', seek: 'maSeek', time: 'maTime' });
+  $('mMute') && ($('mMute').onclick = () => { const c = mediaAir || mediaPrev; if (c && c.toggleMute) { c.toggleMute(); $('mMute').innerHTML = c.muted() ? '&#128263;' : '&#128266;'; } });
+  $('mLoop') && ($('mLoop').onclick = () => { const c = mediaAir || mediaPrev; if (c && c.toggleLoop) { c.toggleLoop(); $('mLoop').classList.toggle('on', c.loop()); } });
+  setInterval(() => { tickPrev(); tickAir(); }, 300);
 }
 function updateMediaBar() {
   const bar = $('mediaBar'); if (!bar) return;
-  const e = previewId && sources.get(previewId);
-  let ctl = null, name = '', where = 'PREVIEW';
-  if (e && e.kind === 'youtube' && e.yt) { ctl = ytCtl(e.yt); name = e.label; }
-  else if (e && e.mediaEl) { ctl = videoCtl(e.mediaEl); name = e.label; } // vídeo (arquivo/URL) no PREVIEW também tem controle
-  else {                                                                   // senão: a CAMADA de vídeo selecionada
-    try {
-      const G = window.Graphics, sel = G && G.selected ? G.selected() : null;
-      const o = (sel != null && G.get) ? G.get(sel) : null;
-      if (o && o.type === 'video') { const c = overlayVidCtl(o); if (c) { ctl = c; name = (o.data && o.data.label) || 'Vídeo'; where = (o.data && o.data.onPgm) ? 'NO AR' : 'PREVIEW'; } }
-    } catch (err) {}
+  let prev = null, air = null, name = '';
+  try {                                                                     // a CAMADA de vídeo selecionada: PREVIEW sempre; AO VIVO só se estiver no ar
+    const G = window.Graphics, sel = G && G.selected ? G.selected() : null;
+    const o = (sel != null && G.get) ? G.get(sel) : null;
+    if (o && o.type === 'video') { name = (o.data && o.data.label) || 'Vídeo'; prev = overlayVidCtl(o, 'prev'); if (o.data && o.data.onPgm) air = overlayVidCtl(o, 'air'); }
+  } catch (err) {}
+  if (!prev) {                                                             // fonte de vídeo/YouTube direto no PREVIEW (legado)
+    const e = previewId && sources.get(previewId);
+    if (e && e.kind === 'youtube' && e.yt) { prev = ytCtl(e.yt); name = e.label; }
+    else if (e && e.mediaEl) { prev = videoCtl(e.mediaEl); name = e.label; }
   }
-  mediaCur = ctl;
-  if (ctl) { bar.classList.remove('is-hidden'); $('mName').textContent = name; const w = $('mWhere'); if (w) { w.textContent = where; w.classList.toggle('on-air', where === 'NO AR'); } $('mLoop').style.display = ctl.loopable ? '' : 'none'; $('mMute').innerHTML = ctl.muted() ? '&#128263;' : '&#128266;'; }
-  else bar.classList.add('is-hidden');
+  mediaPrev = prev; mediaAir = air;
+  const cp = bar.querySelector('.mb-ctl-prev'), ca = bar.querySelector('.mb-ctl-air');
+  if (prev || air) {
+    bar.classList.remove('is-hidden');
+    $('mName').textContent = name;
+    if (cp) cp.style.display = prev ? '' : 'none';
+    if (ca) ca.style.display = air ? '' : 'none';
+    const c = air || prev; if (c && c.muted) $('mMute').innerHTML = c.muted() ? '&#128263;' : '&#128266;';
+  } else bar.classList.add('is-hidden');
 }
 // vídeo por URL direta (.mp4/.webm) -> fonte real
 function addVideoUrl(url) {

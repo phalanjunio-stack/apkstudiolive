@@ -237,6 +237,14 @@ body.nav-collapsed .nav-sec{font-size:0;letter-spacing:0;padding:0;height:1px;ma
 .lp-mini .kic,.lp-x .kic{width:13px;height:13px}
 .ov-tools-bar button .kic,.crop-btn .kic{width:15px;height:15px}
 .lp-th-ic .kic{width:18px;height:18px}
+/* botões PREVIEW / AO VIVO em cada camada (verde=preview, vermelho=no ar) */
+.lp-bus{font-size:8.5px;font-weight:800;letter-spacing:.03em;padding:3px 7px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer;flex:none;white-space:nowrap}
+.lp-bus:hover{border-color:var(--accent);color:var(--txt)}
+.lp-bus.lp-bus-prev.on{background:linear-gradient(180deg,#2ea043,#1f7a33);border-color:transparent;color:#fff}
+.lp-bus.lp-bus-air.on{background:linear-gradient(180deg,#e5484d,#c0282d);border-color:transparent;color:#fff}
+/* painéis arrastáveis (reordenar a coluna direita) */
+.rp-draghead{cursor:grab}
+.rpanel.rp-dragging{opacity:.5}
 
 /* ---- animacoes de entrada (fade + slide) ---- */
 @keyframes fx-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}

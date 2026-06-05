@@ -13,6 +13,7 @@
 
   function init() {
     const col = document.querySelector('.rightcol'); if (!col) return;
+    let dragP = null;
     // 1ª vez: já deixa TRANSMISSÃO e CENAS travados abertos
     if (!localStorage.getItem('kivo-rpanels-init')) { pinned.add('TRANSMISSÃO'); pinned.add('CENAS'); try { localStorage.setItem('kivo-rpanels-init', '1'); } catch {} save(); }
     [...col.querySelectorAll('.rpanel')].forEach((p, i) => {
@@ -33,9 +34,23 @@
         save();
       });
       head.insertBefore(pin, head.firstChild);
+      // arrastar pelo título pra REORDENAR o painel (ex.: PROPRIEDADES lá em cima)
+      p.dataset.pid = id;
+      head.setAttribute('draggable', 'true'); head.classList.add('rp-draghead');
+      head.addEventListener('dragstart', (e) => { dragP = p; p.classList.add('rp-dragging'); try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); } catch (er) {} });
+      head.addEventListener('dragend', () => { if (dragP) dragP.classList.remove('rp-dragging'); dragP = null; saveOrder(); });
       p.classList.add('collapsible');
       if (pinned.has(id)) { p.classList.add('pinned'); pin.classList.add('on'); }
     });
+
+    // REORDENAR painéis: arrasta sobre a coluna reposiciona o painel; a ordem persiste
+    col.addEventListener('dragover', (e) => {
+      if (!dragP) return; e.preventDefault();
+      const after = [...col.querySelectorAll('.rpanel:not(.rp-dragging)')].find(el => { const r = el.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+      if (after) col.insertBefore(dragP, after); else col.appendChild(dragP);
+    });
+    function saveOrder() { try { localStorage.setItem('sl-rpanel-order', JSON.stringify([...col.querySelectorAll('.rpanel')].map(p => p.dataset.pid).filter(Boolean))); } catch {} }
+    (function applyOrder() { let ord = []; try { ord = JSON.parse(localStorage.getItem('sl-rpanel-order') || '[]'); } catch {} if (!ord.length) return; const by = {}; col.querySelectorAll('.rpanel').forEach(p => { if (p.dataset.pid) by[p.dataset.pid] = p; }); ord.forEach(id => { if (by[id]) col.appendChild(by[id]); }); })();
 
     // FONTES — recolhível por CLIQUE/TOQUE (funciona no touch); cabeçalho sempre visível
     const fontes = document.querySelector('.fontes');

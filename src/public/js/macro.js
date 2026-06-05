@@ -30,13 +30,8 @@
     return el;
   }
   function init() {
-    if (!document.getElementById('btnGol')) {
-      const b = document.createElement('button'); b.id = 'btnGol'; b.className = 'macro-fab';
-      b.title = 'Macro GOL — animação + som no ar (4s). Dá pra ligar num número/pad depois.';
-      b.innerHTML = '⚽ GOL';
-      b.onclick = () => gol('GOL!');
-      document.body.appendChild(b);
-    }
+    // botão flutuante "GOL" removido a pedido do usuário; a macro segue disponível via window.Macro.gol()
+    document.getElementById('btnGol')?.remove();
     window.Macro = { gol, cheer };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

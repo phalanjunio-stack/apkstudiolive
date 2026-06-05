@@ -101,13 +101,7 @@
         const rb = el('div', 'lp-prow'); const rbtn = el('button', 'lp-pbtn', 'Resetar cor'); rbtn.onclick = () => { g.clearFilter(o.id); render(); }; rb.appendChild(rbtn); box.appendChild(rb);
       }
     }
-    // atalho número (estilo vMix): a tecla 1-9 liga/desliga essa camada no ar, no lugar definido
-    const hk = el('div', 'lp-prow'); hk.appendChild(el('span', 'lp-plab', 'Atalho nº'));
-    const hs = document.createElement('select');
-    for (let i = 0; i <= 9; i++) { const op = document.createElement('option'); op.value = i; op.textContent = i === 0 ? '— nenhum' : ('tecla ' + i); hs.appendChild(op); }
-    hs.value = (o.data && o.data.hotkey) || 0;
-    hs.onchange = () => { g.update(o.id, { hotkey: +hs.value }); if (+hs.value > 0 && g.setOverlayScene) g.setOverlayScene(o.id, null); render(); };  // com atalho = overlay global (aparece sobre qualquer cena, igual vMix)
-    hk.appendChild(hs); box.appendChild(hk);
+    // (camada NÃO é classificada por número — só vai pra PREVIEW ou AO VIVO. Número = só pra itens da Biblioteca.)
     const acts = el('div', 'lp-pacts');
     const mk = (t, title, fn, cls) => { const b = el('button', 'lp-pbtn' + (cls ? ' ' + cls : ''), t); b.title = title; b.onclick = fn; acts.appendChild(b); };
     mk(ic('front', '▲'), 'Trazer p/ frente', () => g.raise(o.id));
@@ -120,6 +114,7 @@
     }
     if ((o.type === 'image' || o.type === 'video') && window.Biblioteca && window.Biblioteca.crop) mk(ic('crop', '✂'), 'Cortar (tecla C)', () => window.Biblioteca.crop(o.id));
     if (o.type === 'video' && window.Biblioteca && window.Biblioteca.trim) mk(ic('trim', '⏱'), 'Aparar vídeo (in/out)', () => window.Biblioteca.trim(o.id));
+    if (o.type === 'video' && g.setPrevPlay) { const pl = g.getPrevPlay && g.getPrevPlay(o.id); mk(ic(pl ? 'pause' : 'play', pl ? '⏸' : '▶'), pl ? 'Pausar no preview' : 'Tocar no preview (no ar toca sozinho)', () => { g.setPrevPlay(o.id, !(g.getPrevPlay && g.getPrevPlay(o.id))); render(); }, pl ? 'on' : ''); }
     mk(ic(o.locked ? 'lock' : 'unlock', o.locked ? '🔒' : '🔓'), o.locked ? 'Destravar' : 'Travar', () => g.setLocked(o.id, !o.locked));
     mk(ic('trash', '×'), 'Remover', () => g.remove(o.id), 'danger');
     box.appendChild(acts);
@@ -143,14 +138,15 @@
     if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Vazio. Clique/arraste um item da Biblioteca pro PREVIEW — vira camada aqui.')); return; }
     [...list].reverse().forEach(o => {
       const row = el('div', 'lp-row' + (o.id === sel ? ' sel' : '') + (o.visible === false ? ' off' : ''));
-      const eye = el('button', 'lp-eye'); eye.innerHTML = o.visible === false ? EYEOFF : EYE; eye.title = 'Mostrar / ocultar (no ar também)';
-      eye.onclick = e => { e.stopPropagation(); g.setVisible(o.id, o.visible === false); };
+      // cada camada tem SÓ 2 botões: PREVIEW e AO VIVO (toggle). Número fica pros itens da Biblioteca.
+      const pm = !!(o.data && o.data.padManaged);
+      const prev = el('button', 'lp-bus lp-bus-prev' + ((pm ? o.data.onPrev : true) ? ' on' : '')); prev.textContent = 'PREVIEW'; prev.title = 'Mostrar/ocultar no PREVIEW';
+      prev.onclick = e => { e.stopPropagation(); if (pm) g.setBus(o.id, { onPrev: !o.data.onPrev }); else g.setVisible(o.id, o.visible === false); };
+      const live = el('button', 'lp-bus lp-bus-air' + ((pm ? o.data.onPgm : o.visible !== false) ? ' on' : '')); live.textContent = 'AO VIVO'; live.title = 'Pôr/tirar do AR (vai do jeito que você editou no preview)';
+      live.onclick = e => { e.stopPropagation(); if (pm) g.setBus(o.id, { onPgm: !o.data.onPgm }); else g.setVisible(o.id, o.visible === false); };
       const nms = el('span', 'lp-nm', layerName(o));
-      const up = el('button', 'lp-mini', ic('up', '▲')); up.title = 'Frente'; up.onclick = e => { e.stopPropagation(); g.raise(o.id); };
-      const dn = el('button', 'lp-mini', ic('down', '▼')); dn.title = 'Trás'; dn.onclick = e => { e.stopPropagation(); g.lower(o.id); };
       const x = el('button', 'lp-x', ic('close', '×')); x.title = 'Remover'; x.onclick = e => { e.stopPropagation(); g.remove(o.id); };
-      row.append(eye, nms, up, dn, x);
-      if (o.data && o.data.hotkey) { const b = el('span', 'lp-hk', o.data.hotkey); b.title = 'Atalho ' + o.data.hotkey + ' — liga/desliga no ar'; row.insertBefore(b, eye); }
+      row.append(prev, live, nms, x);
       row.onclick = () => g.select(o.id);
       host.appendChild(row);
     });
