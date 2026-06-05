@@ -7,7 +7,9 @@
    Portado/adaptado do micro.js do Contourline.
    ============================================ */
 (function () {
-  const GLOW_SEL = '.topbar-btn-connect, .theme-switcher-btn, .kmode';
+  // tirei o .theme-switcher-btn daqui: as faíscas/aura (smoke-glow) ao redor do botão de
+  // tema ficavam "estranhas" perto do dropdown (pedido do usuário). Fica um botão limpo.
+  const GLOW_SEL = '.topbar-btn-connect, .kmode, .sc-air-btn, .theme-switcher-btn';
 
   // ── injeta aura + halo + 4 faiscas dentro do botao ──
   function attachSmokeGlow(btn) {

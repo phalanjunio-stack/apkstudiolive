@@ -1,0 +1,23 @@
+/* ============================================
+   MOTOR DE GRELHA (Smart Grid) — barra de layouts Solo/2/4 + Fundo.
+   Arruma as fontes automaticamente em grade no PREVIEW (vira camadas).
+   ============================================ */
+.grid-bar{display:flex;align-items:center;gap:12px;align-self:center;margin:8px auto 6px;padding:7px 14px;border-radius:12px;
+  background:rgba(13,27,42,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid #1e293b;box-shadow:0 10px 28px rgba(0,0,0,.45);z-index:6}
+.gb-lab{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;white-space:nowrap}
+.gb-sep{width:1px;height:16px;background:#1e293b;flex:none}
+.gb-grp{display:flex;gap:2px;background:#02040a;border:1px solid #1e293b;border-radius:8px;padding:3px}
+.gb-btn{width:32px;height:27px;border-radius:6px;display:grid;place-items:center;border:0;background:transparent;color:#94a3b8;cursor:pointer;transition:background .12s,color .12s,box-shadow .12s}
+.gb-btn:hover{background:rgba(255,255,255,.06);color:#fff}
+.gb-btn.on{background:#121a2a;color:#22d3ee;box-shadow:0 0 0 1px rgba(34,211,238,.35)}
+.gb-btn svg{width:16px;height:16px}
+.gb-fundo{display:flex;align-items:center;gap:6px;background:transparent;border:0;color:#94a3b8;font-size:12px;font-weight:600;cursor:pointer;transition:color .12s}
+.gb-fundo:hover{color:#fff}
+.gb-fundo svg{width:15px;height:15px}
+
+/* dentro do Switcher, encaixa no topo da área central */
+#switcherModal .grid-bar{margin:10px auto 2px}
+
+/* cantos arredondados nas camadas da grade (look "podcast") */
+.ov.ov-grid{border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.45)}

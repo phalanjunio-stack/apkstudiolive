@@ -78,12 +78,49 @@
     }
     lastProg = String(progId() || '');
   }
+  // ---- TIRAR DO AR: limpa o PROGRAM (o vídeo sai, fica preto) + desativa a cena.
+  // É o "liga/desliga" do botão de transmissão e o botão de pânico se der zebra. ----
+  function airOff(name) {
+    setActive(null, false);
+    try { if (window.Studio && window.Studio.clearProgram) window.Studio.clearProgram(); } catch (e) {}
+    toast('■ ' + (name ? '"' + name + '" ' : '') + 'fora do ar');
+  }
 
   function newScene() {
-    const l = load(); const name = prompt('Nome da nova cena:', 'Cena ' + (l.length + 1)); if (name == null) return;
-    const sc = { id: 'sc' + Date.now(), name: name || ('Cena ' + (l.length + 1)), program: null };
-    l.push(sc); save(l); render(); openEditor(sc.id);   // nova cena abre no EDITOR (preview), NÃO vai pro ar
-    toast('Cena criada — monte as camadas com "+ camada".');
+    const def = 'Cena ' + (load().length + 1);
+    kprompt('Nome da nova cena:', def).then(function (name) {
+      if (name == null) return;                            // cancelou
+      const l = load();
+      const sc = { id: 'sc' + Date.now(), name: name || def, program: null };
+      l.push(sc); save(l); render(); openEditor(sc.id); // nova cena abre o editor MODAL funcional
+      toast('Cena criada — monte as camadas com "+ camada".');
+    });
+  }
+  // SALVAR o que está montado no PREVIEW (camadas + fonte) como uma cena nova, listada nos chips.
+  function saveAsScene() {
+    const g = G();
+    const prev = (g && g.getPreviewScene) ? g.getPreviewScene() : null;
+    const layers = (prev != null && g && g.listForScene) ? g.listForScene(prev) : [];
+    let program = null; try { program = (window.Studio && window.Studio.state) ? window.Studio.state().preview : null; } catch (e) {}
+    if (!layers.length && program == null) { toast('Monte o preview primeiro — arraste mídia da Biblioteca pro PREVIEW.'); return; }
+    // já é uma cena salva (não é staging '__prev*') → salvar = só CONFIRMA (as camadas já persistem no motor)
+    if (prev && !/^__prev/.test(prev)) {
+      const sc0 = load().find(function (x) { return x.id === prev; });
+      toast('Cena "' + (sc0 ? sc0.name : 'atual') + '" salva ✓');
+      return;
+    }
+    const l = load(); const def = 'Cena ' + (l.length + 1);
+    kprompt('Salvar preview como cena:', def).then(function (name) {
+      if (name == null) return;                              // cancelou
+      const id = 'sc' + Date.now();
+      l.push({ id: id, name: name || def, program: program });
+      save(l);
+      if (g.setOverlayScene) layers.forEach(function (o) { g.setOverlayScene(o.id, id); });   // as camadas viram donas dessa cena
+      if (g.setPreviewScene) g.setPreviewScene(id);          // segue editável no PREVIEW
+      previewId = id;
+      toast('Cena "' + (name || def) + '" salva — clique pra carregar, 2 cliques pra editar.');
+      render();
+    });
   }
   function selectScene(id) { if (!load().some(x => x.id === id)) return; setActive(id, true); render(); }        // API: manda direto pro ar
   function loadToPreview(id) {                                                                                    // clique simples → PREVIEW (fora do ar)
@@ -97,8 +134,18 @@
     if (!previewId) return toast('Clique numa cena pra carregar no PREVIEW primeiro');
     setActive(previewId, true); render();
   }
-  function editScene(id) { openMontarCena(id); }   // duplo-clique → editor "Montar Cena"
-  function openMontarCena(id) { try { localStorage.setItem('sl-edit-scene', id || ''); } catch (e) {} window.open('montar-cena.html?scene=' + encodeURIComponent(id || ''), 'kivoEditor', 'width=1320,height=860'); }   // janela própria (nativa no Electron → arrastável pro 2º monitor)
+  function editScene(id) { openEditor(id); }   // duplo-clique → editor MODAL funcional (com o visual do montar-cena)
+  let _editorWin = null;
+  function openMontarCena(id) {
+    try { localStorage.setItem('sl-edit-scene', id || ''); } catch (e) {}
+    const url = 'montar-cena.html?scene=' + encodeURIComponent(id || '');
+    // No Electron cada window.open cria uma janela NOVA → REUSA a que já está aberta (não abre 2 modais)
+    if (_editorWin && !_editorWin.closed) {
+      try { _editorWin.location.href = url; _editorWin.focus(); try { window.SoundFX && window.SoundFX.open(); } catch (e) {} return; } catch (e) {}
+    }
+    try { window.SoundFX && window.SoundFX.open(); } catch (e) {}
+    _editorWin = window.open(url, 'kivoEditor', 'width=1320,height=860');   // janela própria (nativa no Electron → arrastável pro 2º monitor)
+  }
 
   // ---- menu flutuante simples (reaproveita o estilo .add-menu) ----
   function miniMenu(ev, items) {
@@ -391,6 +438,26 @@
     imp.appendChild(libCard(seIcon('video'), 'Vídeo', () => { const o = seAdd('video'); if (o) pickVideoFile(o.id); }));
     imp.appendChild(libCard(seIcon('camera'), 'Câmera', (e) => pickCamera(e, t => seAdd(t))));
     box.appendChild(imp);
+    // ----- MÍDIA REAL do dashboard: logos importados + fontes ao vivo (clique = adiciona na cena) -----
+    let myLogos = []; try { myLogos = (window.Biblioteca && window.Biblioteca.assets) ? window.Biblioteca.assets() : []; } catch (e) {}
+    if (myLogos.length) {
+      box.appendChild(el('div', 'se-libsec', 'Meus logos'));
+      const la = el('div', 'se-libgrid');
+      myLogos.forEach(a => {
+        const c = el('button', 'se-libcard'); c.title = a.name;
+        c.innerHTML = '<span class="se-libic"><img src="' + a.src + '" alt="" style="width:100%;height:100%;object-fit:contain"></span><span class="se-libnm">' + a.name + '</span>';
+        c.onclick = () => { const o = seAdd('image'); if (o) { G().update(o.id, { src: a.src, label: a.name, autofit: false, fit: 'contain' }); G().setWidth(o.id, 28); G().setHeight(o.id, 18); G().setPos(o.id, 36, 40); seRender(); } };
+        la.appendChild(c);
+      });
+      box.appendChild(la);
+    }
+    let srcs = []; try { srcs = (window.Studio && window.Studio.sourcesInfo) ? window.Studio.sourcesInfo().list : []; } catch (e) {}
+    if (srcs.length) {
+      box.appendChild(el('div', 'se-libsec', 'Fontes ao vivo'));
+      const ls = el('div', 'se-libgrid');
+      srcs.forEach(s => ls.appendChild(libCard(seIcon('camera'), s.label || s.id, () => { const o = seAdd('video'); if (o) { G().update(o.id, { sourceId: s.id, label: s.label, fit: 'cover' }); G().setPos(o.id, 0, 0); G().setWidth(o.id, 100); G().setHeight(o.id, 100); seRender(); } })));
+      box.appendChild(ls);
+    }
     box.appendChild(el('div', 'se-libsec', 'Overlays & gráficos'));
     const g = el('div', 'se-libgrid');
     g.appendChild(libCard(seIcon('text'), 'Texto', () => seAdd('text')));
@@ -564,18 +631,27 @@
   function render() {
     if (!host) return; const list = load(); host.innerHTML = '';
     const add = el('button', 'btn-soft fb-prim sc-save', '+ Nova cena'); add.onclick = newScene; host.appendChild(add);
-    if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Crie uma cena e monte as camadas dela (logos, escritas, placar). Clique = ao ar · Duplo-clique = abrir as camadas.')); return; }
+    const sv = el('button', 'btn-soft sc-savebtn', '＋ Salvar preview como cena'); sv.title = 'Salva as camadas montadas no PREVIEW como uma cena'; sv.onclick = saveAsScene; host.appendChild(sv);
+    if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Monte no PREVIEW (arraste da Biblioteca) e clique “Salvar preview como cena”. Ou “+ Nova cena” pra montar do zero. Clique no chip = preview · 2 cliques = editor · 📡 = no ar.')); return; }
     const grid = el('div', 'sc-grid');
     list.forEach(s => {
       const wrap = el('div', 'sc-wrap');
-      const chip = el('div', 'sc-chip' + (s.id === activeId ? ' active' : '') + (s.id === previewId ? ' preview' : ''));
-      const go = el('button', 'sc-go', s.name); go.title = 'Clique: ver no PREVIEW · Duplo-clique: abrir o editor';
+      const onair = activeId === s.id;
+      const chip = el('div', 'sc-chip sc-card' + (onair ? ' active' : '') + (s.id === previewId ? ' preview' : ''));
+      // miniatura (clique = PREVIEW · duplo-clique = editor)
+      const thumb = el('div', 'sc-thumb'); thumb.title = 'Clique: ver no PREVIEW · Duplo-clique: abrir o editor';
+      thumb.appendChild(el('div', 'sc-thumb-ph', seIcon('layers')));
+      if (onair) thumb.appendChild(el('span', 'sc-noair', 'NO AR'));
       let ct = null;
-      go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => loadToPreview(s.id), 230); };
-      go.ondblclick = () => { clearTimeout(ct); editScene(s.id); };
-      const air = el('button', 'sc-mini sc-air-btn', seIcon('broadcast')); air.title = 'Pôr ESTA cena no ar (PROGRAM)'; air.onclick = e => { e.stopPropagation(); setActive(s.id, true); render(); };
-      const ed = el('button', 'sc-mini sc-edit-btn', seIcon('layers')); ed.title = 'Montar Cena (abrir editor)'; ed.onclick = e => { e.stopPropagation(); openMontarCena(s.id); };
-      const ren = el('button', 'sc-mini', seIcon('pencil')); ren.title = 'Renomear'; ren.onclick = e => { e.stopPropagation(); const n = prompt('Nome da cena:', s.name); if (n != null) { const l = load(); const j = l.findIndex(x => x.id === s.id); if (j >= 0) { l[j].name = n || s.name; save(l); render(); } } };
+      thumb.onclick = e => { if (e.target.closest('button')) return; clearTimeout(ct); ct = setTimeout(() => loadToPreview(s.id), 230); };
+      thumb.ondblclick = e => { if (e.target.closest('button')) return; clearTimeout(ct); editScene(s.id); };
+      // NÚMERO/AR no canto (junta atalho + pôr no ar): clique = ar · botão direito = define o nº (único entre cenas)
+      const air = el('button', 'sc-numbtn' + (onair ? ' onair' : '') + (s.hotkey ? ' set' : ''), s.hotkey ? String(s.hotkey) : seIcon('broadcast'));
+      air.title = (onair ? 'No ar — clique pra tirar' : 'Clique = pôr no ar') + ' · botão direito = nº do atalho (pads/tecla)';
+      air.onclick = e => { e.stopPropagation(); if (activeId === s.id) airOff(s.name); else setActive(s.id, true); render(); };
+      air.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); const l = load(); const j = l.findIndex(x => x.id === s.id); if (j < 0) return; l[j].hotkey = window.Pads ? window.Pads.nextFreeNumber(l[j].hotkey, 'scene', s.id) : (((+l[j].hotkey || 0) + 1) % 10); save(l); render(); if (window.Pads) window.Pads.refresh(); };
+      const ed = el('button', 'sc-mini sc-edit-btn', seIcon('layers')); ed.title = 'Editar cena (abrir editor)'; ed.onclick = e => { e.stopPropagation(); openEditor(s.id); };
+      const ren = el('button', 'sc-mini', seIcon('pencil')); ren.title = 'Renomear'; ren.onclick = e => { e.stopPropagation(); kprompt('Nome da cena:', s.name).then(function (n) { if (n != null) { const l = load(); const j = l.findIndex(x => x.id === s.id); if (j >= 0) { l[j].name = n || s.name; save(l); render(); } } }); };
       const x = el('button', 'sc-x', '×'); x.title = 'Remover cena'; x.onclick = e => {
         e.stopPropagation();
         if (!confirm('Remover a cena "' + s.name + '"? As camadas dela viram globais (continuam, aparecendo em todas).')) return;
@@ -584,13 +660,15 @@
         if (activeId === s.id) setActive(null, false);
         render();
       };
-      chip.append(go, air, ed, ren, x); wrap.appendChild(chip);
+      const tools = el('div', 'sc-card-tools'); tools.append(ed, ren, x);
+      thumb.append(air, tools);
+      chip.append(thumb, el('div', 'sc-name', s.name)); wrap.appendChild(chip);
       grid.appendChild(wrap);
     });
     host.appendChild(grid);
   }
 
-  window.Scenes = { list: () => load(), apply: id => selectScene(id), active: () => activeId, render: () => render() };
+  window.Scenes = { list: () => load(), apply: id => selectScene(id), air: id => { if (activeId === id) airOff(); else setActive(id, true); render(); }, preview: id => loadToPreview(id), active: () => activeId, previewId: () => previewId, render: () => render() };
 
   function autoSave() {
     if (!activeId) return;

@@ -190,7 +190,7 @@ const Graphics = (function () {
   // ===== PREVIEW: render paralelo no monitor PREVIEW (cena diferente do PROGRAM, só leitura) =====
   function applyTransformV(o) { if (!o.elv) return; o.elv.style.transformOrigin = 'center center'; o.elv.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.elv.style.opacity = (o.opacity == null ? 1 : o.opacity); o.elv.style.left = o.x + '%'; o.elv.style.top = o.y + '%'; }
   function setVideoBox(o) { [o.el, o.elv].forEach(e => { if (!e) return; e.style.left = o.x + '%'; e.style.top = o.y + '%'; e.style.width = o.w + '%'; if (o.h != null) e.style.height = o.h + '%'; }); }
-  function previewShow(o) { return (o.scene == null || o.scene === previewScene) && o.visible !== false; }
+  function previewShow(o) { return ((o.scene === previewScene) || (o.scene == null && !(o.data && o.data.airOnly))) && o.visible !== false; }   // camada "só do ar" (chamada pelo nº do PROGRAM) NÃO espelha no PREVIEW
   function applyPreviewOne(o) { if (!o.elv) return; o.elv.style.display = previewShow(o) ? '' : 'none'; applyTransformV(o); }
   function applyPreview() { overlays.forEach(applyPreviewOne); }
   function setPreviewScene(id) { previewScene = (id == null ? null : id); applyPreview(); }
@@ -232,6 +232,10 @@ const Graphics = (function () {
   function setScale(id, s) { const o = get(id); if (!o) return; o.scale = Math.max(0.15, Math.min(8, s)); applyTransform(o); saveLocal(); }
   function setRotation(id, deg) { const o = get(id); if (!o) return; o.rotation = ((deg % 360) + 360) % 360; applyTransform(o); saveLocal(); }
   function setOpacity(id, v) { const o = get(id); if (!o) return; o.opacity = Math.max(0, Math.min(1, v)); applyTransform(o); saveLocal(); }
+  // MESCLAGEM (blend mode estilo Photoshop): normal/multiply/screen/overlay/lighten/darken/soft-light/difference...
+  function applyBlend(o) { const b = (o.data && o.data.blend) || 'normal'; if (o.el) o.el.style.mixBlendMode = b; if (o.elv) o.elv.style.mixBlendMode = b; }
+  function setBlend(id, m) { const o = get(id); if (!o) return; o.data.blend = (!m || m === 'normal') ? '' : m; applyBlend(o); saveLocal(); }
+  function setFit(id, fit) { const o = get(id); if (!o) return; o.data.fit = fit || 'contain'; if (o.type === 'image') paint(o); else paintVideo(o); saveLocal(); notify(); }   // contain(caber) · cover(preencher) · fill(esticar)
   function raise(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0 || i === overlays.length - 1) return; const [o] = overlays.splice(i, 1); overlays.push(o); if (host && o.el) host.appendChild(o.el); if (hostV && o.elv) hostV.appendChild(o.elv); emit(); }
   function lower(id) { const i = overlays.findIndex(o => o.id === id); if (i <= 0) return; const [o] = overlays.splice(i, 1); overlays.unshift(o); if (host && o.el) host.insertBefore(o.el, host.firstChild); if (hostV && o.elv) hostV.insertBefore(o.elv, hostV.firstChild); emit(); }
   // reordena z (drag estilo Photoshop): frontToBack = ids do topo (frente) p/ baixo (trás); preserva a posição das demais camadas
@@ -275,11 +279,12 @@ const Graphics = (function () {
     makeDraggable(ov);
     host.appendChild(el);
     if (hostV) {   // gêmeo no monitor PREVIEW (render paralelo, sem edição)
-      const elv = document.createElement('div'); elv.className = 'ov ovv ov-' + ov.type;
+      const elv = document.createElement('div'); elv.className = 'ov ovv ov-' + ov.type; elv.dataset.id = ov.id;
       if (ov.w) elv.style.width = ov.w + '%';
       if (ov.h != null) elv.style.height = ov.h + '%';
       elv.innerHTML = ovHTML(ov.type); ov.elv = elv; hostV.appendChild(elv);
     }
+    applyBlend(ov);
     if (ov.id === selectedId) select(ov.id);
     paint(ov);
     applyPreviewOne(ov);
@@ -291,6 +296,7 @@ const Graphics = (function () {
     if (ov.type === 'image') {
       const img = root.querySelector('img'); const ph = root.querySelector('.ov-vid-ph'); const boxed = ov.h != null;
       img.src = ov.data.src || ''; img.style.display = ov.data.src ? '' : 'none';
+      img.style.objectFit = (ov.data.fit === 'cover') ? 'cover' : (ov.data.fit === 'fill') ? 'fill' : 'contain';   // caber(contain, padrão, sem esticar) · preencher(cover) · esticar(fill)
       if (ov.data.src && ov.data.autofit && root === ov.el && img) {   // a CAIXA adota a proporção real da imagem (cabe no palco, sem sobra em volta)
         const fit = () => { if (!ov.data.autofit || !img.naturalWidth || !img.naturalHeight) return;
           const host2 = ov.el.parentElement, hr = host2 ? host2.getBoundingClientRect() : null; if (!hr || hr.width < 2 || hr.height < 2) return;
@@ -424,6 +430,7 @@ const Graphics = (function () {
   function ensureHandles(ov) {
     const el = ov.el; if (!el || el.querySelector('.ovh-rot')) return;
     if (ov.locked) return;   // camada travada: sem alças (Photoshop)
+    if (!ownedShow(ov)) return;   // camada que não está no PROGRAM (ex.: só no PREVIEW) não desenha alças aqui
     ['n', 'e', 's', 'w'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-e ovh-e-' + c; bindCrop(h, ov, c); el.appendChild(h); });
     ['nw', 'ne', 'se', 'sw'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-c ovh-c-' + c; bindResize(h, ov, c); el.appendChild(h); });
     const rot = document.createElement('span'); rot.className = 'ovh ovh-rot'; bindRotate(rot, ov); el.appendChild(rot);
@@ -507,7 +514,7 @@ const Graphics = (function () {
 
   load();
   return {
-    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setCrop, setHeight, raise, lower, reorderLayers, update, score, clockCtl,
+    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setBlend, setFit, setCrop, setHeight, raise, lower, reorderLayers, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene, takeOverlays,

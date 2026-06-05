@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Kivo Studio — Modo Futebol</title>
-<link rel="icon" type="image/svg+xml" href="/img/kivo-icon.svg" />
+<link rel="icon" type="image/png" href="/img/kivo-favicon.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
@@ -51,7 +51,8 @@ button{font-family:inherit;color:inherit}
   background:linear-gradient(180deg,var(--chrome2),var(--chrome));border-bottom:1px solid var(--line);
   box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 4px 18px -8px rgba(0,0,0,.5);backdrop-filter:blur(8px);z-index:20}
 .brand{display:flex;align-items:center;gap:11px;flex:none}
-.brand img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 6px 16px rgba(31,139,255,.5))}
+.brand img{width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(31,139,255,.56)) drop-shadow(0 8px 18px rgba(124,84,255,.24));animation:kivo-logo-aura 3.8s ease-in-out infinite}
+@keyframes kivo-logo-aura{0%,100%{filter:drop-shadow(0 0 9px rgba(31,139,255,.38)) drop-shadow(0 8px 18px rgba(124,84,255,.18))}50%{filter:drop-shadow(0 0 15px rgba(31,139,255,.66)) drop-shadow(0 10px 24px rgba(124,84,255,.30))}}
 .brand .bt{font-weight:800;font-size:15px;letter-spacing:.2px;line-height:1}
 .brand .bt em{color:var(--accent2);font-style:normal;font-weight:500}
 .brand .bs{display:block;font-size:8.5px;letter-spacing:.3em;color:var(--muted);margin-top:3px;font-weight:600}

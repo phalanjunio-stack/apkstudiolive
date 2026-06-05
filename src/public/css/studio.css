@@ -241,7 +241,9 @@ body.nav-collapsed .nav-sec{font-size:0;letter-spacing:0;padding:0;height:1px;ma
   .tstats{gap:10px}
 }
 @media (prefers-reduced-motion: reduce){
-  *{animation:none !important}
+  /* NÃO matamos animação global: o traçado/glow girando e a abertura suave dos
+     modais são a identidade do Kivo (o usuário PEDIU o movimento). Só evitamos o
+     "pulo" de hover, que é o único que poderia incomodar. */
   .fcard:hover,.mvcell:hover,.ctrl:hover,.bigbtn:hover{transform:none}
 }
 

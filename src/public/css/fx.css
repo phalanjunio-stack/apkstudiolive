@@ -82,6 +82,17 @@
 /* ATIVO: continua aceso verde, com aura suave em movimento */
 .kmode.smoke-glow.active .sg-aura{opacity:.65;animation:sg-aura-pulse 3.4s ease-in-out infinite}
 
+/* ── Botão "pôr no ar" do chip de cena — acende VERMELHO (mesmo efeito de luz do tema, cor live) ── */
+.sc-air-btn.smoke-glow{--glow-r:255;--glow-g:64;--glow-b:74;--glow-spark:#FFD2D6}
+.sc-air-btn.smoke-glow:hover{box-shadow:inset 0 0 14px rgba(255,150,156,.4),0 0 0 3px rgba(255,60,70,.2),0 0 24px rgba(255,60,70,.72);transform:scale(1.06)}
+.sc-air-btn.smoke-glow:hover svg{filter:drop-shadow(0 0 4px rgba(255,200,200,.9))}
+.sc-air-btn.tb-rippling{--ripple-color:rgba(255,150,156,.9)}
+/* cena NO AR: botão fica aceso com aura vermelha suave em movimento (sem precisar do hover) */
+.sc-chip.active .sc-air-btn.smoke-glow .sg-aura{opacity:.62;animation:sg-aura-pulse 3.2s ease-in-out infinite}
+/* aura/halo menores no chip (botão pequeno em painel apertado) — evita o glow ser cortado nas bordas */
+.sc-air-btn.smoke-glow .sg-aura{inset:-9px}
+.sc-air-btn.smoke-glow .sg-halo{inset:-2px}
+
 /* ── Onda no clique ── */
 .tb-ripple{position:absolute;inset:-2px;border-radius:inherit;
   border:1.5px solid var(--ripple-color,rgba(124,196,255,.85));pointer-events:none;opacity:1;
@@ -136,9 +147,9 @@
 .glow-overlay{z-index:9000}
 @property --glow-angle{syntax:"<angle>";inherits:false;initial-value:0deg}
 @keyframes glow-orbit{to{--glow-angle:360deg}}
-.glow-shell{--glow-angle:0deg;position:relative;width:min(560px,94vw);max-height:90vh;border-radius:20px;padding:1.5px;
+.glow-shell{--glow-angle:0deg;position:relative;width:min(560px,94vw);max-height:90vh;border-radius:20px;padding:1px;
   isolation:isolate;display:flex;filter:drop-shadow(0 0 34px rgba(0,136,255,.30));animation:modal-pop 240ms var(--ease-out) both}
-.glow-shell::before{content:"";position:absolute;inset:-2px;border-radius:22px;z-index:-2;
+.glow-shell::before{content:"";position:absolute;inset:-1px;border-radius:21px;z-index:-2;
   background:conic-gradient(from var(--glow-angle),transparent 0deg,transparent 36deg,rgba(0,128,255,.22) 74deg,rgba(45,212,255,1) 103deg,rgba(123,87,255,.92) 124deg,rgba(45,212,255,.86) 148deg,rgba(0,128,255,.20) 188deg,transparent 235deg,transparent 360deg);
   animation:glow-orbit 4.4s linear infinite}
 .glow-shell::after{content:"";position:absolute;inset:-16px;border-radius:34px;z-index:-3;
@@ -151,7 +162,8 @@
 .glow-modal .gm-head h2{margin:0;font-size:16px;font-weight:700}
 .glow-modal .gm-body{padding:16px 20px;overflow:auto}
 .glow-modal .gm-body .page-card{background:transparent;border:0;box-shadow:none;padding:0;margin:0}
-@media (prefers-reduced-motion: reduce){.glow-shell::before,.glow-shell::after{animation:none}}
+/* O traçado/glow girando é a identidade visual do Kivo (pedido do usuário):
+   mantemos a rotação MESMO com "reduzir movimento" — é decorativo e leve. */
 .glow-shell.glow-wide{width:min(660px,95vw)}
 
 /* ===== Modal de Playlist (abas Áudio/Vídeo) ===== */
@@ -250,8 +262,8 @@ audio.audi-media{height:54px;background:transparent}
 .fontes.collapsible.fz-open .fontes-grid{max-height:64vh;overflow:auto;opacity:1}
 
 @media (prefers-reduced-motion: reduce){
+  /* modais continuam abrindo suave (pedido do usuário); só o smoke-glow pesado de hover descansa */
   .smoke-glow:hover .sg-aura,.smoke-glow:hover .sg-halo,.smoke-glow:hover .sg-spark{animation:none}
-  .modal-overlay,.modal-card{animation:none}
 }
 
 /* ──────────────────────────────────────────────

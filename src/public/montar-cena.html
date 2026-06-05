@@ -4,13 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kivo Studio - Montar Cena</title>
-  <link rel="icon" type="image/svg+xml" href="img/kivo-icon.svg" />
+  <link rel="icon" type="image/png" href="img/kivo-favicon.png" />
   <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/graphics.css" />
   <link rel="stylesheet" href="css/futebol.css" />
   <link rel="stylesheet" href="css/modelos.css" />
   <script src="vendor/lucide.min.js"></script>
   <script src="js/graphics.js"></script>
+  <!-- Som de UI (swoosh ao abrir/fechar, clique, hover) — mesmo do Studio -->
+  <script src="js/sfx.js"></script>
+  <script src="js/winctrls.js"></script>
+  <script>document.addEventListener('DOMContentLoaded',function(){try{window.SoundFX&&SoundFX.init()}catch(e){}});</script>
   <style>
     @font-face {
       font-family: Inter;
@@ -4001,6 +4005,320 @@
       font-weight: 800;
     }
 
+    .brand img {
+      filter: drop-shadow(0 0 11px rgba(31, 139, 255, .58)) drop-shadow(0 8px 18px rgba(124, 84, 255, .24));
+      animation: montar-logo-aura 3.8s ease-in-out infinite;
+      transition: transform .18s var(--ease), filter .18s var(--ease);
+    }
+
+    .brand:hover img {
+      transform: translateY(-1px) scale(1.035);
+      filter: drop-shadow(0 0 15px rgba(31, 139, 255, .72)) drop-shadow(0 10px 24px rgba(124, 84, 255, .34));
+    }
+
+    @keyframes montar-logo-aura {
+      0%, 100% { filter: drop-shadow(0 0 8px rgba(31, 139, 255, .40)) drop-shadow(0 8px 18px rgba(124, 84, 255, .18)); }
+      50% { filter: drop-shadow(0 0 15px rgba(31, 139, 255, .68)) drop-shadow(0 10px 24px rgba(124, 84, 255, .30)); }
+    }
+
+    /* Football score overlay. */
+    .scoreboard {
+      top: 7.8%;
+      left: 11.5%;
+      right: 11.5%;
+      height: auto;
+      min-height: 104px;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+      gap: 6px;
+      padding: 10px 11px 8px;
+      overflow: visible;
+      border-radius: 11px;
+      border-color: rgba(71, 161, 255, .58);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(31, 139, 255, .20), transparent 42%),
+        linear-gradient(180deg, rgba(9, 28, 47, .96), rgba(3, 9, 17, .98));
+      box-shadow:
+        0 22px 52px rgba(0, 0, 0, .52),
+        0 0 28px rgba(22, 139, 255, .18),
+        inset 0 1px 0 rgba(255, 255, 255, .10);
+    }
+
+    .scoreboard::before {
+      display: none;
+    }
+
+    .score-league {
+      position: absolute;
+      left: 50%;
+      top: -24px;
+      transform: translateX(-50%);
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 1px solid rgba(71, 161, 255, .45);
+      border-bottom: 0;
+      border-radius: 8px 8px 0 0;
+      color: #dbeaff;
+      background:
+        linear-gradient(180deg, rgba(17, 43, 70, .96), rgba(5, 16, 28, .98)),
+        #071827;
+      box-shadow: 0 0 18px rgba(22, 139, 255, .16);
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .score-league strong {
+      color: #68b4ff;
+      font-weight: 760;
+    }
+
+    .score-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 142px minmax(0, 1fr);
+      align-items: stretch;
+      min-height: 72px;
+      border: 1px solid rgba(71, 161, 255, .34);
+      border-radius: 9px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, .22);
+    }
+
+    .score-team {
+      min-width: 0;
+      display: grid;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      background:
+        linear-gradient(90deg, rgba(22, 139, 255, .14), transparent 72%),
+        rgba(7, 20, 35, .72);
+    }
+
+    .score-team.home {
+      grid-template-columns: 52px minmax(0, 1fr);
+    }
+
+    .score-team.away {
+      grid-template-columns: minmax(0, 1fr) 52px;
+      text-align: right;
+      background:
+        linear-gradient(270deg, rgba(255, 54, 72, .14), transparent 72%),
+        rgba(7, 20, 35, .72);
+    }
+
+    .score-team-copy {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .team-code {
+      color: #5fb0ff;
+      font-size: 9px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .score-team-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #f8fbff;
+      font-size: clamp(12px, 1.18vw, 16px);
+      font-weight: 880;
+      line-height: 1.05;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .score-team-copy small {
+      color: rgba(184, 204, 231, .68);
+      font-size: 9px;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    .score-center {
+      display: grid;
+      grid-template-rows: 17px 1fr 21px;
+      align-items: center;
+      justify-items: center;
+      border-left: 1px solid rgba(71, 161, 255, .34);
+      border-right: 1px solid rgba(71, 161, 255, .34);
+      background:
+        radial-gradient(circle at 50% 48%, rgba(22, 139, 255, .18), transparent 58%),
+        linear-gradient(180deg, rgba(8, 16, 28, .98), rgba(2, 5, 11, .98));
+    }
+
+    .match-status {
+      align-self: stretch;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      color: #ffebee;
+      background: rgba(255, 54, 72, .18);
+      font-size: 8px;
+      font-weight: 820;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .goals {
+      gap: 12px;
+      font-size: clamp(29px, 3vw, 42px);
+      font-weight: 900;
+      letter-spacing: -.03em;
+      text-shadow: 0 0 16px rgba(255, 255, 255, .16);
+    }
+
+    .clock {
+      width: 100%;
+      border-top: 1px solid rgba(71, 161, 255, .24);
+      color: #f6fbff;
+      font-size: clamp(14px, 1.3vw, 18px);
+      font-weight: 850;
+    }
+
+    .clock small {
+      margin-left: 4px;
+      color: #50d9ff;
+      font-size: .66em;
+      font-weight: 840;
+    }
+
+    .score-meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-width: 0;
+      color: #b8cbe2;
+      font-size: 8.5px;
+      font-weight: 720;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .score-meta span {
+      min-width: 0;
+      padding: 4px 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border: 1px solid rgba(71, 161, 255, .22);
+      border-radius: 999px;
+      background: rgba(7, 24, 40, .78);
+    }
+
+    .score-meta span:first-child {
+      color: #69b7ff;
+      border-color: rgba(71, 161, 255, .42);
+    }
+
+    .shield {
+      width: 44px;
+      height: 52px;
+      font-size: 14px;
+      filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .42));
+    }
+
+    .scene-frame.ratio-9-16 .scoreboard {
+      top: 7.4%;
+      left: 8%;
+      right: 8%;
+      min-height: 116px;
+      padding: 8px;
+      gap: 5px;
+      grid-template-columns: 1fr;
+    }
+
+    .scene-frame.ratio-9-16 .score-league {
+      top: -20px;
+      height: 20px;
+      gap: 5px;
+      padding: 0 7px;
+      font-size: 7px;
+    }
+
+    .scene-frame.ratio-9-16 .score-main {
+      grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr);
+      min-height: 74px;
+    }
+
+    .scene-frame.ratio-9-16 .score-team {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      gap: 4px;
+      padding: 0 4px;
+      text-align: center;
+    }
+
+    .scene-frame.ratio-9-16 .score-team.away {
+      grid-template-columns: 1fr;
+    }
+
+    .scene-frame.ratio-9-16 .score-team.away .shield {
+      order: -1;
+    }
+
+    .scene-frame.ratio-9-16 .shield {
+      width: 34px;
+      height: 40px;
+      font-size: 11px;
+    }
+
+    .scene-frame.ratio-9-16 .team-code {
+      font-size: 8px;
+    }
+
+    .scene-frame.ratio-9-16 .score-team-name,
+    .scene-frame.ratio-9-16 .score-team-copy small {
+      display: none;
+    }
+
+    .scene-frame.ratio-9-16 .score-center {
+      grid-template-rows: 15px 1fr 20px;
+    }
+
+    .scene-frame.ratio-9-16 .match-status {
+      font-size: 7px;
+    }
+
+    .scene-frame.ratio-9-16 .goals {
+      gap: 6px;
+      font-size: 27px;
+    }
+
+    .scene-frame.ratio-9-16 .clock {
+      font-size: 13px;
+    }
+
+    .scene-frame.ratio-9-16 .score-meta {
+      gap: 4px;
+      font-size: 7px;
+    }
+
+    .scene-frame.ratio-9-16 .score-meta span {
+      padding: 3px 5px;
+    }
+
+    .scene-frame.ratio-9-16 .score-meta span:nth-child(n+3) {
+      display: none;
+    }
+
+    .scene-frame.ratio-9-16 .live-bug {
+      top: 1.4%;
+      right: 3.5%;
+      transform: scale(.84);
+      transform-origin: top right;
+    }
+
     @media (max-width: 1220px) {
       .studio-modal {
         min-width: 860px;
@@ -4228,6 +4546,10 @@
                   <div class="media-thumb thumb-overlay"><div class="thumb-label"><span>Placar</span><span></span></div></div>
                   <div class="media-name">placar.png</div>
                 </article>
+                <article class="media-item" draggable="true" data-media-name="score-futebol.png" data-media-kind="overlay">
+                  <div class="media-thumb thumb-overlay"><div class="thumb-label"><span>Score Futebol</span><span>live</span></div></div>
+                  <div class="media-name">score-futebol.png</div>
+                </article>
                 <article class="media-item" draggable="true" data-media-name="lower-third.png" data-media-kind="overlay">
                   <div class="media-thumb thumb-overlay"><div class="thumb-label"><span>Lower Third</span><span></span></div></div>
                   <div class="media-name">lower-third.png</div>
@@ -4286,15 +4608,38 @@
                   <div class="guide h"></div>
 
                   <div class="scene-object scoreboard" data-object-layer="scoreboard">
-                    <div class="shield home" data-object-layer="logo-atletico">CAM</div>
-                    <div class="team-name home">Atlético FC</div>
-                    <div class="score-center">
-                      <div class="goals"><span>2</span><span>x</span><span>1</span></div>
-                      <div class="clock" data-object-layer="tempo">45:00</div>
+                    <div class="score-league">
+                      <span>Mineiro 2026</span>
+                      <strong>Rodada 9</strong>
                     </div>
-                    <div class="team-name away">União Esporte</div>
-                    <div class="shield away" data-object-layer="logo-uniao">UE</div>
-                    <div class="period-pill" data-object-layer="competicao">1º Tempo</div>
+                    <div class="score-main">
+                      <div class="score-team home">
+                        <div class="shield home" data-object-layer="logo-atletico">CAM</div>
+                        <div class="score-team-copy">
+                          <span class="team-code">CAM</span>
+                          <strong class="score-team-name">Atlético FC</strong>
+                          <small>Casa</small>
+                        </div>
+                      </div>
+                      <div class="score-center">
+                        <div class="match-status">Ao vivo</div>
+                        <div class="goals"><span>2</span><span>x</span><span>1</span></div>
+                        <div class="clock" data-object-layer="tempo">45:00 <small>+3</small></div>
+                      </div>
+                      <div class="score-team away">
+                        <div class="score-team-copy">
+                          <span class="team-code">UNI</span>
+                          <strong class="score-team-name">União Esporte</strong>
+                          <small>Visitante</small>
+                        </div>
+                        <div class="shield away" data-object-layer="logo-uniao">UE</div>
+                      </div>
+                    </div>
+                    <div class="score-meta" data-object-layer="competicao">
+                      <span>1º Tempo</span>
+                      <span>Posse 58% - 42%</span>
+                      <span>Finalizações 9 - 5</span>
+                    </div>
                     <div class="selection-frame">
                       <span class="handle nw"></span><span class="handle n"></span><span class="handle ne"></span>
                       <span class="handle e"></span><span class="handle se"></span><span class="handle s"></span>
@@ -4614,7 +4959,7 @@
 
     const layers = [
       { id: "noar", name: "NO AR", icon: "eye", thumb: "red", object: "noar", opacity: 100, start: 1, duration: 4, color: "clip-red", keyframes: [1.35, 3.8], x: 1120, y: 42, w: 82, h: 28 },
-      { id: "scoreboard", name: "Placar", icon: "eye", thumb: "score", object: "scoreboard", opacity: 100, start: 2.8, duration: 42, color: "clip-blue", keyframes: [4, 14, 32], x: 214, y: 82, w: 772, h: 88 },
+      { id: "scoreboard", name: "Score Futebol", icon: "eye", thumb: "score", object: "scoreboard", opacity: 100, start: 2.8, duration: 42, color: "clip-blue", keyframes: [4, 14, 32], x: 148, y: 56, w: 984, h: 112 },
       { id: "tempo", name: "Tempo", icon: "eye", thumb: "text", object: "tempo", opacity: 100, start: 2.8, duration: 42, color: "clip-blue-dark", keyframes: [8, 22], x: 560, y: 150, w: 142, h: 28 },
       { id: "competicao", name: "Competição", icon: "eye", thumb: "text", object: "competicao", opacity: 100, start: 2.8, duration: 42, color: "clip-blue", keyframes: [7], x: 548, y: 182, w: 116, h: 22 },
       { id: "logo-atletico", name: "Logo Atlético", icon: "eye", thumb: "logoA", object: "logo-atletico", opacity: 100, start: 14.5, duration: 12, color: "clip-red", keyframes: [16], x: 164, y: 88, w: 54, h: 62 },
@@ -4625,7 +4970,7 @@
       { id: "background", name: "Plano de Fundo", icon: "eye", thumb: "bg", object: "background", opacity: 100, start: 1, duration: 43, color: "clip-black", keyframes: [], x: 0, y: 0, w: 1280, h: 720 }
     ];
 
-    let selectedLayerId = "lower-third";
+    let selectedLayerId = "scoreboard";
 
     const $ = (selector, root = document) => root.querySelector(selector);
     const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));

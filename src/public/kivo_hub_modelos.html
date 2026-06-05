@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kivo Studio — Kivo Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          colors: {
+            kivo: { 900: '#02040A', 850: '#03070D', 800: '#071323', 700: '#0a1a30', 600: '#0e2138' },
+            neon: { blue: '#2f7dff', cyan: '#32d4ff', violet: '#8a5cff', green: '#31d17d', amber: '#f7b84b', red: '#ff4d57' }
+          },
+          boxShadow: {
+            glow: '0 0 0 1px rgba(47,125,255,.18), 0 8px 28px -10px rgba(47,125,255,.45)',
+            glowsoft: '0 8px 30px -14px rgba(0,0,0,.7)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    html, body { height: 100%; }
+    body {
+      background:
+        radial-gradient(1100px 600px at 80% -10%, rgba(47,125,255,.10), transparent 60%),
+        radial-gradient(900px 500px at -5% 110%, rgba(138,92,255,.07), transparent 60%),
+        linear-gradient(160deg, #03070D 0%, #071323 48%, #02040A 100%);
+      background-attachment: fixed;
+    }
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-thumb { background: rgba(120,160,255,.18); border-radius: 99px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .glass { background: linear-gradient(180deg, rgba(13,26,46,.66), rgba(7,15,28,.74)); backdrop-filter: blur(10px) saturate(120%); }
+    .glass-soft { background: linear-gradient(180deg, rgba(13,26,46,.5), rgba(7,15,28,.6)); backdrop-filter: blur(8px); }
+    .hairline { border: 1px solid rgba(91,150,255,.16); }
+    .hairline-strong { border: 1px solid rgba(91,150,255,.32); }
+    .card-tpl { transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .2s, border-color .2s; }
+    .card-tpl:hover { transform: translateY(-4px); border-color: rgba(91,161,255,.55); box-shadow: 0 16px 40px -16px rgba(47,125,255,.55), 0 0 0 1px rgba(91,161,255,.3); }
+    .chip { transition: background .15s, color .15s, border-color .15s; }
+    .navlink { transition: background .15s, color .15s; }
+    .glowbtn { box-shadow: 0 6px 20px -8px rgba(47,125,255,.7), inset 0 1px 0 rgba(255,255,255,.18); }
+    .tpl-shine { background-image: radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,.08), transparent 55%); }
+    [data-hidden] { display: none !important; }
+    .fade-in { animation: fadein .35s ease both; }
+    @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+
+<body class="font-sans text-slate-200 antialiased overflow-hidden">
+
+  <div class="h-screen flex flex-col">
+
+    <!-- ===================== 1. TOPBAR ===================== -->
+    <header class="flex items-center gap-4 px-4 h-[52px] flex-none glass border-b border-[rgba(91,150,255,.14)]">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg grid place-items-center" style="background:linear-gradient(135deg,#2f7dff,#8a5cff)">
+          <i data-lucide="radio" class="w-4 h-4 text-white"></i>
+        </div>
+        <div class="leading-tight">
+          <div class="text-[13px] font-bold tracking-tight">Kivo <span class="text-neon-violet font-medium">Studio</span></div>
+        </div>
+      </div>
+      <div class="h-5 w-px bg-[rgba(91,150,255,.2)]"></div>
+      <button class="flex items-center gap-2 text-[12px] text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg hairline glass-soft">
+        <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-neon-cyan"></i> Compositor
+        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-500"></i>
+      </button>
+      <span class="text-[12px] text-slate-400 px-2 py-1 rounded-md hairline">Cena 1</span>
+
+      <div class="ml-2 hidden lg:flex items-center gap-4 text-[10.5px]">
+        <div class="flex items-center gap-1.5"><span class="text-slate-500">CPU</span><b class="text-slate-200">9%</b></div>
+        <div class="flex items-center gap-1.5"><span class="text-slate-500">GPU</span><b class="text-slate-200">14%</b></div>
+        <div class="flex items-center gap-1.5"><span class="text-slate-500">FPS</span><b class="text-neon-cyan">60</b></div>
+      </div>
+
+      <div class="ml-auto flex items-center gap-3 text-[10.5px]">
+        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-neon-red/80"></span><span class="text-slate-400">REC <b class="text-slate-300">Offline</b></span></span>
+        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-neon-blue/80"></span><span class="text-slate-400">Stream <b class="text-slate-300">Offline</b></span></span>
+        <span class="hidden md:flex items-center gap-1.5"><i data-lucide="signal" class="w-3.5 h-3.5 text-neon-green"></i><span class="text-neon-green font-medium">Excelente</span></span>
+        <div class="h-5 w-px bg-[rgba(91,150,255,.2)]"></div>
+        <button class="text-[11px] px-2.5 py-1.5 rounded-lg hairline glass-soft text-slate-300 hover:text-white flex items-center gap-1.5"><i data-lucide="eye" class="w-3.5 h-3.5"></i> Preview</button>
+        <button class="text-[11px] px-3 py-1.5 rounded-lg text-white font-semibold glowbtn" style="background:linear-gradient(180deg,#2f7dff,#1a5fd6)"><i data-lucide="radio" class="w-3.5 h-3.5 inline -mt-0.5"></i> Pôr no ar</button>
+        <button class="text-[11px] px-2.5 py-1.5 rounded-lg hairline-strong text-neon-violet font-semibold flex items-center gap-1"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Pro</button>
+        <button class="text-slate-400 hover:text-white"><i data-lucide="settings" class="w-4 h-4"></i></button>
+      </div>
+    </header>
+
+    <!-- ===================== CORPO ===================== -->
+    <div class="flex-1 flex min-h-0">
+
+      <!-- 2. RAIL DO SISTEMA -->
+      <nav class="flex-none w-[58px] flex flex-col items-center gap-1 py-3 bg-[#02040a]/70 border-r border-[rgba(91,150,255,.12)]">
+        <button class="rail-b" data-t="Mídia"><i data-lucide="image"></i><span>Mídia</span></button>
+        <button class="rail-b" data-t="Texto"><i data-lucide="type"></i><span>Texto</span></button>
+        <button class="rail-b" data-t="Stickers"><i data-lucide="sticker"></i><span>Stickers</span></button>
+        <button class="rail-b" data-t="Elementos"><i data-lucide="shapes"></i><span>Elem.</span></button>
+        <button class="rail-b" data-t="Transições"><i data-lucide="arrow-left-right"></i><span>Transç.</span></button>
+        <button class="rail-b" data-t="Filtros"><i data-lucide="sliders-horizontal"></i><span>Filtros</span></button>
+        <button class="rail-b" data-t="Camadas"><i data-lucide="layers"></i><span>Camadas</span></button>
+        <button class="rail-b" data-t="Áudio"><i data-lucide="music"></i><span>Áudio</span></button>
+        <button class="rail-b rail-on" data-t="Modelos"><i data-lucide="layout-template"></i><span>Modelos</span></button>
+        <div class="mt-auto"></div>
+        <button class="rail-b" data-t="Config"><i data-lucide="settings-2"></i><span>Config</span></button>
+      </nav>
+
+      <!-- 3. PAINEL LATERAL DOS MODELOS -->
+      <aside class="flex-none w-[212px] overflow-y-auto px-3 py-4 bg-[#03070d]/60 border-r border-[rgba(91,150,255,.12)]">
+        <div class="text-[10px] font-bold tracking-[.16em] text-slate-500 px-2 mb-2">MODELOS</div>
+        <nav id="hubNav" class="flex flex-col gap-0.5 mb-5">
+          <button class="hub-nav" data-nav="meus"><i data-lucide="folder"></i> Meus Modelos</button>
+          <button class="hub-nav hub-nav-on" data-nav="hub"><i data-lucide="globe"></i> Kivo Hub</button>
+          <button class="hub-nav" data-nav="favoritos"><i data-lucide="heart"></i> Favoritos</button>
+          <button class="hub-nav" data-nav="publicados"><i data-lucide="upload-cloud"></i> Publicados</button>
+        </nav>
+
+        <div class="text-[10px] font-bold tracking-[.16em] text-slate-500 px-2 mb-2">CATEGORIAS</div>
+        <nav id="catNav" class="flex flex-col gap-0.5 mb-5"></nav>
+
+        <div class="text-[10px] font-bold tracking-[.16em] text-slate-500 px-2 mb-2">FILTROS</div>
+        <div id="filterBox" class="flex flex-col gap-1.5 px-1 text-[12.5px] text-slate-300">
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-filter="free" class="kx"> Gratuitos</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-filter="premium" class="kx"> Premium</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-filter="downloads" class="kx"> Mais baixados</label>
+          <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-filter="recent" class="kx"> Mais recentes</label>
+        </div>
+      </aside>
+
+      <!-- 4. CENTRO -->
+      <main class="flex-1 min-w-0 overflow-y-auto px-6 py-5">
+        <div class="flex flex-wrap items-start gap-4 mb-5">
+          <div class="mr-auto">
+            <h1 class="text-[26px] font-extrabold tracking-tight text-white leading-none">Kivo Hub</h1>
+            <p class="text-[12.5px] text-slate-400 mt-1.5">Explore modelos criados pela comunidade Kivo Studio.</p>
+          </div>
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"></i>
+            <input id="search" type="text" placeholder="Buscar modelos..." class="w-[280px] max-w-[60vw] pl-9 pr-3 h-10 rounded-xl glass hairline text-[13px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-neon-blue/60 focus:shadow-glow">
+          </div>
+          <div class="relative">
+            <select id="sort" class="appearance-none h-10 pl-3.5 pr-9 rounded-xl glass hairline text-[13px] text-slate-200 focus:outline-none focus:border-neon-blue/60 cursor-pointer">
+              <option value="downloads">Mais baixados</option>
+              <option value="likes">Mais curtidos</option>
+              <option value="recent">Mais recentes</option>
+              <option value="az">A → Z</option>
+            </select>
+            <i data-lucide="chevron-down" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"></i>
+          </div>
+          <button id="btnPublish" class="h-10 px-4 rounded-xl text-white text-[13px] font-semibold glowbtn flex items-center gap-2" style="background:linear-gradient(180deg,#8a5cff,#5b32d6)">
+            <i data-lucide="plus" class="w-4 h-4"></i> Enviar modelo
+          </button>
+        </div>
+
+        <!-- filtros horizontais -->
+        <div id="chips" class="flex flex-wrap items-center gap-2 mb-5"></div>
+
+        <!-- grid -->
+        <div id="grid" class="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4"></div>
+        <div id="empty" class="hidden text-center text-slate-500 text-[13px] py-16">Nenhum modelo encontrado com esses filtros.</div>
+
+        <!-- 6. paginação -->
+        <div class="flex flex-col items-center gap-2 mt-7 mb-2">
+          <div class="flex items-center gap-1.5">
+            <button class="pg-arrow"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            <button class="pg pg-on">1</button>
+            <button class="pg">2</button>
+            <button class="pg">3</button>
+            <span class="text-slate-600 px-1">…</span>
+            <button class="pg">15</button>
+            <button class="pg-arrow"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+          </div>
+          <div id="pageInfo" class="text-[11.5px] text-slate-500">Mostrando 1-8 de 256 modelos</div>
+        </div>
+      </main>
+
+      <!-- 7/8/9. PAINEL DIREITO -->
+      <aside class="flex-none w-[306px] overflow-y-auto px-4 py-5 space-y-4 bg-[#03070d]/55 border-l border-[rgba(91,150,255,.12)]">
+
+        <!-- Perfil do criador -->
+        <section class="rounded-2xl glass hairline p-4 fade-in">
+          <div class="text-[10px] font-bold tracking-[.16em] text-slate-500 mb-3">PERFIL DO CRIADOR</div>
+          <div id="creatorCard"></div>
+        </section>
+
+        <!-- Modelos em destaque -->
+        <section class="rounded-2xl glass hairline p-4">
+          <div class="text-[10px] font-bold tracking-[.16em] text-slate-500 mb-3">MODELOS EM DESTAQUE</div>
+          <div id="featured" class="space-y-2.5"></div>
+        </section>
+
+        <!-- Sobre o Kivo Hub -->
+        <section class="rounded-2xl p-4 hairline" style="background:linear-gradient(160deg,rgba(47,125,255,.12),rgba(138,92,255,.08))">
+          <div class="text-[13px] font-bold text-white mb-1.5 flex items-center gap-2"><i data-lucide="globe" class="w-4 h-4 text-neon-cyan"></i> Sobre o Kivo Hub</div>
+          <p class="text-[12px] text-slate-300/90 leading-relaxed mb-3">Compartilhe seus modelos, inspire outros criadores e eleve o nível das transmissões esportivas.</p>
+          <ul class="space-y-2 text-[12px] text-slate-300">
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-neon-green"></i> Publique seus modelos</li>
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-neon-green"></i> Seja descoberto pela comunidade</li>
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-neon-green"></i> Receba curtidas e downloads</li>
+            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-neon-green"></i> Modelos funcionam em qualquer projeto</li>
+          </ul>
+          <button id="howTo" class="mt-3 text-[12px] text-neon-cyan hover:text-white font-medium flex items-center gap-1">Saiba como publicar um modelo <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+        </section>
+      </aside>
+    </div>
+
+    <!-- ===================== 10. RODAPÉ ===================== -->
+    <footer class="flex-none flex items-center gap-6 px-5 h-[34px] text-[10.5px] text-slate-500 glass border-t border-[rgba(91,150,255,.12)]">
+      <span>Projeto: <b class="text-slate-300">Cena 1</b></span>
+      <span>Resolução: <b class="text-slate-300">1920×1080</b> (16:9)</span>
+      <span>FPS: <b class="text-slate-300">60</b></span>
+      <span class="hidden md:inline">Duração: <b class="text-slate-300">00:00</b></span>
+      <span class="hidden md:inline">CPU: <b class="text-slate-300">9%</b></span>
+      <span class="hidden lg:inline">Memória: <b class="text-slate-300">2.1 GB</b></span>
+      <span class="ml-auto flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-neon-green"></span> Sistema operacional</span>
+    </footer>
+  </div>
+
+  <!-- ===================== MODAL PUBLICAR ===================== -->
+  <div id="pubModal" class="fixed inset-0 z-50 hidden items-center justify-center p-5" style="background:rgba(2,5,12,.7);backdrop-filter:blur(6px)">
+    <div class="w-full max-w-[520px] rounded-2xl glass hairline-strong p-5 fade-in" style="box-shadow:0 30px 80px -30px rgba(0,0,0,.9)">
+      <div class="flex items-center gap-2 mb-1">
+        <i data-lucide="upload-cloud" class="w-5 h-5 text-neon-violet"></i>
+        <h2 class="text-[16px] font-bold text-white">Publicar modelo no Kivo Hub</h2>
+        <button id="pubClose" class="ml-auto text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p class="text-[12px] text-slate-400 mb-4">Empacota como <span class="text-neon-cyan">.kivopack</span> e compartilha com a comunidade.</p>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="col-span-2 text-[11px] text-slate-400">Nome do modelo
+          <input class="kx-in" placeholder="Ex.: Placar Série A Azul">
+        </label>
+        <label class="text-[11px] text-slate-400">Categoria
+          <select id="pubCat" class="kx-in"></select>
+        </label>
+        <label class="text-[11px] text-slate-400">Esporte
+          <select class="kx-in"><option>Futebol</option><option>Vôlei</option><option>Futsal</option><option>Basquete</option><option>Geral</option></select>
+        </label>
+        <label class="col-span-2 text-[11px] text-slate-400">Tags
+          <input class="kx-in" placeholder="placar, escudo, neon, série a">
+        </label>
+        <div class="col-span-2 flex items-center gap-2 text-[12px] text-slate-300">
+          <span class="text-[11px] text-slate-400 mr-1">Plano:</span>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="plan" checked class="kx"> Gratuito</label>
+          <label class="flex items-center gap-1.5 cursor-pointer"><input type="radio" name="plan" class="kx"> <span class="text-neon-violet">Premium</span></label>
+        </div>
+        <button class="kx-up"><i data-lucide="image" class="w-4 h-4"></i> Upload do preview (.png)</button>
+        <button class="kx-up"><i data-lucide="package" class="w-4 h-4"></i> Upload do pacote (.kivopack)</button>
+      </div>
+      <div class="flex gap-2 mt-5">
+        <button id="pubCancel" class="flex-1 h-10 rounded-xl hairline text-slate-300 text-[13px] hover:text-white">Cancelar</button>
+        <button id="pubDo" class="flex-1 h-10 rounded-xl text-white text-[13px] font-semibold glowbtn" style="background:linear-gradient(180deg,#8a5cff,#5b32d6)">Publicar modelo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- toast -->
+  <div id="toast" class="fixed left-1/2 -translate-x-1/2 top-4 z-[60] hidden">
+    <div class="px-4 py-2.5 rounded-xl glass hairline-strong text-[13px] text-slate-100 flex items-center gap-2" style="box-shadow:0 14px 34px -12px rgba(0,0,0,.7)">
+      <i id="toastIc" data-lucide="check-circle-2" class="w-4 h-4 text-neon-green"></i><span id="toastMsg"></span>
+    </div>
+  </div>
+
+  <style>
+    .rail-b { width: 46px; padding: 7px 0; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: #7e8aa6; font-size: 8.5px; font-weight: 600; }
+    .rail-b svg { width: 18px; height: 18px; }
+    .rail-b:hover { background: rgba(91,150,255,.1); color: #cbd6f5; }
+    .rail-on { background: rgba(47,125,255,.16) !important; color: #6ea8ff !important; box-shadow: inset 2px 0 0 #2f7dff; }
+    .hub-nav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 9px; font-size: 13px; color: #aab6d2; text-align: left; }
+    .hub-nav svg { width: 16px; height: 16px; }
+    .hub-nav:hover { background: rgba(91,150,255,.1); color: #fff; }
+    .hub-nav-on { background: rgba(47,125,255,.16); color: #6ea8ff; }
+    .cat-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; font-size: 12.5px; color: #98a4c2; text-align: left; }
+    .cat-row svg { width: 14px; height: 14px; flex: none; }
+    .cat-row:hover { background: rgba(91,150,255,.08); color: #dbe4fb; }
+    .cat-on { background: rgba(47,125,255,.14); color: #6ea8ff; }
+    .cat-count { margin-left: auto; font-size: 10.5px; color: #5c6a8c; font-variant-numeric: tabular-nums; }
+    .cat-on .cat-count { color: #6ea8ff; }
+    .kx { accent-color: #2f7dff; width: 14px; height: 14px; }
+    .kx-in { width: 100%; margin-top: 4px; height: 38px; padding: 0 11px; border-radius: 9px; background: rgba(7,15,28,.7); border: 1px solid rgba(91,150,255,.2); color: #e7eefb; font-size: 13px; outline: none; }
+    .kx-in:focus { border-color: rgba(47,125,255,.6); }
+    select.kx-in { height: 38px; }
+    .kx-up { display: flex; align-items: center; justify-content: center; gap: 7px; height: 64px; border-radius: 11px; border: 1px dashed rgba(91,150,255,.3); background: rgba(7,15,28,.4); color: #aab6d2; font-size: 12px; }
+    .kx-up:hover { border-color: rgba(47,125,255,.6); color: #fff; }
+    .chip { padding: 6px 13px; border-radius: 99px; font-size: 12.5px; font-weight: 500; color: #aab6d2; border: 1px solid rgba(91,150,255,.18); background: rgba(13,26,46,.4); }
+    .chip:hover { color: #fff; border-color: rgba(91,150,255,.4); }
+    .chip-on { background: rgba(47,125,255,.18); color: #cfe0ff; border-color: rgba(47,125,255,.55); }
+    .chip-prem.chip-on { background: rgba(138,92,255,.2); color: #cdbcff; border-color: rgba(138,92,255,.55); }
+    .pg { min-width: 32px; height: 32px; padding: 0 6px; border-radius: 8px; font-size: 12.5px; color: #aab6d2; border: 1px solid rgba(91,150,255,.16); background: rgba(13,26,46,.4); }
+    .pg:hover { color: #fff; border-color: rgba(91,150,255,.4); }
+    .pg-on { background: linear-gradient(180deg,#2f7dff,#1a5fd6); color: #fff; border-color: transparent; font-weight: 600; }
+    .pg-arrow { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: #8f9cc0; border: 1px solid rgba(91,150,255,.16); }
+    .pg-arrow:hover { color: #fff; }
+  </style>
+
+  <script>
+    // ============================================================
+    //  KIVO HUB — rede de modelos/templates (mock, sem backend)
+    //  Cada modelo = um pacote .kivopack { preview.png, template.json, assets/, metadata.json }
+    // ============================================================
+    const CATEGORIES = [
+      { key: 'todos', label: 'Todos', icon: 'layout-grid', count: 256 },
+      { key: 'futebol', label: 'Futebol', icon: 'goal', count: 128 },
+      { key: 'volei', label: 'Vôlei', icon: 'volleyball', count: 32 },
+      { key: 'futsal', label: 'Futsal', icon: 'goal', count: 24 },
+      { key: 'basquete', label: 'Basquete', icon: 'dribbble', count: 18 },
+      { key: 'placar', label: 'Placar', icon: 'gauge', count: 96 },
+      { key: 'gol', label: 'Cards de Gol', icon: 'zap', count: 42 },
+      { key: 'lower', label: 'Lower Third', icon: 'panel-bottom', count: 38 },
+      { key: 'stats', label: 'Estatísticas', icon: 'bar-chart-3', count: 28 },
+      { key: 'transicoes', label: 'Transições', icon: 'arrow-left-right', count: 16 },
+      { key: 'vinhetas', label: 'Vinhetas', icon: 'film', count: 22 }
+    ];
+    // filtros horizontais (subconjunto)
+    const HCHIPS = [
+      { key: 'todos', label: 'Todos' }, { key: 'futebol', label: 'Futebol' }, { key: 'volei', label: 'Vôlei' },
+      { key: 'futsal', label: 'Futsal' }, { key: 'placar', label: 'Placar' }, { key: 'gol', label: 'Cards de Gol' },
+      { key: 'lower', label: 'Lower Third' }, { key: 'free', label: 'Gratuitos' }, { key: 'premium', label: 'Premium' }
+    ];
+
+    const CREATORS = {
+      joaodesign: { name: 'João Sports Design', handle: '@joaodesign', verified: true, bio: 'Designer de overlays e placares para transmissões esportivas.', models: 18, downloads: 2430, likes: 580, followers: 126, following: false, color: '#2f7dff' },
+      graphicslive: { name: 'Graphics Live', handle: '@graphicslive', verified: true, bio: 'Pacotes premium de scoreboard e motion para o futebol.', models: 41, downloads: 9120, likes: 2110, followers: 803, following: false, color: '#ff4d57' },
+      lucasdesigner: { name: 'Lucas Designer', handle: '@lucasdesigner', verified: true, bio: 'Overlays neon e identidade visual para canais esportivos.', models: 12, downloads: 1540, likes: 410, followers: 92, following: false, color: '#31d17d' },
+      designerpro: { name: 'Designer Pro', handle: '@designerpro', verified: true, bio: 'Lower thirds e vinhetas cinematográficas.', models: 27, downloads: 5300, likes: 1280, followers: 421, following: false, color: '#8a5cff' },
+      brunovisuals: { name: 'Bruno Visuals', handle: '@brunovisuals', verified: true, bio: 'Cards de gol explosivos e animações de impacto.', models: 9, downloads: 3110, likes: 760, followers: 188, following: false, color: '#f7b84b' },
+      designscore: { name: 'Design Score', handle: '@designscore', verified: true, bio: 'Disciplina e estatística: cartões, faltas e dados.', models: 15, downloads: 2040, likes: 503, followers: 140, following: false, color: '#ffcf45' },
+      statdesign: { name: 'Stat Design', handle: '@statdesign', verified: true, bio: 'Painéis de estatísticas modernas e data viz esportivo.', models: 22, downloads: 4760, likes: 1190, followers: 360, following: false, color: '#32d4ff' },
+      motionarts: { name: 'Motion Arts', handle: '@motionarts', verified: true, bio: 'Telas de intervalo, contagens e vinhetas animadas.', models: 19, downloads: 3980, likes: 940, followers: 295, following: false, color: '#8a5cff' }
+    };
+
+    const MODELS = [
+      { id: 1, name: 'Placar Série A Azul', type: 'sb-blue', cat: 'placar', sport: 'futebol', plan: 'free', dl: 1240, likes: 342, author: 'joaodesign', fav: false, ts: 7 },
+      { id: 2, name: 'Placar Vermelho Pro', type: 'sb-red', cat: 'placar', sport: 'futebol', plan: 'premium', dl: 982, likes: 215, author: 'graphicslive', fav: false, ts: 9 },
+      { id: 3, name: 'Placar Neon Green', type: 'sb-green', cat: 'placar', sport: 'futebol', plan: 'free', dl: 865, likes: 178, author: 'lucasdesigner', fav: false, ts: 4 },
+      { id: 4, name: 'Lower Third Premium', type: 'lower', cat: 'lower', sport: 'futebol', plan: 'premium', dl: 724, likes: 156, author: 'designerpro', fav: false, ts: 12 },
+      { id: 5, name: 'Card de Gol Explosão', type: 'goal', cat: 'gol', sport: 'futebol', plan: 'free', dl: 1102, likes: 281, author: 'brunovisuals', fav: false, ts: 3 },
+      { id: 6, name: 'Card Cartão Amarelo', type: 'card-yellow', cat: 'gol', sport: 'futebol', plan: 'free', dl: 713, likes: 142, author: 'designscore', fav: false, ts: 6 },
+      { id: 7, name: 'Estatísticas Modernas', type: 'stats', cat: 'stats', sport: 'futebol', plan: 'premium', dl: 532, likes: 98, author: 'statdesign', fav: false, ts: 2 },
+      { id: 8, name: 'Tela de Intervalo Pro', type: 'intermission', cat: 'vinhetas', sport: 'futebol', plan: 'free', dl: 648, likes: 115, author: 'motionarts', fav: false, ts: 8 },
+      { id: 9, name: 'Placar Vôlei Clean', type: 'sb-blue', cat: 'volei', sport: 'volei', plan: 'free', dl: 421, likes: 88, author: 'joaodesign', fav: false, ts: 5 },
+      { id: 10, name: 'Lower Third Cyber', type: 'lower', cat: 'lower', sport: 'futebol', plan: 'premium', dl: 590, likes: 134, author: 'designerpro', fav: false, ts: 11 },
+      { id: 11, name: 'Gol Slow Motion', type: 'goal', cat: 'gol', sport: 'futsal', plan: 'premium', dl: 760, likes: 203, author: 'brunovisuals', fav: false, ts: 1 },
+      { id: 12, name: 'Placar Futsal Dark', type: 'sb-green', cat: 'placar', sport: 'futsal', plan: 'free', dl: 388, likes: 71, author: 'lucasdesigner', fav: false, ts: 10 }
+    ];
+
+    const FEATURED = [1, 5, 4, 8];
+
+    // ---------- estado ----------
+    let cat = 'todos', chip = 'todos', sortBy = 'downloads', query = '', selCreator = 'joaodesign';
+    const filters = { free: false, premium: false, downloads: false, recent: false };
+
+    const $ = s => document.querySelector(s);
+    const fmt = n => n >= 1000 ? (n / 1000).toFixed(n % 1000 >= 100 ? 1 : 0).replace('.', '.') + 'k' : '' + n;
+    const fmtFull = n => n.toLocaleString('pt-BR');
+
+    function toast(msg, ic = 'check-circle-2') {
+      $('#toastMsg').textContent = msg; $('#toastIc').setAttribute('data-lucide', ic);
+      const t = $('#toast'); t.classList.remove('hidden'); lucide.createIcons();
+      clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add('hidden'), 2400);
+    }
+
+    // ---------- preview (templates fake parecendo broadcast) ----------
+    function badge(t) { return '<span style="font-size:7px;letter-spacing:.12em;font-weight:700;color:#cbd6f5;opacity:.85">' + t + '</span>'; }
+    function shield(c) { return '<div style="width:22px;height:24px;border-radius:5px 5px 9px 9px;background:linear-gradient(160deg,' + c + ',#0b1220);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)"></div>'; }
+    function preview(m) {
+      const A = '#1b3a8a', B = '#7a1a1a';
+      switch (m.type) {
+        case 'sb-blue': case 'sb-green': case 'sb-red': {
+          const accent = m.type === 'sb-red' ? '#ff4d57' : m.type === 'sb-green' ? '#31d17d' : '#2f7dff';
+          const champ = m.type === 'sb-red' ? 'CAMPEONATO PAULISTA' : m.type === 'sb-green' ? 'COPA DO BRASIL' : 'CAMPEONATO BRASILEIRO';
+          const score = m.type === 'sb-red' ? '3 × 2' : m.type === 'sb-green' ? '1 × 0' : '2 × 1';
+          const tm = m.type === 'sb-red' ? '48:30  2º TEMPO' : m.type === 'sb-green' ? '27:15  1º TEMPO' : '45:00  1º TEMPO';
+          return '<div class="tpl-shine" style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(120% 90% at 50% 0%,' + accent + '22,#02040a 70%)">'
+            + '<div style="padding:2px 12px;border-radius:4px;background:linear-gradient(90deg,' + accent + ',transparent);">' + badge(champ) + '</div>'
+            + '<div style="display:flex;align-items:center;gap:14px">' + shield('#cfd8ec')
+            + '<div style="font-size:30px;font-weight:800;color:#fff;letter-spacing:1px;text-shadow:0 2px 10px ' + accent + '88">' + score + '</div>'
+            + shield('#cfd8ec') + '</div>'
+            + '<div style="padding:3px 14px;border-radius:6px;background:' + accent + ';color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;box-shadow:0 0 16px ' + accent + '99">' + tm + '</div></div>';
+        }
+        case 'lower':
+          return '<div class="tpl-shine" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 30% 50%,#8a5cff22,#02040a 70%)">'
+            + '<div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-radius:10px;background:linear-gradient(90deg,#5b32d6,#1a1030);box-shadow:0 0 22px #8a5cff55;border:1px solid #8a5cff55">'
+            + '<div style="width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:#8a5cff"><svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg></div>'
+            + '<div style="text-align:left"><div style="font-size:7px;letter-spacing:.18em;color:#cdbcff">NARRAÇÃO</div><div style="font-size:14px;font-weight:800;color:#fff;letter-spacing:.5px">JOÃO VICTOR</div></div></div></div>';
+        case 'goal':
+          return '<div class="tpl-shine" style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:radial-gradient(120% 90% at 50% 40%,#2f7dff33,#02040a 72%)">'
+            + '<div style="font-size:34px;font-weight:900;font-style:italic;color:#fff;letter-spacing:1px;text-shadow:0 0 18px #2f7dffaa,0 0 4px #fff">GOOOL!</div>'
+            + '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700;color:#cfe0ff;letter-spacing:1px">GABRIEL SILVA</span>'
+            + '<span style="width:24px;height:24px;border-radius:6px;display:grid;place-items:center;background:#2f7dff;color:#fff;font-weight:800;font-size:13px">9</span></div></div>';
+        case 'card-yellow':
+          return '<div class="tpl-shine" style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;background:radial-gradient(120% 90% at 50% 30%,#f7b84b22,#02040a 72%)">'
+            + '<div style="font-size:13px;font-weight:800;color:#ffcf45;letter-spacing:1.5px">CARTÃO AMARELO</div>'
+            + '<div style="display:flex;align-items:center;gap:10px"><div style="width:26px;height:36px;border-radius:4px;background:linear-gradient(160deg,#ffd84d,#e0a900);box-shadow:0 0 18px #ffcf4577;transform:rotate(-8deg)"></div>'
+            + '<span style="width:26px;height:26px;border-radius:6px;display:grid;place-items:center;background:#1b2740;color:#fff;font-weight:800;font-size:13px;border:1px solid #ffffff22">8</span>'
+            + '<span style="font-size:13px;font-weight:700;color:#e7eefb;letter-spacing:.5px">JHONATAN</span></div></div>';
+        case 'stats': {
+          const rows = [['POSSE DE BOLA', 62, 38], ['FINALIZAÇÕES', 12, 6], ['ESCANTEIOS', 5, 2], ['FALTAS', 8, 6]];
+          let h = '<div style="width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:10px 16px;background:radial-gradient(120% 90% at 50% 0%,#32d4ff1f,#02040a 70%)">';
+          h += '<div style="font-size:9px;letter-spacing:.16em;color:#9fb4d8;text-align:center;margin-bottom:2px">ESTATÍSTICAS DO JOGO</div>';
+          rows.forEach(r => {
+            h += '<div style="display:flex;align-items:center;gap:8px;font-size:9px;color:#cfe0ff"><b style="width:18px;text-align:right;color:#32d4ff">' + r[1] + '</b>'
+              + '<div style="flex:1;text-align:center;color:#8fa3c8;font-size:8px;letter-spacing:.06em">' + r[0] + '</div>'
+              + '<b style="width:18px;color:#8fa3c8">' + r[2] + '</b></div>';
+          });
+          return h + '</div>';
+        }
+        case 'intermission':
+          return '<div class="tpl-shine" style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:radial-gradient(130% 100% at 50% 0%,#2f7dff2e,#040a18 60%,#02040a)">'
+            + '<div style="font-size:30px;font-weight:900;color:#fff;letter-spacing:3px;text-shadow:0 0 20px #2f7dff99">INTERVALO</div>'
+            + '<div style="font-size:9px;letter-spacing:.3em;color:#8fb6ff">EM INSTANTES</div>'
+            + '<div style="margin-top:4px;padding:3px 14px;border-radius:99px;border:1px solid #2f7dff66;font-size:9px;letter-spacing:.2em;color:#cfe0ff">VOLTAMOS</div></div>';
+      }
+      return '<div style="width:100%;height:100%;background:#0a1220"></div>';
+    }
+
+    function initials(name) { return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase(); }
+    function avatar(handleKey, size) {
+      const c = CREATORS[handleKey]; const s = size || 34;
+      return '<div style="width:' + s + 'px;height:' + s + 'px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:' + (s / 2.7) + 'px;color:#fff;background:linear-gradient(140deg,' + c.color + ',#0b1220);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)">' + initials(c.name) + '</div>';
+    }
+    function verified() { return '<svg width="13" height="13" viewBox="0 0 24 24" fill="#2f7dff" style="flex:none"><path d="M12 1l2.4 2.2 3.2-.3 1 3 3 1-.3 3.2L23.4 16 21.2 18l.3 3.2-3 1-1 3-3.2-.3L12 27l-2.3-2.1-3.2.3-1-3-3-1 .3-3.2L1 13l2.1-2.3-.3-3.2 3-1 1-3 3.2.3z" transform="scale(.85) translate(2 0)"/><path d="M9.5 12.5l2 2 4-4.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+
+    // ---------- render: categorias ----------
+    function renderCats() {
+      $('#catNav').innerHTML = CATEGORIES.map(c =>
+        '<button class="cat-row ' + (cat === c.key ? 'cat-on' : '') + '" data-cat="' + c.key + '"><i data-lucide="' + c.icon + '"></i>' + c.label + '<span class="cat-count">' + c.count + '</span></button>'
+      ).join('');
+    }
+    // ---------- render: chips horizontais ----------
+    function renderChips() {
+      $('#chips').innerHTML = HCHIPS.map(c => {
+        const on = (chip === c.key) || (c.key === 'free' && filters.free) || (c.key === 'premium' && filters.premium);
+        const prem = c.key === 'premium' ? ' chip-prem' : '';
+        const star = c.key === 'premium' ? '<i data-lucide="sparkles" class="w-3 h-3 inline -mt-0.5 mr-1"></i>' : '';
+        return '<button class="chip' + prem + (on ? ' chip-on' : '') + '" data-chip="' + c.key + '">' + star + c.label + '</button>';
+      }).join('');
+    }
+
+    // ---------- filtragem + ordenação ----------
+    function visibleModels() {
+      let list = MODELS.slice();
+      const c = cat !== 'todos' ? cat : (chip !== 'todos' && chip !== 'free' && chip !== 'premium' ? chip : null);
+      if (c) list = list.filter(m => m.cat === c || m.sport === c);
+      if (filters.free || chip === 'free') list = list.filter(m => m.plan === 'free');
+      if (filters.premium || chip === 'premium') list = list.filter(m => m.plan === 'premium');
+      if (query) { const q = query.toLowerCase(); list = list.filter(m => m.name.toLowerCase().includes(q) || CREATORS[m.author].handle.toLowerCase().includes(q)); }
+      const s = (filters.recent ? 'recent' : filters.downloads ? 'downloads' : sortBy);
+      list.sort((a, b) => s === 'likes' ? b.likes - a.likes : s === 'recent' ? a.ts - b.ts : s === 'az' ? a.name.localeCompare(b.name) : b.dl - a.dl);
+      return list;
+    }
+
+    // ---------- render: grid ----------
+    function renderGrid() {
+      const list = visibleModels();
+      const grid = $('#grid');
+      $('#empty').classList.toggle('hidden', list.length > 0);
+      grid.innerHTML = list.slice(0, 8).map(m => {
+        const c = CREATORS[m.author];
+        const planBadge = m.plan === 'premium'
+          ? '<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md text-neon-violet" style="background:rgba(138,92,255,.16);border:1px solid rgba(138,92,255,.4)">Premium <i data-lucide="sparkles" class="w-2.5 h-2.5 inline -mt-0.5"></i></span>'
+          : '<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md text-neon-green" style="background:rgba(49,209,125,.14);border:1px solid rgba(49,209,125,.4)">Grátis</span>';
+        return '<div class="card-tpl rounded-2xl glass hairline overflow-hidden fade-in" data-card="' + m.id + '">'
+          + '<div style="aspect-ratio:16/10;position:relative;border-bottom:1px solid rgba(91,150,255,.12);overflow:hidden">' + preview(m)
+          + '<button class="favbtn" data-fav="' + m.id + '" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(2,5,12,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.12)">'
+          + '<i data-lucide="heart" class="w-3.5 h-3.5" style="color:' + (m.fav ? '#ff4d6e' : '#9fb0d0') + ';fill:' + (m.fav ? '#ff4d6e' : 'none') + '"></i></button></div>'
+          + '<div class="p-3">'
+          + '<div class="text-[13.5px] font-semibold text-white truncate mb-2">' + m.name + '</div>'
+          + '<div class="flex items-center gap-2 mb-2.5">' + avatar(m.author, 22)
+          + '<span class="text-[11.5px] text-slate-400 truncate flex items-center gap-1">' + c.handle + (c.verified ? verified() : '') + '</span>'
+          + '<span class="ml-auto">' + planBadge + '</span></div>'
+          + '<div class="flex items-center gap-3 text-[11px] text-slate-400">'
+          + '<span class="flex items-center gap-1"><i data-lucide="download" class="w-3.5 h-3.5"></i>' + fmtFull(m.dl) + '</span>'
+          + '<span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5"></i>' + m.likes + '</span>'
+          + '<button class="dlbtn ml-auto text-[11px] font-semibold text-neon-cyan hover:text-white px-2.5 py-1 rounded-lg" data-dl="' + m.id + '" style="border:1px solid rgba(50,212,255,.35);background:rgba(50,212,255,.08)"><i data-lucide="download" class="w-3 h-3 inline -mt-0.5"></i> Baixar</button>'
+          + '</div></div></div>';
+      }).join('');
+      $('#pageInfo').textContent = 'Mostrando 1-' + Math.min(8, list.length) + ' de ' + (cat === 'todos' && chip === 'todos' ? 256 : list.length) + ' modelos';
+      lucide.createIcons();
+    }
+
+    // ---------- render: perfil do criador ----------
+    function renderCreator() {
+      const c = CREATORS[selCreator];
+      $('#creatorCard').innerHTML =
+        '<div class="flex items-center gap-3 mb-3">' + avatar(selCreator, 48)
+        + '<div class="min-w-0"><div class="text-[14px] font-bold text-white flex items-center gap-1 truncate">' + c.name + (c.verified ? verified() : '') + '</div>'
+        + '<div class="text-[12px] text-neon-cyan/90">' + c.handle + '</div></div></div>'
+        + '<p class="text-[12px] text-slate-400 leading-relaxed mb-3">' + c.bio + '</p>'
+        + '<div class="grid grid-cols-4 gap-1 text-center mb-3">'
+        + stat(c.models, 'Modelos') + stat(fmtFull(c.downloads), 'Downloads') + stat(c.likes, 'Curtidas') + stat(c.followers, 'Seguidores')
+        + '</div>'
+        + '<button id="followBtn" class="w-full h-9 rounded-xl text-[13px] font-semibold ' + (c.following ? 'hairline text-slate-300' : 'text-white glowbtn') + '" '
+        + (c.following ? '' : 'style="background:linear-gradient(180deg,#2f7dff,#1a5fd6)"') + '>' + (c.following ? '✓ Seguindo' : 'Seguir') + '</button>';
+      lucide.createIcons();
+    }
+    function stat(v, l) { return '<div><div class="text-[14px] font-bold text-white leading-none">' + v + '</div><div class="text-[9.5px] text-slate-500 mt-1">' + l + '</div></div>'; }
+
+    // ---------- render: destaque ----------
+    function renderFeatured() {
+      $('#featured').innerHTML = FEATURED.map(id => {
+        const m = MODELS.find(x => x.id === id);
+        return '<button class="featrow w-full flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-[rgba(91,150,255,.08)]" data-card="' + id + '">'
+          + '<div style="width:56px;height:34px;border-radius:7px;overflow:hidden;flex:none;border:1px solid rgba(91,150,255,.18)"><div style="transform:scale(.42);transform-origin:top left;width:238%;height:238%">' + preview(m) + '</div></div>'
+          + '<div class="min-w-0 text-left flex-1"><div class="text-[12px] font-semibold text-white truncate">' + m.name + '</div>'
+          + '<div class="text-[10.5px] text-slate-500 flex items-center gap-2.5 mt-0.5"><span class="flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i>' + fmtFull(m.dl) + '</span><span class="flex items-center gap-1"><i data-lucide="heart" class="w-3 h-3"></i>' + m.likes + '</span></div></div></button>';
+      }).join('');
+      lucide.createIcons();
+    }
+
+    // ---------- eventos ----------
+    document.addEventListener('click', e => {
+      const cEl = e.target.closest('[data-cat]'); if (cEl) { cat = cEl.dataset.cat; chip = 'todos'; renderCats(); renderChips(); renderGrid(); return; }
+      const chEl = e.target.closest('[data-chip]'); if (chEl) {
+        const k = chEl.dataset.chip;
+        if (k === 'free') { filters.free = !filters.free; filters.premium = false; }
+        else if (k === 'premium') { filters.premium = !filters.premium; filters.free = false; }
+        else { chip = k; cat = 'todos'; }
+        syncFilterBox(); renderCats(); renderChips(); renderGrid(); return;
+      }
+      const navEl = e.target.closest('[data-nav]'); if (navEl) {
+        document.querySelectorAll('#hubNav .hub-nav').forEach(b => b.classList.toggle('hub-nav-on', b === navEl));
+        const n = navEl.dataset.nav;
+        if (n === 'favoritos') { query = ''; $('#search').value = ''; }
+        toast(n === 'meus' ? 'Meus Modelos (mock)' : n === 'favoritos' ? 'Seus favoritos' : n === 'publicados' ? 'Seus modelos publicados' : 'Explorando o Kivo Hub', 'folder');
+        if (n === 'favoritos') { showFavorites(); } else { showFavorites(false); }
+        return;
+      }
+      const fav = e.target.closest('[data-fav]'); if (fav) { e.stopPropagation(); toggleFav(+fav.dataset.fav); return; }
+      const dl = e.target.closest('[data-dl]'); if (dl) { e.stopPropagation(); doDownload(+dl.dataset.dl); return; }
+      const card = e.target.closest('[data-card]'); if (card) { const m = MODELS.find(x => x.id === +card.dataset.card); if (m) { selCreator = m.author; renderCreator(); flash(); } return; }
+      if (e.target.closest('#followBtn')) { const c = CREATORS[selCreator]; c.following = !c.following; renderCreator(); toast(c.following ? 'Seguindo ' + c.name : 'Deixou de seguir', c.following ? 'user-check' : 'user'); return; }
+      if (e.target.closest('#btnPublish') || e.target.closest('#howTo')) { openPub(); return; }
+      if (e.target.closest('#pubClose') || e.target.closest('#pubCancel') || (e.target.id === 'pubModal')) { $('#pubModal').classList.add('hidden'); $('#pubModal').classList.remove('flex'); return; }
+      if (e.target.closest('#pubDo')) { $('#pubModal').classList.add('hidden'); $('#pubModal').classList.remove('flex'); toast('Modelo publicado no Kivo Hub! 🎉', 'check-circle-2'); return; }
+      if (e.target.closest('.pg')) { document.querySelectorAll('.pg').forEach(p => p.classList.remove('pg-on')); e.target.closest('.pg').classList.add('pg-on'); return; }
+    });
+
+    let onlyFav = false;
+    function showFavorites(on = true) { onlyFav = on; renderGrid2(); }
+    function renderGrid2() { // wrapper que respeita "só favoritos"
+      const orig = MODELS.slice();
+      if (onlyFav) { const f = MODELS.filter(m => m.fav); $('#grid').dataset.fav = '1'; renderGridList(f); }
+      else renderGrid();
+    }
+    function renderGridList(list) {
+      $('#empty').classList.toggle('hidden', list.length > 0);
+      if (!list.length) { $('#grid').innerHTML = ''; $('#empty').textContent = 'Você ainda não favoritou nenhum modelo.'; return; }
+      // reaproveita renderGrid via filtro temporário não é trivial; renderiza inline:
+      const tmp = visibleModels; // noop
+      $('#grid').innerHTML = list.map(m => cardHTML(m)).join(''); lucide.createIcons();
+      $('#pageInfo').textContent = 'Mostrando ' + list.length + ' favorito(s)';
+    }
+    function cardHTML(m) {
+      const c = CREATORS[m.author];
+      const planBadge = m.plan === 'premium'
+        ? '<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md text-neon-violet" style="background:rgba(138,92,255,.16);border:1px solid rgba(138,92,255,.4)">Premium</span>'
+        : '<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md text-neon-green" style="background:rgba(49,209,125,.14);border:1px solid rgba(49,209,125,.4)">Grátis</span>';
+      return '<div class="card-tpl rounded-2xl glass hairline overflow-hidden fade-in" data-card="' + m.id + '">'
+        + '<div style="aspect-ratio:16/10;position:relative;border-bottom:1px solid rgba(91,150,255,.12);overflow:hidden">' + preview(m)
+        + '<button class="favbtn" data-fav="' + m.id + '" style="position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(2,5,12,.55);border:1px solid rgba(255,255,255,.12)"><i data-lucide="heart" class="w-3.5 h-3.5" style="color:' + (m.fav ? '#ff4d6e' : '#9fb0d0') + ';fill:' + (m.fav ? '#ff4d6e' : 'none') + '"></i></button></div>'
+        + '<div class="p-3"><div class="text-[13.5px] font-semibold text-white truncate mb-2">' + m.name + '</div>'
+        + '<div class="flex items-center gap-2 mb-2.5">' + avatar(m.author, 22) + '<span class="text-[11.5px] text-slate-400 truncate">' + c.handle + '</span><span class="ml-auto">' + planBadge + '</span></div>'
+        + '<div class="flex items-center gap-3 text-[11px] text-slate-400"><span class="flex items-center gap-1"><i data-lucide="download" class="w-3.5 h-3.5"></i>' + fmtFull(m.dl) + '</span><span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5"></i>' + m.likes + '</span>'
+        + '<button class="dlbtn ml-auto text-[11px] font-semibold text-neon-cyan px-2.5 py-1 rounded-lg" data-dl="' + m.id + '" style="border:1px solid rgba(50,212,255,.35);background:rgba(50,212,255,.08)">Baixar</button></div></div></div>';
+    }
+
+    function toggleFav(id) {
+      const m = MODELS.find(x => x.id === id); if (!m) return; m.fav = !m.fav; m.likes += m.fav ? 1 : -1;
+      if (onlyFav) renderGrid2(); else renderGrid();
+      toast(m.fav ? 'Adicionado aos favoritos' : 'Removido dos favoritos', m.fav ? 'heart' : 'heart-off');
+    }
+    function doDownload(id) {
+      const m = MODELS.find(x => x.id === id); if (!m) return; m.dl++;
+      toast('Instalando "' + m.name + '.kivopack"…', 'download');
+      setTimeout(() => { if (onlyFav) renderGrid2(); else renderGrid(); toast('"' + m.name + '" pronto — use no Compositor, Futebol ou overlays.', 'check-circle-2'); }, 850);
+    }
+
+    function syncFilterBox() {
+      document.querySelectorAll('#filterBox input').forEach(i => { i.checked = !!filters[i.dataset.filter]; });
+    }
+    document.querySelectorAll('#filterBox input').forEach(i => i.addEventListener('change', () => {
+      filters[i.dataset.filter] = i.checked;
+      if (i.dataset.filter === 'downloads' && i.checked) filters.recent = false;
+      if (i.dataset.filter === 'recent' && i.checked) filters.downloads = false;
+      syncFilterBox(); renderChips(); renderGrid();
+    }));
+    $('#search').addEventListener('input', e => { query = e.target.value; if (onlyFav) renderGrid2(); else renderGrid(); });
+    $('#sort').addEventListener('change', e => { sortBy = e.target.value; renderGrid(); });
+
+    function openPub() {
+      $('#pubCat').innerHTML = CATEGORIES.filter(c => c.key !== 'todos').map(c => '<option>' + c.label + '</option>').join('');
+      const m = $('#pubModal'); m.classList.remove('hidden'); m.classList.add('flex'); lucide.createIcons();
+    }
+    function flash() { const el = $('#creatorCard').parentElement; el.classList.remove('fade-in'); void el.offsetWidth; el.classList.add('fade-in'); }
+
+    // ---------- boot ----------
+    renderCats(); renderChips(); renderGrid(); renderCreator(); renderFeatured();
+    lucide.createIcons();
+  </script>
+</body>
+
+</html>

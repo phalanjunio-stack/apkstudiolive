@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kivo Studio</title>
-  <link rel="icon" type="image/svg+xml" href="/img/kivo-icon.svg" />
+  <link rel="icon" type="image/png" href="/img/kivo-favicon.png" />
   <link rel="preload" href="/fonts/jakarta.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/css/app.css" />
@@ -20,29 +20,37 @@
   <link rel="stylesheet" href="/css/livemode.css" />
   <link rel="stylesheet" href="/css/dock.css" />
   <link rel="stylesheet" href="/css/brand.css" />
+  <link rel="stylesheet" href="/css/biblioteca.css" />
+  <link rel="stylesheet" href="/css/pads.css" />
+  <link rel="stylesheet" href="/css/switcher.css" />
+  <link rel="stylesheet" href="/css/grid.css" />
+  <link rel="stylesheet" href="/css/macro.css" />
+  <link rel="stylesheet" href="/css/theme-modern.css" />
   <script src="/js/theme.js"></script>
   <style>
-    #kivoSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;
-      background:radial-gradient(130% 100% at 50% 8%, #1a1f4d, #070912 62%);
+    #kivoSplash{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;overflow:hidden;
+      background:#070912;
       font-family:Plus Jakarta Sans,Inter,"Segoe UI",system-ui,Arial,sans-serif;transition:opacity .55s ease}
     #kivoSplash.ks-done{opacity:0;pointer-events:none}
-    #kivoSplash .ks-card{width:min(340px,84vw);text-align:center;animation:ks-rise .6s cubic-bezier(.22,1,.36,1) both}
-    #kivoSplash .ks-logo{width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 10px 30px rgba(108,86,255,.55));animation:ks-pulse 2.4s ease-in-out infinite}
-    #kivoSplash .ks-name{margin-top:14px;font-size:27px;font-weight:600;color:#eaf1ff;letter-spacing:.3px}
+    #kivoSplash .ks-card{width:min(760px,88vw);text-align:center;animation:ks-rise .6s cubic-bezier(.22,1,.36,1) both}
+    #kivoSplash .ks-video-shell{width:min(720px,86vw);aspect-ratio:3/2;margin:0 auto;display:grid;place-items:center;overflow:hidden;background:#070912}
+    #kivoSplash .ks-video{width:100%;height:100%;display:block;object-fit:contain}
+    #kivoSplash .ks-name{display:none;margin-top:14px;font-size:27px;font-weight:600;color:#eaf1ff;letter-spacing:.3px}
     #kivoSplash .ks-name span{color:#9a7bff;font-weight:500;margin-left:7px}
     #kivoSplash .ks-bar{margin-top:24px;height:6px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden}
-    #kivoSplash .ks-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#3a7bff,#7c54ff);box-shadow:0 0 14px rgba(108,86,255,.6);transition:width .25s ease}
+    #kivoSplash .ks-fill{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#168bff,#7c54ff);box-shadow:none;transition:width .25s ease}
     #kivoSplash .ks-row{display:flex;justify-content:space-between;align-items:center;margin-top:11px;font-size:12px;color:#8fa3c8}
     #kivoSplash .ks-pct{color:#cfe4ff;font-weight:600;font-variant-numeric:tabular-nums}
     @keyframes ks-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-    @keyframes ks-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
   </style>
 </head>
 <body class="studio-body">
   <div class="kivo-edge" aria-hidden="true"></div>
   <div id="kivoSplash">
     <div class="ks-card">
-      <img class="ks-logo" src="/img/kivo-icon.png" alt="Kivo" />
+      <div class="ks-video-shell">
+        <video class="ks-video" src="/splash/logo3.mp4" autoplay muted playsinline loop preload="auto"></video>
+      </div>
       <div class="ks-name">Kivo<span>Studio</span></div>
       <div class="ks-bar"><div class="ks-fill" id="ksFill"></div></div>
       <div class="ks-row"><span id="ksSub">Iniciando&hellip;</span><span class="ks-pct" id="ksPct">0%</span></div>
@@ -95,6 +103,11 @@
         <button class="icon-btn" title="Ajuda">?</button>
         <button class="icon-btn" title="Perfil">&#9711;</button>
       </div>
+      <div class="win-ctrls" id="winCtrls" hidden>
+        <button class="wc-btn" id="wcMin" type="button" title="Minimizar" aria-label="Minimizar"><svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <button class="wc-btn" id="wcMax" type="button" title="Maximizar" aria-label="Maximizar"><svg viewBox="0 0 24 24"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5"/></svg></button>
+        <button class="wc-btn wc-close" id="wcClose" type="button" title="Fechar" aria-label="Fechar"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+      </div>
     </header>
 
     <!-- ===================== NAV ===================== -->
@@ -128,7 +141,7 @@
           <div class="mon-top"><span class="mon-tag">PREVIEW <span id="previewName">&mdash;</span></span><button class="crop-btn" id="cropBtn" title="Cortar bordas do vídeo">&#9986;</button></div>
           <video id="previewVideo" autoplay playsinline muted></video>
           <div class="pgm-overlay" id="prevOverlay"></div>
-          <div class="mon-bottom"><span class="badge" id="previewRes">&mdash;</span><span class="badge">16:9</span><span class="badge">WebRTC</span><span class="meter"></span></div>
+          <div class="mon-bottom"><span class="badge" id="previewRes">&mdash;</span><span class="badge">16:9</span><span class="badge">WebRTC</span><span class="meter"></span><button class="mon-fone" id="monePrev" title="Fone: ouvir só o que está no PREVIEW">&#127911;</button></div>
           <div class="mon-empty" id="previewEmpty">Clique numa fonte abaixo</div>
           <div class="crop-ui" id="cropUI">
             <div class="crop-h crop-t" data-edge="t"></div>
@@ -140,11 +153,16 @@
         </section>
 
         <div class="switch">
+          <div class="pad-lab air">AO VIVO &middot; tecla 1&ndash;9</div>
+          <div class="pad air" id="padAir" title="Pads AO VIVO (vermelho) — recall direto no PROGRAM. Atalho: tecla 1&ndash;9"></div>
           <button id="takeBtn" class="take" disabled>TAKE &rsaquo;</button>
           <div class="tbar"><i></i></div>
           <button id="cutBtn" class="cut" disabled>CUT</button>
           <button id="takeAutoBtn" class="take-auto" disabled title="Manda pro ar JÁ TOCANDO, com áudio e vídeo">&#9654; TAKE + Play</button>
+          <button id="editAirBtn" class="edit-air" title="Traz o que está NO AR pra editar no PREVIEW (o público continua vendo o de antes). Clique de novo = aplica no ar (TAKE). Botão direito = cancelar.">&#9998; Editar no ar</button>
           <div class="switch-hint">PREVIEW &rarr; PROGRAM</div>
+          <div class="pad-lab prev">PREVIEW &middot; Shift+1&ndash;9</div>
+          <div class="pad prev" id="padPrev" title="Pads PREVIEW (verde) — recall no PREVIEW pra testar antes do ar. Atalho: Shift+1&ndash;9"></div>
         </div>
 
         <section class="mon program" id="programMon">
@@ -153,7 +171,7 @@
           <video id="programVideoB" class="pgm-fade" autoplay playsinline muted></video>
           <div class="pgm-overlay" id="pgmOverlay"></div>
           <div class="pgm-black" id="programBlack"></div>
-          <div class="mon-bottom"><span class="badge" id="programRes">&mdash;</span><span class="badge">16:9</span><span class="badge" id="programOnair">OFFLINE</span><span class="meter"></span></div>
+          <div class="mon-bottom"><span class="badge" id="programRes">&mdash;</span><span class="badge">16:9</span><span class="badge" id="programOnair">OFFLINE</span><span class="meter"></span><button class="mon-fone" id="monePgm" title="Fone: ouvir o MASTER (o que está no ar)">&#127911;</button></div>
           <div class="mon-empty" id="programEmpty">No ar: nada ainda</div>
         </section>
       </div>
@@ -167,8 +185,11 @@
         <span id="mName" class="mb-name"></span>
       </div>
 
-      <div class="fontes">
-        <div class="sec-head">FONTES <span class="kbd-hint">teclas 1&ndash;9 cortam &middot; &larr; &rarr; preview &middot; Enter = TAKE</span></div>
+      <div class="fontes biblioteca">
+        <div class="sec-head">BIBLIOTECA <span class="kbd-hint">arraste pro PREVIEW &rarr; vira camada &middot; clique = preview &middot; 1&ndash;9 cortam</span></div>
+        <div class="lib-sub">Logos &amp; imagens <button class="lib-importbtn" id="libImport" type="button">+ importar</button></div>
+        <div class="lib-assets" id="libAssets"></div>
+        <div class="lib-sub">C&acirc;meras &amp; m&iacute;dia</div>
         <div class="fontes-grid" id="fontesGrid"></div>
       </div>
 
@@ -253,6 +274,11 @@
       </div>
 
       <div class="rpanel">
+        <h3>PROPRIEDADES</h3>
+        <div id="propsPanel" class="lp-list"></div>
+      </div>
+
+      <div class="rpanel">
         <h3>DISPOSITIVOS MÓVEIS</h3>
         <div id="devices"><div class="dev-empty">Nenhum dispositivo conectado.</div></div>
       </div>
@@ -287,6 +313,8 @@
   <script src="/js/license.js"></script>
   <script src="/js/studio.js"></script>
   <script src="/js/sfx.js"></script>
+  <script src="/js/winctrls.js"></script>
+  <script src="/js/kprompt.js"></script>
   <script src="/js/fx.js"></script>
   <script src="/js/graphics.js"></script>
   <script src="/js/futebol.js"></script>
@@ -300,9 +328,14 @@
   <script src="/js/bgmfloat.js"></script>
   <script src="/js/playlist.js"></script>
   <script src="/js/videofloat.js"></script>
-  <script src="/js/progbar.js"></script>
+  <!-- progbar.js removido: controlador de video extra (pedido do usuario) - o player flutuante ja controla -->
   <script src="/js/layers.js"></script>
+  <script src="/js/biblioteca.js"></script>
   <script src="/js/scenes.js"></script>
+  <script src="/js/pads.js"></script>
+  <script src="/js/grid.js"></script>
+  <script src="/js/switcher.js"></script>
+  <script src="/js/macro.js"></script>
   <script src="/js/profile.js"></script>
   <script src="/js/stream.js"></script>
   <script src="/js/livemode.js"></script>

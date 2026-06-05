@@ -218,7 +218,12 @@ const Mixer = (function () {
     if (host) { renderHead(); render(); }
     window.addEventListener('pointerdown', resume);
   }
-  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, get programStream() { return programDest ? programDest.stream : null; } };
+  // ----- fone nos monitores (PROGRAM = master · PREVIEW = a fonte que está no preview) -----
+  function toggleMasterMon() { masterMon = !masterMon; applyMix(); render(); return masterMon; }
+  function getMasterMon() { return masterMon; }
+  function monitorByLabel(label, b) { const c = channels.find(c => c.label === label); if (!c) return null; c.monitor = (b == null) ? !c.monitor : !!b; applyMix(); render(); return c.monitor; }
+  function getMonitorByLabel(label) { const c = channels.find(c => c.label === label); return c ? !!c.monitor : false; }
+  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, toggleMasterMon, getMasterMon, monitorByLabel, getMonitorByLabel, get programStream() { return programDest ? programDest.stream : null; } };
 })();
 window.Mixer = Mixer;
 Mixer.boot();

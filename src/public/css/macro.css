@@ -1,0 +1,23 @@
+/* ============================================
+   MACRO "GOL" — bloco de ação: animação grande no PROGRAM + som, auto-some (4s).
+   ============================================ */
+.macro-fab{position:fixed;right:18px;bottom:18px;z-index:8500;display:flex;align-items:center;gap:7px;
+  background:linear-gradient(180deg,#2ee07a,#15a657);color:#04240f;font-weight:900;font-size:14px;letter-spacing:.03em;
+  border:0;border-radius:12px;padding:11px 16px;cursor:pointer;box-shadow:0 10px 26px -8px rgba(46,224,122,.6);
+  transition:transform .1s,filter .12s}
+.macro-fab:hover{filter:brightness(1.08)}
+.macro-fab:active{transform:scale(.96)}
+
+.macro-gol{position:absolute;inset:0;z-index:40;display:grid;place-items:center;pointer-events:none;overflow:hidden;
+  background:radial-gradient(circle at 50% 50%,rgba(16,185,129,.28),rgba(2,4,10,.55));animation:mg-bg .35s ease both}
+.macro-gol.mg-out{animation:mg-fade .5s ease forwards}
+.mg-in{display:flex;flex-direction:column;align-items:center;gap:2px;animation:mg-pop .5s cubic-bezier(.2,1.45,.4,1) both}
+.mg-ball{font-size:9vh;line-height:1;animation:mg-spin 1s linear infinite}
+.mg-tx{font-size:18vh;font-weight:900;letter-spacing:.03em;line-height:.85;
+  background:linear-gradient(180deg,#ffffff,#7bed9f);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 30px rgba(46,224,122,.55));animation:mg-shake .55s ease}
+@keyframes mg-bg{from{opacity:0}to{opacity:1}}
+@keyframes mg-fade{to{opacity:0}}
+@keyframes mg-pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes mg-spin{to{transform:rotate(360deg)}}
+@keyframes mg-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}

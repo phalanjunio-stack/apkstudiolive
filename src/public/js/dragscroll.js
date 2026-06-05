@@ -11,7 +11,8 @@
   const SKIP = 'button, a, [role="button"], label, input, textarea, select, ' +
                '.fader, .vfader, .master-fader, .mb-seek, .rpanel-pin, .fmt-seg, .theme-switcher, ' +
                '.crop-h, .crop-ui, .yt-stage, .gfx-dock, [data-ov], .ov-item, ' +
-               '.pgm-overlay, .ov, .ov-resize, .fb-prevstage, .fb-proxy, .lp-row, .sc-chip';
+               '.pgm-overlay, .ov, .ov-resize, .fb-prevstage, .fb-proxy, .lp-row, .sc-chip, ' +
+               '.fcard, .lib-item';   // cards arrastáveis (biblioteca) — arrastar ≠ rolar
 
   let cont = null, sx = 0, sy = 0, sl = 0, st = 0, moved = false, suppress = false;
 

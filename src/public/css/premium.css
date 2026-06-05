@@ -114,9 +114,27 @@ html[data-theme="light"]{
 .nav-foot .logo-badge{border-radius:8px}
 .nav-foot-name{font-weight:700;font-size:12px;letter-spacing:.18em;color:var(--muted);margin-top:8px}
 /* logo KIVO como imagem (sem o fundo gradiente do badge) */
-.logo-img{background:transparent !important;box-shadow:none !important;padding:0;object-fit:contain}
+.logo-img{
+  background:transparent !important;box-shadow:none !important;padding:0;object-fit:contain;
+  filter:drop-shadow(0 0 10px rgba(31,139,255,.46)) drop-shadow(0 8px 18px rgba(120,84,255,.22));
+  transition:transform .18s var(--ease),filter .18s var(--ease);
+  animation:kivo-logo-aura 3.8s ease-in-out infinite;
+}
+.logo-img:hover,.connect-logo:hover{
+  transform:translateY(-1px) scale(1.035);
+  filter:drop-shadow(0 0 14px rgba(31,139,255,.62)) drop-shadow(0 10px 22px rgba(120,84,255,.32));
+}
 .brand .logo-img{width:34px;height:34px}
 .nav-foot .logo-img{width:30px;height:30px}
+.connect-logo{
+  filter:drop-shadow(0 0 12px rgba(31,139,255,.48)) drop-shadow(0 10px 24px rgba(120,84,255,.24));
+  transition:transform .18s var(--ease),filter .18s var(--ease);
+  animation:kivo-logo-aura 3.8s ease-in-out infinite;
+}
+@keyframes kivo-logo-aura{
+  0%,100%{filter:drop-shadow(0 0 9px rgba(31,139,255,.38)) drop-shadow(0 8px 18px rgba(120,84,255,.18))}
+  50%{filter:drop-shadow(0 0 15px rgba(31,139,255,.62)) drop-shadow(0 10px 24px rgba(120,84,255,.30))}
+}
 
 /* ---------- 6. MONITORES ---------- */
 .mon{background:#000;border:1px solid var(--line);box-shadow:var(--shadow-card)}

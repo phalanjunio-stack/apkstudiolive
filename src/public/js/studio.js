@@ -36,21 +36,22 @@ function flashSourceByNode(node) { for (const e of sources.values()) { if (e.mix
 
 function makeTile(id, kind, label, removable) {
   const f = elc('div', 'fcard fx-pop'); f.dataset.id = id;
+  f.draggable = true;   // arrastar a FONTE → soltar no PREVIEW vira CAMADA
+  f.addEventListener('dragstart', e => { try { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'copy'; } catch (err) {} f.classList.add('dragging-src'); });
+  f.addEventListener('dragend', () => f.classList.remove('dragging-src'));
   f.innerHTML =
-    '<div class="thumb"><span class="num"></span><video autoplay playsinline muted></video>' +
-    `<span class="kind-tag">${KIND[kind]}</span><span class="bat-badge" hidden></span>` +
-    '<button class="golive-btn" title="Jogar direto no ar (PROGRAM)">&#9679; AO VIVO</button></div>' +
+    '<div class="thumb"><span class="num" title="Número de classificação — recall pelo pad/tecla"></span><video autoplay playsinline muted></video>' +
+    `<span class="kind-tag">${KIND[kind]}</span><span class="bat-badge" hidden></span></div>` +
     `<div class="head"><span class="nm" title="${label}">${label}</span>` +
     (removable ? '<button class="fcard-x" title="Remover">&times;</button>' : '') + '</div>' +
     '<div class="foot"><span class="ty">conectando&hellip;</span><span class="st"></span></div>';
   f.addEventListener('click', e => {
     if (e.target.closest('.fcard-x')) { removeSource(id); return; }
-    if (e.target.closest('.golive-btn')) { setProgram(id); return; } // atalho: direto pro ar
-    setPreview(id);
-    selectSource(id); // acende (glow) o card + o canal do mixer na cor da fonte
+    dropSourceAsLayer(id);   // clicar no card = adiciona como CAMADA no preview (tudo é camada)
+    selectSource(id);        // acende o canal do mixer na cor da fonte
   });
   f.addEventListener('dblclick', e => { // 2 cliques = pré-visualizar (assistir antes do ar; áudio no fone)
-    if (e.target.closest('.fcard-x, .golive-btn')) return;
+    if (e.target.closest('.fcard-x')) return;
     const s = sources.get(id); if (!s) return;
     if (s.kind === 'playlist') { if (window.VideoFloat && window.VideoFloat.open) window.VideoFloat.open(); else if (window.openPlaylistModal) window.openPlaylistModal('video'); }
     else if (s.url && window.openAudition) window.openAudition(s.url, s.label, true);
@@ -60,7 +61,37 @@ function makeTile(id, kind, label, removable) {
   c.innerHTML = '<video autoplay playsinline muted></video>' + `<span class="n">${label}</span>`;
   c.addEventListener('click', () => setPreview(id));
   mvEl.appendChild(c);
+  wirePreviewDrop();   // garante a zona de drop do PREVIEW ligada (idempotente)
   return { tile: f, tv: f.querySelector('video'), fty: f.querySelector('.ty'), fst: f.querySelector('.st'), mv: c, mvv: c.querySelector('video'), bat: f.querySelector('.bat-badge') };
+}
+
+// ---- Arrastar FONTE → soltar no PREVIEW: vira CAMADA (modelo unificado "tudo é camada") ----
+let _previewDropWired = false;
+function wirePreviewDrop() {
+  if (_previewDropWired) return;
+  const mon = $('previewMon'); if (!mon) return;
+  _previewDropWired = true;
+  mon.addEventListener('dragover', e => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {} mon.classList.add('drop-hot'); });
+  mon.addEventListener('dragleave', e => { if (!e.relatedTarget || !mon.contains(e.relatedTarget)) mon.classList.remove('drop-hot'); });
+  mon.addEventListener('drop', e => { e.preventDefault(); mon.classList.remove('drop-hot'); const id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || ''; if (id) dropSourceAsLayer(id); });
+}
+// fonte da biblioteca → CAMADA. UM caminho só: delega pro Biblioteca.addLayer
+// (garante a cena de preview, vídeo entra tela cheia, imagem vira logo, seleciona).
+function dropSourceAsLayer(id) {
+  const s = sources.get(id); if (!s) return;
+  const B = window.Biblioteca;
+  const isImg = s.kind === 'image' || (s.url && /^data:image|\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(s.url));
+  if (B && B.addLayer) {
+    if (isImg && s.url) B.addLayer({ kind: 'image', src: s.url, name: s.label }, 50, 50);
+    else B.addLayer({ kind: 'source', id, label: s.label }, 50, 50);
+    try { window.SoundFX && window.SoundFX.click(); } catch (e) {}
+    return;
+  }
+  // fallback (Biblioteca ainda não carregou)
+  const G = window.Graphics; if (!G || !G.add) return;
+  let o; if (isImg && s.url) { o = G.add('image'); if (o) G.update(o.id, { src: s.url }); }
+  else { o = G.add('video'); if (o) G.update(o.id, s.stream ? { sourceId: id, label: s.label } : { src: s.url, label: s.label }); }
+  if (o && G.select) G.select(o.id);
 }
 
 function ensureSource(id, kind, label, removable) {
@@ -81,7 +112,8 @@ function setStream(id, stream) {
   if (e.tv.videoWidth) setTileRatio(e);
   if (previewId === id) attachPreview(id);
   if (programId === id) attachProgram(id);
-  if (!previewId && !programId) setPreview(id); // fonte nova entra no PREVIEW (espera o TAKE/cut)
+  // fonte nova NÃO vira mais "fundo" do PREVIEW. Ela fica na biblioteca; vira CAMADA quando
+  // você clica ou arrasta o card (modelo "tudo é camada"). Corrige o vídeo que entrava como fundo.
 }
 
 function removeSource(id) {
@@ -257,7 +289,7 @@ function canvasStream(v) {
 function addVideoFile(file) {
   const url = URL.createObjectURL(file);
   const v = document.createElement('video');
-  v.src = url; v.loop = false; v.playsInline = true; // NÃO autoplay — você decide quando tocar
+  v.src = url; v.loop = true; v.playsInline = true;   // toca em loop pra a camada MOSTRAR o vídeo (senão fica quadro congelado)
   const id = 'local-' + (++localSeq);
   const e = ensureSource(id, 'video', file.name, true);
   e.mediaEl = v; e.url = url; applySourceColor(e, nextVidColor());
@@ -266,7 +298,7 @@ function addVideoFile(file) {
   try { const ch = window.Mixer && window.Mixer.addMediaElement && window.Mixer.addMediaElement(v, file.name, e.color); mixNode = ch && ch.node; } catch {}
   e.mixNode = mixNode;
   e.cleanup = () => { try { e.canvasStop && e.canvasStop(); } catch {} URL.revokeObjectURL(url); if (mixNode && window.Mixer && window.Mixer.removeChannelByNode) try { window.Mixer.removeChannelByNode(mixNode); } catch {} };
-  const apply = () => { if (e.canvasStop) return; const cv = canvasStream(v); e.canvasStop = cv.stop; setStream(id, cv.stream); }; // só vídeo na fonte; áudio é do mixer
+  const apply = () => { if (e.canvasStop) return; const cv = canvasStream(v); e.canvasStop = cv.stop; setStream(id, cv.stream); v.play && v.play().catch(() => {}); }; // só vídeo na fonte; áudio é do mixer
   if (v.readyState >= 2) apply(); else v.addEventListener('loadeddata', apply, { once: true });
 }
 
@@ -503,30 +535,70 @@ function placeMenu(menu, anchor) {
 }
 window.placeMenu = placeMenu;
 
+// entrada de ÁUDIO (microfone / mesa) — vai direto pro MIXER, sem virar card de vídeo (igual OBS)
+async function addAudioInput(deviceId, label) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: deviceId ? { deviceId: { exact: deviceId } } : true, video: false });
+    if (window.Mixer && window.Mixer.addStreamAudio) window.Mixer.addStreamAudio(stream, label || 'Microfone');
+    else stream.getTracks().forEach(t => t.stop());
+    toast('Áudio "' + (label || 'Microfone') + '" no mixer.');
+  } catch (e) { toast('Áudio: ' + e.message); }
+}
+// menu OBS-style: escolhe o TIPO (Câmera/Captura/Mídia/Áudio) → a ORIGEM (dispositivo).
+// Câmera/vídeo/tela viram FONTE (card na biblioteca, arraste pro PREVIEW). Imagem/logo vai pra biblioteca.
+// ícones de linha (estilo Lucide, igual ao menu lateral) — sem emoji
+const ADDIC = {
+  webcam: '<circle cx="12" cy="11" r="3.4"/><path d="M3 7h3l2-2.5h8L18 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/>',
+  phone: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18.5h2"/>',
+  wand: '<path d="m12 3-1.6 4.8a2 2 0 0 1-1.3 1.3L4.5 10.7l4.6 1.6a2 2 0 0 1 1.3 1.3L12 18.4l1.6-4.8a2 2 0 0 1 1.3-1.3l4.6-1.6-4.6-1.6a2 2 0 0 1-1.3-1.3Z"/>',
+  monitor: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+  film: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>',
+  listvideo: '<path d="M3 6h12"/><path d="M3 12h8"/><path d="M3 18h8"/><path d="m15 11 6 3.5-6 3.5v-7Z"/>',
+  link: '<path d="m9 15 6-6"/><path d="M11 6.5 13 4.5a4 4 0 0 1 6 6l-2 2"/><path d="M13 17.5l-2 2a4 4 0 0 1-6-6l2-2"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.5-3.5L9 21"/>',
+  mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/><path d="M8 22h8"/>',
+  palette: '<path d="M12 3.5 6.5 9a7.5 7.5 0 1 0 11 0Z"/>',
+  rewind: '<path d="M11 19 3 12l8-7v14Z"/><path d="M21 19l-8-7 8-7v14Z"/>',
+};
+function addIcon(k) { return '<svg class="addsrc-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + (ADDIC[k] || '') + '</svg>'; }
+// menu OBS-style: escolhe o TIPO (Câmera/Captura/Mídia/Áudio) → a ORIGEM (dispositivo).
+// Câmera/vídeo/tela viram FONTE (card na biblioteca, arraste pro PREVIEW). Imagem/logo vai pra biblioteca.
 async function openAddMenu(ev) {
   closeAddMenu();
+  let cams = [], mics = [];
+  try { const d = await navigator.mediaDevices.enumerateDevices(); cams = d.filter(x => x.kind === 'videoinput'); mics = d.filter(x => x.kind === 'audioinput'); } catch {}
   const items = [];
-  let cams = [];
-  try { cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'); } catch {}
-  if (cams.length && cams.some(c => c.label)) cams.forEach(c => items.push(['Câmera: ' + (c.label || 'USB'), () => addWebcam(c.deviceId, c.label || 'Câmera USB')]));
-  else items.push(['Câmera USB / webcam', () => addWebcam(null, 'Câmera USB')]);
-  items.push(['Celular (câmera via QR)', () => window.openConnectModal && window.openConnectModal('camera', 'camera')]);
-  items.push(['Tela / janela / aba (jogo, YouTube...)', addScreen]);
-  items.push(['Vídeo (arquivo)', () => pickFile('video/*', addVideoFile)]);
-  items.push(['Playlist de vídeos (vários)', () => pickFiles('video/*', addVideoPlaylist)]);
-  items.push(['Link (YouTube / vídeo URL)', addLink]);
-  items.push(['Imagem', () => pickFile('image/*', addImageFile)]);
-  items.push(['Cor sólida (fundo / placa)', addColorSource]);
-  items.push(['Chroma key (fundo verde → virtual set)', addChromaSource]);
-  items.push(['Instant Replay (câmera lenta)', addReplay]);
-  items.push(['Convidado por link (celular / PC)', () => window.openConnectModal && window.openConnectModal('camera', 'camera')]);
+  items.push(['__grp', 'Câmeras']);
+  if (cams.length && cams.some(c => c.label)) cams.forEach(c => items.push([(c.label || 'Câmera USB'), () => addWebcam(c.deviceId, c.label || 'Câmera USB'), 'webcam']));
+  else items.push(['Câmera USB / webcam', () => addWebcam(null, 'Câmera USB'), 'webcam']);
+  items.push(['Celular (câmera via QR)', () => window.openConnectModal && window.openConnectModal('camera', 'camera'), 'phone']);
+  items.push(['Chroma key (fundo verde → virtual set)', addChromaSource, 'wand']);
+  items.push(['__grp', 'Captura de tela']);
+  items.push(['Tela / janela / aba (jogo, YouTube...)', addScreen, 'monitor']);
+  items.push(['__grp', 'Mídia']);
+  items.push(['Vídeo (arquivo)', () => pickFile('video/*', addVideoFile), 'film']);
+  items.push(['Playlist de vídeos (vários)', () => pickFiles('video/*', addVideoPlaylist), 'listvideo']);
+  items.push(['Link (YouTube / vídeo URL)', addLink, 'link']);
+  items.push(['Imagem / Logo (biblioteca)', () => window.Biblioteca ? window.Biblioteca.importImages() : pickFile('image/*', addImageFile), 'image']);
+  items.push(['__grp', 'Áudio']);
+  if (mics.length && mics.some(m => m.label)) mics.forEach(m => items.push([(m.label || 'Microfone'), () => addAudioInput(m.deviceId, m.label || 'Microfone'), 'mic']));
+  else items.push(['Microfone / entrada de áudio', () => addAudioInput(null, 'Microfone'), 'mic']);
+  items.push(['__grp', 'Gerar']);
+  items.push(['Cor sólida (fundo / placa)', addColorSource, 'palette']);
+  items.push(['Instant Replay (câmera lenta)', addReplay, 'rewind']);
   const ov = elc('div', 'modal-overlay glow-overlay'); ov.id = 'addMenu';
   const shell = elc('div', 'glow-shell');
   const card = elc('div', 'glow-modal');
   card.innerHTML = '<div class="gm-head"><h2>Adicionar fonte</h2><button class="modal-close" type="button" style="position:static" aria-label="Fechar">✕</button></div>' +
-    '<div class="gm-body"><p class="addsrc-sub">Escolha o tipo de fonte pra colocar no preview.</p><div class="addsrc-list"></div></div>';
+    '<div class="gm-body"><p class="addsrc-sub">Escolha a origem. Câmera, vídeo e tela entram na biblioteca — arraste pro PREVIEW pra virar camada.</p><div class="addsrc-list"></div></div>';
   const list = card.querySelector('.addsrc-list');
-  items.forEach(([label, fn]) => { const b = elc('button', 'addsrc-item'); b.type = 'button'; b.textContent = label; b.onclick = () => { closeAddMenu(); fn(); }; list.appendChild(b); });
+  items.forEach(([label, fn, icon]) => {
+    if (label === '__grp') { list.appendChild(elc('div', 'addsrc-grp')).textContent = fn; return; }
+    const b = elc('button', 'addsrc-item'); b.type = 'button';
+    b.innerHTML = addIcon(icon) + '<span class="addsrc-tx"></span>';
+    b.querySelector('.addsrc-tx').textContent = label;
+    b.onclick = () => { closeAddMenu(); fn(); }; list.appendChild(b);
+  });
   card.querySelector('.modal-close').onclick = closeAddMenu;
   shell.appendChild(card); ov.appendChild(shell);
   ov.addEventListener('mousedown', (e) => { if (e.target === ov) closeAddMenu(); });
@@ -541,7 +613,7 @@ function attachPreview(id) {
   const yt = e && e.kind === 'youtube';
   previewVideo.srcObject = (e && !yt) ? e.stream : null;
   $('previewEmpty').style.display = (e && (yt || e.stream)) ? 'none' : 'flex';
-  $('previewName').textContent = e ? e.label : '—';
+  { const _pn = $('previewName'); if (_pn) _pn.textContent = ''; }   // sem nome do arquivo poluindo o PREVIEW (pedido do usuário)
   if (!id) $('previewRes').textContent = '—';
   applyCrop(previewVideo, (e && e.crop) || {}); positionCropHandles((e && e.crop) || {});
   positionYouTube();
@@ -575,14 +647,23 @@ function attachProgram(id) {
   applyCrop(programVideo, (e && e.crop) || {});
   positionYouTube();
 }
-function take() { if (previewId) setProgram(previewId); }
+function take() {   // TAKE = TROCA preview↔programa (corte). Novo programa toca; o que sai do ar vai pro PREVIEW pausado.
+  if (!previewId) return;
+  const newProg = previewId, oldProg = programId;
+  setProgram(newProg);                                           // muteVideoChannel já pausa o ex-programa
+  const ne = sources.get(newProg);
+  if (ne && ne.mediaEl && ne.mediaEl.paused) ne.mediaEl.play().catch(() => {});  // garante o novo no ar TOCANDO
+  if (oldProg && oldProg !== newProg) setPreview(oldProg);       // SWAP: ex-programa → preview (fica pausado/congelado)
+  if (window.Graphics && window.Graphics.takeOverlays && window.Graphics.getPreviewScene && window.Graphics.getPreviewScene() != null) window.Graphics.takeOverlays(localStorage.getItem('sl-take-clear') === '1');
+}
 // TAKE + Play: manda pro ar JÁ TOCANDO, com áudio (desmuta) e vídeo (play)
 function takeAutoPlay() {
   const id = previewId; if (!id || !sources.has(id)) return;
-  const e = sources.get(id);
+  const e = sources.get(id); const oldProg = programId;
   setProgram(id);
   if (e.mediaEl && e.mediaEl.paused) e.mediaEl.play().catch(() => {});
   if (e.mixNode && window.Mixer && window.Mixer.setChannelMuted) window.Mixer.setChannelMuted(e.mixNode, false);
+  if (oldProg && oldProg !== id) setPreview(oldProg);   // SWAP: ex-programa → preview (pausado)
 }
 // FADE: crossfade suave do PREVIEW pro PROGRAM (camada B por cima, fade-in, depois troca)
 function crossfade(id) {
@@ -816,11 +897,12 @@ function positionYouTube() {
   }
 }
 function addLink() {
-  const url = prompt('Cole o link (YouTube, ou link direto de video .mp4):');
-  if (!url) return;
-  if (/youtube\.com|youtu\.be/i.test(url)) return addYouTube(url);
-  if (/instagram\.com/i.test(url)) return toast('Instagram: use Adicionar fonte > Tela/aba (captura).');
-  addVideoUrl(url);
+  kprompt('Cole o link (YouTube, ou link direto de vídeo .mp4):', '', { placeholder: 'https://…' }).then(function (url) {
+    if (!url) return;
+    if (/youtube\.com|youtu\.be/i.test(url)) return addYouTube(url);
+    if (/instagram\.com/i.test(url)) return toast('Instagram: use Adicionar fonte > Tela/aba (captura).');
+    addVideoUrl(url);
+  });
 }
 // melhor feed ao vivo disponível: PROGRAM > PREVIEW > qualquer fonte conectada
 function liveStream() {
@@ -861,7 +943,10 @@ document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, select, textarea') || e.altKey || e.ctrlKey || e.metaKey) return;
   const ids = [...sources.keys()];
   if (e.key >= '1' && e.key <= '9') {
-    const i = +e.key - 1; if (ids[i]) setProgram(ids[i]); // corta direto pro PROGRAM
+    const n = +e.key;
+    // vMix: o número faz "recall" do slot n. Sem Shift = AO VIVO (PROGRAM) · com Shift = PREVIEW.
+    if (window.Pads) { if (e.shiftKey ? window.Pads.firePrev(n) : window.Pads.fireAir(n)) return; }
+    const i = n - 1; if (ids[i]) setProgram(ids[i]); // senão, corta direto pra fonte N (legado)
   } else if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault(); take();
   } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {

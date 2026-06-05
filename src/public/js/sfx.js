@@ -9,6 +9,7 @@ const SoundFX = (() => {
   let _enabled = localStorage.getItem('sl-sfx-enabled') !== 'false';
   let _hoverThrottle = 0;
   let _userGestured = false;
+  let _swGate = { open: 0, close: 0 }; // anti-duplicata: observador + chamada explícita não tocam 2x
 
   ['click', 'keydown', 'touchstart', 'pointerdown'].forEach(ev => {
     window.addEventListener(ev, () => { _userGestured = true; }, { once: true, capture: true });
@@ -69,13 +70,37 @@ const SoundFX = (() => {
     _note('sine', 880, t, 0.12, 0.16, 0.005);
     _note('sine', 440, t + 0.002, 0.16, 0.09, 0.008);
   }
+  // SONS COPIADOS 100% DO SITELOCAL (sound-fx.js) — sem inventar nada.
+  // open (LOG): sobe 300→600Hz · chatOpen: dois pings + sparkle · close: desce 600→300Hz.
   function open() {
-    if (!_enabled) return; const ac = _ac(); if (!ac) return; const t = ac.currentTime;
-    _note('sine', 300, t, 0.18, 0.26, 0.04, 600);
+    if (!_enabled) return;
+    const n = Date.now(); if (n - _swGate.open < 150) return; _swGate.open = n;
+    const ac = _ac(); if (!ac) return;
+    const t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(300, t);
+    o.frequency.exponentialRampToValueAtTime(600, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.3, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g); g.connect(_master);
+    o.start(t); o.stop(t + 0.2);
+  }
+  function chatOpen() {
+    if (!_enabled) return;
+    const ac = _ac(); if (!ac) return;
+    const t = ac.currentTime;
+    _note('sine',  880, t,        0.18, 0.18, 0.008); // Lá5
+    _note('sine', 1320, t + 0.06, 0.16, 0.16, 0.008); // Mi6
+    _note('sine', 2200, t + 0.10, 0.10, 0.05, 0.006); // sparkle agudo
   }
   function close() {
-    if (!_enabled) return; const ac = _ac(); if (!ac) return; const t = ac.currentTime;
-    _note('sine', 600, t, 0.20, 0.26, 0.012, 300);
+    if (!_enabled) return;
+    const n = Date.now(); if (n - _swGate.close < 150) return; _swGate.close = n;
+    const ac = _ac(); if (!ac) return;
+    const t = ac.currentTime;
+    _note('sine',  600, t,        0.20, 0.28, 0.012, 300);
     _note('sine', 1200, t + 0.02, 0.10, 0.05, 0.006);
   }
   function success() {
@@ -133,6 +158,25 @@ const SoundFX = (() => {
     }, true);
   }
 
+  // ── Swoosh automático ao abrir/fechar QUALQUER modal/janela ──
+  const MODAL_SEL = '.modal-overlay,.glow-shell,.modal-card,.se-modal,.add-menu,.qr-modal,[data-modal]';
+  function _isModal(n) {
+    return n && n.nodeType === 1 && (n.matches?.(MODAL_SEL) || n.querySelector?.(MODAL_SEL));
+  }
+  function _hookModals() {
+    let queued = null; // debounce: 1 som por "rajada" de mutações
+    const fire = fn => { if (queued) return; queued = fn; queueMicrotask(() => { const f = queued; queued = null; f(); }); };
+    new MutationObserver(muts => {
+      let opened = false, closed = false;
+      for (const m of muts) {
+        m.addedNodes.forEach(n => { if (_isModal(n)) opened = true; });
+        m.removedNodes.forEach(n => { if (_isModal(n)) closed = true; });
+      }
+      if (opened) fire(open);
+      else if (closed) fire(close);
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  }
+
   // ── Toggle de som (icone no topbar) ──
   function createToggle() {
     const btn = document.createElement('button');
@@ -156,8 +200,8 @@ const SoundFX = (() => {
   }
 
   return {
-    hover, click, open, close, success, error, navigate, goal, createToggle,
-    init() { _hookGlobal(); },
+    hover, click, open, chatOpen, close, success, error, navigate, goal, createToggle,
+    init() { _hookGlobal(); _hookModals(); },
   };
 })();
 window.SoundFX = SoundFX;

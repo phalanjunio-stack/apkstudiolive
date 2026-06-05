@@ -30,7 +30,15 @@ body.pa{
 .pa-logo{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;
   font-weight:900;color:#fff;font-size:17px;background:radial-gradient(130% 130% at 28% 18%,#5ed6ff,#1a7bf0 55%,#0846a8);
   box-shadow:0 4px 16px rgba(26,123,240,.55),inset 0 1px 0 rgba(255,255,255,.4)}
-.pa-logo-img{background:none;box-shadow:none;object-fit:contain}
+.pa-logo-img{
+  background:none;box-shadow:none;object-fit:contain;
+  filter:drop-shadow(0 0 10px rgba(31,139,255,.54)) drop-shadow(0 8px 18px rgba(124,84,255,.24));
+  animation:kivo-logo-aura 3.8s ease-in-out infinite;
+}
+@keyframes kivo-logo-aura{
+  0%,100%{filter:drop-shadow(0 0 8px rgba(31,139,255,.38)) drop-shadow(0 7px 16px rgba(124,84,255,.18))}
+  50%{filter:drop-shadow(0 0 14px rgba(31,139,255,.66)) drop-shadow(0 9px 22px rgba(124,84,255,.30))}
+}
 
 .pa-body{flex:1;overflow-y:auto;min-height:0;position:relative}
 .scr{animation:scrin .35s var(--ease) both}

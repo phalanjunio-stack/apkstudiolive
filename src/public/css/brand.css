@@ -17,6 +17,12 @@
   --grad-blue:linear-gradient(135deg,#3a7bff,#7c54ff);
   --grad-cyan:linear-gradient(135deg,#5b8bff,#9b7bff);
   --glow-blue:0 6px 20px -6px rgba(124,84,255,.5);
+  /* SISTEMA DE DEGRADÊS — cada cor vai pro seu tom escuro (pedido do usuário):
+     vermelho→vermelho-escuro (ruby), azul→roxo (blue), amarelo→amarelo-escuro (gold). */
+  --grad-danger:linear-gradient(180deg,#ff5a5c,#a3161d);   /* vermelho → vermelho escuro */
+  --grad-gold:linear-gradient(180deg,#ffd24d,#a9740a);     /* amarelo → amarelo escuro */
+  --grad-amber:linear-gradient(180deg,#ffd24d,#a9740a);
+  --glow-gold:0 6px 20px -6px rgba(255,196,60,.42);
 }
 html[data-theme="light"]{
   --accent:#4a5cff;
@@ -48,18 +54,18 @@ html[data-theme="light"]{
 /* ---------- 4. GLOW COM CLASSE — sem o arco-íris que ciclava o matiz ----------
    O premium.css animava a borda dos botões ativos com hue-rotate
    (vira "RGB gamer"). Aqui a borda e o brilho ficam FIXOS na marca. */
-.dash button:not(:disabled):is(.active,.on,.on-air,[aria-pressed="true"]){
+.dash button:not(:disabled):not(.theme-option):is(.active,.on,.on-air,[aria-pressed="true"]){
   box-shadow:
     0 0 0 1px rgba(var(--accent-rgb),.35),
     0 0 16px -2px rgba(124,84,255,.4),
     inset 0 1px 0 rgba(255,255,255,.14)
 }
-.dash button:not(:disabled):is(.active,.on,.on-air,[aria-pressed="true"])::before{
+.dash button:not(:disabled):not(.theme-option):is(.active,.on,.on-air,[aria-pressed="true"])::before{
   background:var(--grad-blue);
   animation:none;
   opacity:.9
 }
-.dash button:not(:disabled):is(.active,.on,.on-air,[aria-pressed="true"])::after{
+.dash button:not(:disabled):not(.theme-option):is(.active,.on,.on-air,[aria-pressed="true"])::after{
   background:radial-gradient(circle at 50% 50%,rgba(var(--accent2-rgb),.32),transparent 68%);
   animation:none
 }
@@ -124,24 +130,58 @@ html[data-theme="light"]{
 .sc-chip.preview .sc-go{border-color:var(--accent2);color:#cfe4ff;box-shadow:inset 0 0 0 1px rgba(var(--accent2-rgb),.6)}
 .sc-take{width:100%;margin-top:8px;padding:10px;border-radius:9px;border:1px solid rgba(255,77,79,.5);background:var(--grad-ruby);color:#fff;font-weight:800;letter-spacing:.04em;cursor:pointer;box-shadow:var(--glow-ruby)}
 .sc-take:hover{filter:brightness(1.07)}
-/* botão ▶ (pôr ESTA cena no ar) — vermelho discreto, acende no hover */
-.sc-air-btn{color:#ff9aa0;border-color:rgba(255,89,100,.35)}
+/* botão "pôr ESTA cena no ar" — NEUTRO igual aos outros ícones (tirei o rosa fixo + o glow,
+   que pareciam um "alerta aceso" estranho). Só fica vermelho no HOVER e quando está no ar (.active). */
 .sc-air-btn:hover{background:linear-gradient(180deg,#e0454e,#c01f2a);color:#fff;border-color:transparent}
 .sc-chip.active .sc-air-btn{background:linear-gradient(180deg,#e0454e,#c01f2a);color:#fff;border-color:transparent}
 /* chip de cena PRO: ícones SVG + traçado girando as cores (estilo sitelocal) */
 .sc-mini{display:inline-flex;align-items:center;justify-content:center}
 .sc-mini svg{width:15px;height:15px;display:block}
-.sc-air-btn svg{filter:drop-shadow(0 0 4px rgba(255,89,100,.55))}
 .sc-edit-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* botões do chip QUADRADOS e centralizados (estavam esticando na altura = retângulos) */
+.sc-chip{align-items:center}
+.sc-mini,.sc-x{width:34px;height:34px}
 @property --kg-ang{syntax:"<angle>";inherits:false;initial-value:0deg}
 @keyframes kg-orbit{to{--kg-ang:360deg}}
 .sc-chip{position:relative}
-.sc-chip.active{box-shadow:0 0 18px -5px rgba(224,21,43,.6)}
-.sc-chip.active::after,.sc-chip.preview::after{content:"";position:absolute;inset:-1.5px;border-radius:10px;padding:1.5px;pointer-events:none;
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
-  animation:kg-orbit 4.5s linear infinite}
-.sc-chip.active::after{background:conic-gradient(from var(--kg-ang),#ff5d6c,#ff9a4d,#ffd24d,#ff5d6c,#c01f2a,#ff5d6c)}
-.sc-chip.preview::after{background:conic-gradient(from var(--kg-ang),var(--accent2),#6fe0ff,var(--accent),var(--accent2));opacity:.85;animation-duration:5.5s}
+/* SEM traçado girando no chip (pedido do usuário — ficava "cobrindo tudo").
+   Preview e ativo são indicados só pela borda do .sc-go + o botão vermelho de "no ar". */
+.sc-chip.active::after,.sc-chip.preview::after{display:none!important}
+
+/* ===== CHIP DE CENA — calmo (igual imagem 1); o efeito é só no HOVER ===== */
+.sc-go{padding:10px 13px;border-radius:11px;border:1px solid var(--line2);
+  background:linear-gradient(180deg,var(--panel2),var(--inset));color:var(--txt);font-weight:700;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 9px -5px rgba(0,0,0,.25);
+  transition:border-color .16s var(--ease-out),box-shadow .18s,transform .16s,background .18s}
+.sc-go::before{content:"\25B6";color:var(--accent);margin-right:8px;font-size:9px;vertical-align:1px}
+.sc-go:hover{border-color:rgba(var(--accent-rgb),.55);transform:translateX(2px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 20px -10px rgba(var(--accent-rgb),.6)}
+/* ATIVA (no ar): CALMA — só um realce leve (theme-aware). Quem mostra "no ar" é o botão de transmissão aceso (vermelho). */
+.sc-chip.active .sc-go{border-color:rgba(var(--accent-rgb),.5);color:var(--txt);
+  background:linear-gradient(180deg,var(--panel2),var(--inset));box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.18)}
+.sc-chip.active .sc-go::before{content:"\25CF";color:var(--accent)}
+.sc-mini,.sc-x{transition:border-color .15s,color .15s,background .15s,transform .12s}
+.sc-mini:hover,.sc-x:hover{transform:translateY(-1px)}
+/* espaço em cima/embaixo da lista pro brilho (smoke-glow) do botão vermelho de "no ar" não ser
+   cortado pelo overflow:hidden do painel (.rpanel-body), sobretudo no ÚLTIMO chip da lista */
+.sc-grid{padding:8px 0 22px}
+
+/* ===== DROPDOWN DE TEMA — copiado do NOVODESIGN: sólido; HOVER = pílula accent + anel + glow; SELECIONADO = só o check azul ===== */
+.theme-switcher-menu{width:190px;padding:6px;background:var(--panel);
+  -webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line2);border-radius:14px;
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.5);z-index:400}
+.theme-option{display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;border-radius:10px;
+  font-size:13px;color:var(--muted);background:transparent}
+.theme-option:hover{background:rgba(var(--accent-rgb),.12);color:var(--txt);
+  box-shadow:inset 0 0 0 1px rgba(var(--accent-rgb),.40),0 4px 16px -6px rgba(var(--accent-rgb),.55)}
+/* SELECIONADO (igual NOVODESIGN .theme-opt.active): só a cor normal + o check azul. Pílula = só no :hover. */
+.theme-option.active{color:var(--txt)}
+/* o app tem várias regras genéricas que dão glow/borda em QUALQUER button.active dentro de .dash
+   (box-shadow + ::before borda-gradiente + ::after glow radial). O ID do menu mata TUDO isso só aqui
+   → selecionado fica sem glow (só o check), igual NOVODESIGN. */
+#theme-menu .theme-option.active{box-shadow:none!important;outline:none!important}
+#theme-menu .theme-option.active::before,#theme-menu .theme-option.active::after{display:none!important}
+.theme-option .theme-option-check{margin-left:auto;color:var(--accent)}
 /* ===== UPLIFT PROFISSIONAL (refs sitelocal / NOVODESIGN) ===== */
 /* inputs & selects premium — alguns ficavam BRANCOS (amador), agora dark com foco em glow */
 input[type=text],input[type=number],input[type=search],input[type=time],input[type=date],input[type=tel],input[type=url],input:not([type]),select,textarea{
@@ -152,17 +192,78 @@ input[type=text]:focus,input[type=number]:focus,input[type=search]:focus,input[t
 input::placeholder,textarea::placeholder{color:var(--muted)}
 /* abertura "sensacional": borda conic girando em TODOS os modais (.modal-card), reaproveitando glow-orbit */
 .modal-card{isolation:isolate}
-.modal-card::before{content:"";position:absolute;inset:-1.5px;border-radius:17px;z-index:-1;pointer-events:none;
+.modal-card::before{content:"";position:absolute;inset:-1px;border-radius:17px;z-index:-1;pointer-events:none;
   background:conic-gradient(from var(--glow-angle,0deg),transparent 0 40deg,rgba(0,128,255,.18) 78deg,rgba(45,212,255,.9) 104deg,rgba(123,87,255,.85) 126deg,rgba(45,212,255,.8) 150deg,rgba(0,128,255,.16) 190deg,transparent 236deg 360deg);
   animation:glow-orbit 4.6s linear infinite}
 /* botão primário: pop sutil no hover (easing do sitelocal) */
 .fb-prim,.btn-primary,.btn-soft.fb-prim{transition:filter .15s ease,transform .18s cubic-bezier(.34,1.4,.64,1),box-shadow .2s ease}
 .fb-prim:hover,.btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}
-/* traçado de luz girando (azul/roxo, 2px) em volta do app inteiro — estilo sitelocal */
-.kivo-edge{position:fixed;inset:0;z-index:9990;pointer-events:none;padding:2px;border-radius:2px;
-  background:conic-gradient(from var(--glow-angle,0deg),transparent 0deg,#2f7dff 64deg,#7a57ff 130deg,transparent 198deg,#2f7dff 300deg,transparent 360deg);
+/* ===== BOTÃO CTA (estilo pack de botões gradiente): chip branco c/ ícone +
+   corpo em degradê + RASTRO em camadas atrás. Use .kcta + uma variante de cor. ===== */
+.kcta{position:relative;display:inline-flex;align-items:center;justify-content:flex-start;gap:10px;
+  border:0;cursor:pointer;padding:5px;border-radius:13px;isolation:isolate;
+  background:var(--kcta-grad);color:#fff;font-weight:800;letter-spacing:.02em;font-size:13px;line-height:1;
+  box-shadow:0 10px 22px -10px var(--kcta-sh),inset 0 1px 0 rgba(255,255,255,.25);
+  transition:transform .18s var(--ease-out),box-shadow .18s var(--ease-out),filter .18s}
+.kcta:hover{transform:translateY(-2px);box-shadow:0 16px 30px -10px var(--kcta-sh),inset 0 1px 0 rgba(255,255,255,.32);filter:brightness(1.06)}
+.kcta:active{transform:translateY(0);filter:brightness(.98)}
+.kcta-ic{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:#fff;display:grid;place-items:center;
+  box-shadow:0 3px 8px rgba(0,0,0,.22)}
+.kcta-ic svg{width:18px;height:18px;display:block;color:var(--kcta-ic-color)}
+.kcta-tx{padding-right:8px;white-space:nowrap}
+/* rastro/“swoosh” em 2 camadas atrás, escapando pela direita */
+.kcta::after,.kcta::before{content:"";position:absolute;inset:4px 4px;z-index:-1;border-radius:11px;background:var(--kcta-grad)}
+.kcta::after{transform:translateX(8px) scaleY(.92);opacity:.5}
+.kcta::before{transform:translateX(15px) scaleY(.82);opacity:.24}
+/* variantes (sistema de degradês: cor → cor escura; azul = azul→roxo) */
+.kcta--red{--kcta-grad:linear-gradient(180deg,#e21d2c 0%,#7c0c14 52%,#220305 100%);--kcta-sh:rgba(200,18,38,.5);--kcta-ic-color:#d4172a}
+.kcta--blue{--kcta-grad:linear-gradient(100deg,#3a7bff,#7c54ff);--kcta-sh:rgba(108,86,255,.45);--kcta-ic-color:#5b6bff}
+.kcta--gold{--kcta-grad:linear-gradient(100deg,#ffd24d,#a9740a);--kcta-sh:rgba(255,196,60,.42);--kcta-ic-color:#b8860b}
+.kcta--green{--kcta-grad:linear-gradient(100deg,#34d399,#0f9d6b);--kcta-sh:rgba(52,211,153,.42);--kcta-ic-color:#0f9d6b}
+/* ===== kprompt — modal de digitar (substitui o prompt() que o Electron não tem) ===== */
+.kprompt-ov{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;background:rgba(4,8,14,.5);backdrop-filter:blur(3px)}
+.kprompt-ov .glow-shell{width:min(420px,92vw)}
+.kprompt-card .gm-body{display:flex;flex-direction:column;gap:14px;padding:18px 20px 20px}
+.kprompt-input{width:100%}
+.kprompt-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:2px}
+/* ===== arrastar FONTE → soltar no PREVIEW vira CAMADA ===== */
+.fcard[draggable=true]{cursor:grab}
+.fcard.dragging-src{opacity:.45;transform:scale(.96)}
+#previewMon.drop-hot{outline:2px dashed var(--accent);outline-offset:-5px}
+#previewMon.drop-hot::after{content:"Soltar pra virar camada";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:rgba(10,16,28,.86);color:#dbe8ff;padding:9px 15px;border-radius:10px;font-size:13px;font-weight:700;white-space:nowrap;
+  border:1px solid var(--accent);box-shadow:0 8px 24px -8px rgba(0,0,0,.6);pointer-events:none;z-index:6}
+/* traçado de luz (azul→roxo, 1px FININHO) em volta do app — paleta EXATA do
+   sitelocal (titlebar.css): o anel inteiro é colorido e GIRA, então azul e roxo
+   se movem pela janela toda. Um cometa mais aceso + halo macio acompanham a volta. */
+.kivo-edge{position:fixed;inset:0;z-index:9990;pointer-events:none;padding:1px;border-radius:8px;isolation:isolate;
+  background:conic-gradient(from var(--glow-angle,0deg),
+    rgba(31,139,255,.80) 0deg,
+    rgba(79,180,255,.92) 50deg,
+    #7cc4ff 80deg,
+    #a78bfa 120deg,
+    #c084fc 140deg,
+    rgba(167,139,250,.92) 180deg,
+    rgba(124,196,255,.80) 240deg,
+    rgba(31,139,255,.78) 300deg,
+    rgba(31,139,255,.80) 360deg);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
-  animation:glow-orbit 5.5s linear infinite;opacity:.9}
+  animation:glow-orbit 8s linear infinite}
+/* halo macio que ACOMPANHA o cometa girando (o "leve glow" que se move junto) */
+.kivo-edge::after{content:"";position:absolute;inset:0;border-radius:10px;pointer-events:none;padding:4px;
+  background:conic-gradient(from var(--glow-angle,0deg),transparent 0 96deg,rgba(124,196,255,.55) 128deg,rgba(192,132,252,.6) 150deg,rgba(167,139,250,.5) 176deg,transparent 220deg 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  filter:blur(5px);opacity:.8;animation:glow-orbit 8s linear infinite}
+/* janela MAXIMIZADA → cantos retos (igual sitelocal .is-maximized) */
+body.win-max .kivo-edge,body.win-max .kivo-edge::after{border-radius:0}
+/* CONTROLES DE JANELA (Electron frameless): minimizar / maximizar / fechar */
+.win-ctrls{display:none;align-items:center;gap:2px;margin-left:6px}
+body.electron .win-ctrls{display:flex}
+.win-ctrls .wc-btn{width:36px;height:30px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;transition:background .15s var(--ease-out),color .15s}
+.win-ctrls .wc-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.win-ctrls .wc-btn:hover{background:rgba(140,165,225,.16);color:var(--txt)}
+.win-ctrls .wc-close:hover{background:var(--grad-danger);color:#fff;box-shadow:var(--glow-ruby)}
+.win-ctrls .wc-btn:active{transform:translateY(.5px)}
 /* ===== Dashboard premium (capricho PartnerZone): cards dos painéis ===== */
 .rightcol{gap:14px}
 .rpanel,.panelbox,.fontes{
@@ -178,6 +279,25 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
   box-shadow:0 16px 40px -18px rgba(0,0,0,.72),0 0 0 1px rgba(91,161,255,.10),inset 0 1px 0 rgba(255,255,255,.05);
 }
 .rpanel h3,.rpanel>h3{font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:#9fb2cf}
+/* MODO CLARO: os cards NÃO podem herdar o degradê escuro (vira cinza feio).
+   Branco com leve tinta azul/lavanda + sombra suave (referência PartnerZone). */
+html[data-theme="light"] .rpanel,html[data-theme="light"] .panelbox,html[data-theme="light"] .fontes{
+  background-image:linear-gradient(168deg,rgba(99,140,255,.08),rgba(99,140,255,.015));
+  background-color:#fff;
+  border-color:rgba(40,70,140,.12);
+  box-shadow:0 10px 26px -16px rgba(30,50,110,.20),inset 0 1px 0 rgba(255,255,255,.7)}
+html[data-theme="light"] .rpanel:hover{
+  border-color:rgba(60,99,240,.32);
+  box-shadow:0 14px 30px -16px rgba(30,50,110,.24),0 0 0 1px rgba(60,99,240,.10),inset 0 1px 0 rgba(255,255,255,.85)}
+html[data-theme="light"] .rpanel h3,html[data-theme="light"] .rpanel>h3{color:#5a6b8c}
+@media (prefers-color-scheme:light){
+  html[data-theme="auto"] .rpanel,html[data-theme="auto"] .panelbox,html[data-theme="auto"] .fontes{
+    background-image:linear-gradient(168deg,rgba(99,140,255,.08),rgba(99,140,255,.015));
+    background-color:#fff;
+    border-color:rgba(40,70,140,.12);
+    box-shadow:0 10px 26px -16px rgba(30,50,110,.20),inset 0 1px 0 rgba(255,255,255,.7)}
+  html[data-theme="auto"] .rpanel h3,html[data-theme="auto"] .rpanel>h3{color:#5a6b8c}
+}
 .sc-lvid{cursor:pointer}
 .sc-lvid:hover{border-color:var(--accent)}
 
@@ -361,8 +481,13 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .tl-lane.sel{border-color:var(--accent2)}
 /* CAMADAS (preview): botão Pôr no ar + toggle */
 .lp-air{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.lp-airbtn{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,80,80,.5);background:linear-gradient(180deg,rgba(224,21,43,.92),rgba(170,14,31,.92));color:#fff;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 0 14px -5px rgba(224,21,43,.7)}
-.lp-airbtn:hover{filter:brightness(1.08)}
+/* compacto (o "Pôr no ar" grande saiu — o TAKE/CUT é o principal). Vermelho discreto, preenche no hover. */
+.lp-airbtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:7px 10px;border-radius:9px;
+  border:1px solid rgba(255,90,92,.42);background:rgba(255,60,70,.10);color:#ff8a8e;font-weight:700;font-size:12px;cursor:pointer;
+  transition:background .15s var(--ease-out),border-color .15s,color .15s,transform .12s}
+.lp-airbtn svg{width:14px;height:14px}
+.lp-airbtn:hover{background:var(--grad-danger);border-color:transparent;color:#fff}
+.lp-airbtn:active{transform:translateY(.5px)}
 .lp-airtg{display:flex;align-items:center;gap:4px;font-size:9.5px;color:var(--muted);white-space:nowrap;cursor:pointer}
 .lp-airtg input{margin:0}
 
