@@ -21,9 +21,11 @@
             '<button class="acfg-add" id="acfgAddMic">+ usar</button></div></div>' +
           '<div class="acfg-row"><label>Áudio do computador (desktop)</label>' +
             '<button class="acfg-add" id="acfgDesk">+ capturar áudio do PC</button></div>' +
-          '<div class="acfg-row"><label>Fone de ouvido — saída do monitor (notebook ou USB)</label>' +
+          '<div class="acfg-row"><label>Fone de ouvido — saída do MONITOR (canais com 🎧)</label>' +
             '<select id="acfgOut"><option>Carregando…</option></select></div>' +
-          '<div class="acfg-hint" id="acfgHint">A saída do fone controla onde VOCÊ ouve (monitor). O programa/stream não muda.</div>' +
+          '<div class="acfg-row"><label>Saída do PROGRAMA (ao vivo) — outro fone / PC</label>' +
+            '<select id="acfgLiveOut"><option value="">— igual ao fone (não separar)</option></select></div>' +
+          '<div class="acfg-hint" id="acfgHint">Fone = você ouve os canais marcados com 🎧. Programa = o que vai pra live, pode tocar em OUTRA saída.</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -50,6 +52,12 @@
       });
       outSel.onchange = () => { M.setMonitorOutput(outSel.value); };
     }
+    const liveSel = q('#acfgLiveOut', ov);
+    if (liveSel && M.liveOutputSupported && M.liveOutputSupported()) {
+      const curL = M.getLiveOutput ? M.getLiveOutput() : '';
+      outputs.forEach((d, i) => { const o = document.createElement('option'); o.value = d.deviceId; o.textContent = d.label || ('Saída ' + (i + 1)); if (d.deviceId === curL) o.selected = true; liveSel.appendChild(o); });
+      liveSel.onchange = () => { M.setLiveOutput(liveSel.value); };
+    } else if (liveSel) { liveSel.disabled = true; }
     q('#acfgAddMic', ov).onclick = () => {
       if (M.addMic) { const opt = inSel.options[inSel.selectedIndex]; M.addMic(inSel.value, opt ? opt.textContent : ''); }
       close();

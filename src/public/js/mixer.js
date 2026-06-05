@@ -3,7 +3,7 @@
 // próprio (arrastável), não <input range> — pra funcionar igual mesa de verdade.
 const Mixer = (function () {
   const MAX = 1.5, H = 150, CAP = 14, USABLE = H - CAP;
-  let ac, programBus, programDest, masterGain, monitorBus, progMon, masterAn, masterData, masterMeterEl;
+  let ac, programBus, programDest, masterGain, monitorBus, progMon, masterAn, masterData, masterMeterEl, liveOutDest, liveAudioEl;
   let channels = [], seq = 0, host, headEl, raf = 0, masterVol = 1, masterMuted = false, masterMon = true;
 
   function ensureAC() {
@@ -17,6 +17,10 @@ const Mixer = (function () {
     progMon = ac.createGain(); progMon.gain.value = 1; masterGain.connect(progMon); progMon.connect(monitorBus);
     masterAn = ac.createAnalyser(); masterAn.fftSize = 512; masterData = new Uint8Array(masterAn.fftSize); masterGain.connect(masterAn);
     try { const sv = localStorage.getItem('sl-mon-out'); if (sv && ac.setSinkId) ac.setSinkId(sv).catch(() => {}); } catch (e) {}   // restaura a saída do fone escolhida
+    // 2ª SAÍDA: o áudio do PROGRAMA (o que vai pra live) pode tocar em OUTRA porta (outro fone / PC)
+    liveOutDest = ac.createMediaStreamDestination(); masterGain.connect(liveOutDest);
+    liveAudioEl = new Audio(); liveAudioEl.srcObject = liveOutDest.stream; liveAudioEl.autoplay = true;
+    try { const lv = localStorage.getItem('sl-live-out'); if (lv && liveAudioEl.setSinkId) liveAudioEl.setSinkId(lv).then(() => liveAudioEl.play().catch(() => {})).catch(() => {}); else liveAudioEl.pause(); } catch (e) {}
     loop();
   }
   // ---- dispositivos de áudio (entrada/saída) p/ a tela de Configurações ----
@@ -28,6 +32,16 @@ const Mixer = (function () {
   async function setMonitorOutput(deviceId) { ensureAC(); try { localStorage.setItem('sl-mon-out', deviceId || ''); } catch (e) {} try { if (ac.setSinkId) { await ac.setSinkId(deviceId || ''); return true; } } catch (e) {} return false; }
   function getMonitorOutput() { try { return localStorage.getItem('sl-mon-out') || ''; } catch (e) { return ''; } }
   function monitorOutputSupported() { try { ensureAC(); return typeof ac.setSinkId === 'function'; } catch (e) { return false; } }
+  // saída SEPARADA do PROGRAMA (o que vai pra live) — outro fone / PC. '' = não separar (usa só o fone).
+  async function setLiveOutput(deviceId) {
+    ensureAC(); try { localStorage.setItem('sl-live-out', deviceId || ''); } catch (e) {}
+    if (!liveAudioEl) return false;
+    if (!deviceId) { try { liveAudioEl.pause(); } catch (e) {} return true; }
+    try { if (liveAudioEl.setSinkId) { await liveAudioEl.setSinkId(deviceId); liveAudioEl.play().catch(() => {}); return true; } } catch (e) {}
+    return false;
+  }
+  function getLiveOutput() { try { return localStorage.getItem('sl-live-out') || ''; } catch (e) { return ''; } }
+  function liveOutputSupported() { try { return typeof (new Audio()).setSinkId === 'function'; } catch (e) { return false; } }
   function resume() { if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); }
 
   function addChannel(node, kind, label, color) {
@@ -236,7 +250,7 @@ const Mixer = (function () {
   function anyMonitor() { return channels.some(c => c.monitor); }
   function monitorByLabel(label, b) { const c = channels.find(c => c.label === label); if (!c) return null; c.monitor = (b == null) ? !c.monitor : !!b; applyMix(); render(); return c.monitor; }
   function getMonitorByLabel(label) { const c = channels.find(c => c.label === label); return c ? !!c.monitor : false; }
-  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, toggleMasterMon, setMasterMon, getMasterMon, clearMonitors, anyMonitor, monitorByLabel, getMonitorByLabel, listAudioDevices, setMonitorOutput, getMonitorOutput, monitorOutputSupported, get programStream() { return programDest ? programDest.stream : null; } };
+  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, toggleMasterMon, setMasterMon, getMasterMon, clearMonitors, anyMonitor, monitorByLabel, getMonitorByLabel, listAudioDevices, setMonitorOutput, getMonitorOutput, monitorOutputSupported, setLiveOutput, getLiveOutput, liveOutputSupported, get programStream() { return programDest ? programDest.stream : null; } };
 })();
 window.Mixer = Mixer;
 Mixer.boot();
