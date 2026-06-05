@@ -16,12 +16,14 @@
       '<div class="acfg-card">' +
         '<div class="acfg-head"><b>Configurações de áudio</b><button class="acfg-x" title="Fechar">&times;</button></div>' +
         '<div class="acfg-body">' +
-          '<div class="acfg-row"><label>Entrada — microfone (porta que entra)</label>' +
+          '<div class="acfg-row"><label>Entrada — microfone / auxiliar (porta que entra)</label>' +
             '<div class="acfg-inline"><select id="acfgIn"><option>Carregando…</option></select>' +
             '<button class="acfg-add" id="acfgAddMic">+ usar</button></div></div>' +
-          '<div class="acfg-row"><label>Saída — fone / monitor (notebook ou USB)</label>' +
+          '<div class="acfg-row"><label>Áudio do computador (desktop)</label>' +
+            '<button class="acfg-add" id="acfgDesk">+ capturar áudio do PC</button></div>' +
+          '<div class="acfg-row"><label>Fone de ouvido — saída do monitor (notebook ou USB)</label>' +
             '<select id="acfgOut"><option>Carregando…</option></select></div>' +
-          '<div class="acfg-hint" id="acfgHint">A saída controla onde VOCÊ ouve (fone/monitor). O programa/stream não muda.</div>' +
+          '<div class="acfg-hint" id="acfgHint">A saída do fone controla onde VOCÊ ouve (monitor). O programa/stream não muda.</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -52,6 +54,8 @@
       if (M.addMic) { const opt = inSel.options[inSel.selectedIndex]; M.addMic(inSel.value, opt ? opt.textContent : ''); }
       close();
     };
+    const deskBtn = q('#acfgDesk', ov);
+    if (deskBtn) deskBtn.onclick = () => { if (M.addDesktop) { M.addDesktop(); close(); } };
   }
 
   function wire() {
