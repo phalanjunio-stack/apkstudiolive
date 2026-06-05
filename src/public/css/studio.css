@@ -242,6 +242,9 @@ body.nav-collapsed .nav-sec{font-size:0;letter-spacing:0;padding:0;height:1px;ma
 .lp-bus:hover{border-color:var(--accent);color:var(--txt)}
 .lp-bus.lp-bus-prev.on{background:linear-gradient(180deg,#2ea043,#1f7a33);border-color:transparent;color:#fff}
 .lp-bus.lp-bus-air.on{background:linear-gradient(180deg,#e5484d,#c0282d);border-color:transparent;color:#fff}
+/* sem o glow/neon genérico de "botão ativo" nesses botões (ficam chapados, limpos) */
+.lp-bus.on{box-shadow:none!important}
+.lp-bus.on::before,.lp-bus.on::after{content:none!important;display:none!important}
 /* painéis arrastáveis (reordenar a coluna direita) */
 .rp-draghead{cursor:grab}
 .rpanel.rp-dragging{opacity:.5}
