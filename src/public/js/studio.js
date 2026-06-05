@@ -1011,6 +1011,13 @@ function updateMediaBar() {
     const ov = (sel != null && G.get) ? G.get(sel) : null;
     if (ov && ov.type === 'video') { o = ov; name = (ov.data && ov.data.label) || 'Vídeo'; onAir = !!(ov.data && ov.data.onPgm); }
   } catch (e) {}
+  if (!o) {                                                                 // nenhum vídeo selecionado: se tiver VÍDEO NO AR, mostra o player dele (modo AO VIVO)
+    try {
+      const G = window.Graphics, list = (G && G.list) ? G.list() : [];
+      const air = list.find(x => x.type === 'video' && x.data && x.data.onPgm && x.visible !== false);
+      if (air) { o = air; name = (air.data && air.data.label) || 'Vídeo'; onAir = true; mediaMode = 'air'; }
+    } catch (e) {}
+  }
   if (!o) {                                                                 // fonte de vídeo/YouTube direto no PREVIEW (legado)
     const e = previewId && sources.get(previewId);
     if (e && e.kind === 'youtube' && e.yt) { srcCtl = ytCtl(e.yt); name = e.label; }
