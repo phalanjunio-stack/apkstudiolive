@@ -128,22 +128,26 @@
         </section>
       </div>
 
-      <div class="media-bar is-hidden" id="mediaBar">
-        <div class="mb-mode">
-          <button id="mModePrev" class="mb-modebtn on" title="Controlar o PREVIEW">PREVIEW</button>
-          <button id="mModeAir" class="mb-modebtn" title="Controlar o AO VIVO">AO VIVO</button>
+      <div class="mon-ctls is-hidden" id="monCtls">
+        <div class="mc mc-prev is-hidden" id="ctlPrev">
+          <span class="mc-tag">PREVIEW</span>
+          <button id="cpStandby" class="mb-btn" title="Voltar ao início (espera)"></button>
+          <button id="cpBack" class="mb-btn" title="Voltar 10s"></button>
+          <button id="cpPlay" class="mb-btn mb-play" title="Tocar / pausar"></button>
+          <button id="cpFwd" class="mb-btn" title="Avançar 10s"></button>
+          <div class="mb-seek" id="cpSeek" title="Arraste pra navegar"><div class="mb-fill" id="cpFill"></div></div>
+          <span id="cpTime" class="mb-time">0:00 / 0:00</span>
         </div>
-        <span class="mb-name" id="mName"></span>
-        <div class="mb-transport">
-          <button id="mStandby" class="mb-btn" title="Voltar ao início (deixa em espera)"></button>
-          <button id="mBack" class="mb-btn" title="Voltar 10s"></button>
-          <button id="mPlay" class="mb-btn mb-play" title="Tocar / pausar"></button>
-          <button id="mFwd" class="mb-btn" title="Avançar 10s"></button>
+        <div class="mc-spacer"></div>
+        <div class="mc mc-air is-hidden" id="ctlAir">
+          <span class="mc-tag">AO VIVO</span>
+          <button id="caStandby" class="mb-btn" title="Voltar ao início (espera)"></button>
+          <button id="caBack" class="mb-btn" title="Voltar 10s"></button>
+          <button id="caPlay" class="mb-btn mb-play" title="Tocar / pausar"></button>
+          <button id="caFwd" class="mb-btn" title="Avançar 10s"></button>
+          <div class="mb-seek" id="caSeek" title="Arraste pra navegar"><div class="mb-fill" id="caFill"></div></div>
+          <span id="caTime" class="mb-time">0:00 / 0:00</span>
         </div>
-        <div class="mb-seek" id="mSeek" title="Arraste pra navegar"><div class="mb-fill" id="mFill"></div></div>
-        <span id="mTime" class="mb-time">0:00 / 0:00</span>
-        <button id="mMute" class="mb-btn mb-volbtn" title="Mudo / som"></button>
-        <input type="range" id="mVol" class="mb-vol" min="0" max="100" value="100" title="Volume">
       </div>
 
       <div class="fontes biblioteca">

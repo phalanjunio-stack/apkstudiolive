@@ -952,7 +952,7 @@ $('ftbBtn').onclick = ftb;
 
 // API pública (usada pela página "Fontes" do menu)
 // ---- barra de mídia: play/pause, seek, tempo, mute, loop (vídeo arquivo/URL e YouTube) ----
-let mediaCur = null, mediaMode = 'prev', mediaSeeking = false;   // player de mídia: controlador atual + modo (prev/air)
+let mediaPrev = null, mediaAir = null;   // dois controladores de mídia: um sob o PREVIEW, outro sob o AO VIVO
 const fmtT = (s) => { s = Math.floor(s) || 0; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 // controllers unificados pros dois tipos de mídia
 function videoCtl(v) { return { play: () => v.play().catch(() => {}), pause: () => v.pause(), paused: () => v.paused, time: () => v.currentTime || 0, dur: () => v.duration || 0, seek: (f) => { if (v.duration) v.currentTime = v.duration * f; }, muted: () => v.muted, toggleMute: () => { v.muted = !v.muted; }, setVol: (x) => { try { v.volume = Math.max(0, Math.min(1, x)); } catch (e) {} }, loopable: true, loop: () => v.loop, toggleLoop: () => { v.loop = !v.loop; } }; }
@@ -977,65 +977,48 @@ function overlayVidCtl(o, which) {
   };
 }
 function bindMediaBar() {
-  if (!$('mediaBar')) return;
+  if (!$('monCtls')) return;
   const ic = (n) => (window.kicon ? window.kicon(n) : '');
-  $('mStandby').innerHTML = ic('skip-back'); $('mBack').innerHTML = ic('rewind'); $('mFwd').innerHTML = ic('forward'); $('mMute').innerHTML = ic('volume');
-  const seekSec = (s) => { if (!mediaCur) return; const d = mediaCur.dur(); if (d > 0) mediaCur.seek(Math.max(0, Math.min(1, s / d))); };
-  $('mPlay').onclick = () => { if (mediaCur) (mediaCur.paused() ? mediaCur.play() : mediaCur.pause()); };
-  $('mStandby').onclick = () => { if (mediaCur) { mediaCur.seek(0); mediaCur.pause(); toast('Em espera — pronto pra ir.'); } };   // volta ao início + pausa
-  $('mBack').onclick = () => { if (mediaCur) seekSec(mediaCur.time() - 10); };
-  $('mFwd').onclick = () => { if (mediaCur) seekSec(mediaCur.time() + 10); };
-  $('mMute').onclick = () => { if (mediaCur) { mediaCur.toggleMute(); $('mMute').innerHTML = ic(mediaCur.muted() ? 'volume-x' : 'volume'); } };
-  $('mVol') && $('mVol').addEventListener('input', () => { if (mediaCur && mediaCur.setVol) mediaCur.setVol($('mVol').value / 100); });
-  $('mModePrev') && ($('mModePrev').onclick = () => { mediaMode = 'prev'; updateMediaBar(); });
-  $('mModeAir') && ($('mModeAir').onclick = () => { mediaMode = 'air'; updateMediaBar(); });
-  const seek = $('mSeek');
-  if (seek) {
-    const seekTo = (x) => { if (!mediaCur) return; const r = seek.getBoundingClientRect(); mediaCur.seek(Math.max(0, Math.min(1, (x - r.left) / r.width))); };
-    seek.addEventListener('pointerdown', e => { mediaSeeking = true; try { seek.setPointerCapture(e.pointerId); } catch (er) {} seekTo(e.clientX); });
-    seek.addEventListener('pointermove', e => { if (mediaSeeking) seekTo(e.clientX); });
-    seek.addEventListener('pointerup', () => { mediaSeeking = false; });
-    seek.addEventListener('pointercancel', () => { mediaSeeking = false; });
-  }
-  setInterval(() => {
-    if (!mediaCur) return;
-    const d = mediaCur.dur(), c = mediaCur.time();
-    if (!mediaSeeking && $('mFill')) $('mFill').style.width = (d ? (c / d * 100) : 0) + '%';
-    if ($('mTime')) $('mTime').textContent = fmtT(c) + ' / ' + fmtT(d);
-    if ($('mPlay')) $('mPlay').innerHTML = ic(mediaCur.paused() ? 'play' : 'pause');
-  }, 250);
+  const wire = (getCtl, ids) => {
+    let seeking = false;
+    if ($(ids.standby)) $(ids.standby).innerHTML = ic('skip-back');
+    if ($(ids.back)) $(ids.back).innerHTML = ic('rewind');
+    if ($(ids.fwd)) $(ids.fwd).innerHTML = ic('forward');
+    $(ids.play) && ($(ids.play).onclick = () => { const c = getCtl(); if (c) (c.paused() ? c.play() : c.pause()); });
+    $(ids.standby) && ($(ids.standby).onclick = () => { const c = getCtl(); if (c) { c.seek(0); c.pause(); } });   // início + espera
+    $(ids.back) && ($(ids.back).onclick = () => { const c = getCtl(); if (c) { const d = c.dur(); if (d) c.seek(Math.max(0, (c.time() - 10) / d)); } });
+    $(ids.fwd) && ($(ids.fwd).onclick = () => { const c = getCtl(); if (c) { const d = c.dur(); if (d) c.seek(Math.min(1, (c.time() + 10) / d)); } });
+    const seek = $(ids.seek);
+    if (seek) {
+      const seekTo = (x) => { const c = getCtl(); if (!c) return; const r = seek.getBoundingClientRect(); c.seek(Math.max(0, Math.min(1, (x - r.left) / r.width))); };
+      seek.addEventListener('pointerdown', e => { seeking = true; try { seek.setPointerCapture(e.pointerId); } catch (er) {} seekTo(e.clientX); });
+      seek.addEventListener('pointermove', e => { if (seeking) seekTo(e.clientX); });
+      seek.addEventListener('pointerup', () => { seeking = false; });
+      seek.addEventListener('pointercancel', () => { seeking = false; });
+    }
+    return () => { const c = getCtl(); if (!c) return; const d = c.dur(), t = c.time(); if (!seeking && $(ids.fill)) $(ids.fill).style.width = (d ? (t / d * 100) : 0) + '%'; if ($(ids.time)) $(ids.time).textContent = fmtT(t) + ' / ' + fmtT(d); if ($(ids.play)) $(ids.play).innerHTML = ic(c.paused() ? 'play' : 'pause'); };
+  };
+  const tickP = wire(() => mediaPrev, { play: 'cpPlay', standby: 'cpStandby', back: 'cpBack', fwd: 'cpFwd', seek: 'cpSeek', fill: 'cpFill', time: 'cpTime' });
+  const tickA = wire(() => mediaAir, { play: 'caPlay', standby: 'caStandby', back: 'caBack', fwd: 'caFwd', seek: 'caSeek', fill: 'caFill', time: 'caTime' });
+  setInterval(() => { tickP(); tickA(); }, 250);
 }
+function srcVidPick(e) { if (!e) return null; if (e.kind === 'youtube' && e.yt) return ytCtl(e.yt); if (e.mediaEl && e.mediaEl.tagName === 'VIDEO') return videoCtl(e.mediaEl); return null; }
 function updateMediaBar() {
-  const bar = $('mediaBar'); if (!bar) return;
-  let o = null, name = '', onAir = false, srcCtl = null, srcOnAir = false;
-  try {                                                                     // a CAMADA de vídeo selecionada
-    const G = window.Graphics, sel = G && G.selected ? G.selected() : null;
-    const ov = (sel != null && G.get) ? G.get(sel) : null;
-    if (ov && ov.type === 'video') { o = ov; name = (ov.data && ov.data.label) || 'Vídeo'; onAir = !!(ov.data && ov.data.onPgm); }
-  } catch (e) {}
-  if (!o) {                                                                 // nenhum vídeo selecionado: se tiver VÍDEO NO AR, mostra o player dele (modo AO VIVO)
-    try {
-      const G = window.Graphics, list = (G && G.list) ? G.list() : [];
-      const air = list.find(x => x.type === 'video' && x.data && x.data.onPgm && x.visible !== false);
-      if (air) { o = air; name = (air.data && air.data.label) || 'Vídeo'; onAir = true; mediaMode = 'air'; }
-    } catch (e) {}
-  }
-  if (!o) {                                                                 // fonte de vídeo (arquivo/YouTube) NO AR (programa) ou no PREVIEW
-    const pick = (e) => { if (!e) return null; if (e.kind === 'youtube' && e.yt) return ytCtl(e.yt); if (e.mediaEl && e.mediaEl.tagName === 'VIDEO') return videoCtl(e.mediaEl); return null; };
-    const pe = programId && sources.get(programId), pc = pick(pe);
-    if (pc) { srcCtl = pc; name = pe.label; srcOnAir = true; mediaMode = 'air'; }            // vídeo-fonte no ar → controlador aparece
-    else { const ve = previewId && sources.get(previewId), vc = pick(ve); if (vc) { srcCtl = vc; name = ve.label; } }
-  }
-  if (!o && !srcCtl) { bar.classList.add('is-hidden'); mediaCur = null; return; }
-  const liveNow = (o && onAir) || srcOnAir;
-  const airBtn = $('mModeAir'); if (airBtn) airBtn.style.display = liveNow ? '' : 'none';   // tab AO VIVO só quando há vídeo no ar
-  if (!liveNow && mediaMode === 'air') mediaMode = 'prev';
-  mediaCur = o ? overlayVidCtl(o, mediaMode === 'air' ? 'air' : 'prev') : srcCtl;
-  $('mModePrev') && $('mModePrev').classList.toggle('on', mediaMode !== 'air');
-  $('mModeAir') && $('mModeAir').classList.toggle('on', mediaMode === 'air');
-  bar.classList.remove('is-hidden');
-  $('mName').textContent = name;
-  if (mediaCur && $('mMute')) $('mMute').innerHTML = (window.kicon ? window.kicon(mediaCur.muted() ? 'volume-x' : 'volume') : '');
+  const row = $('monCtls'); if (!row) return;
+  const G = window.Graphics, list = (G && G.list) ? G.list() : [];
+  // PREVIEW: camada de vídeo selecionada, ou onPrev (fora do ar), ou a fonte do preview
+  let prevO = null, prevCtl = null;
+  try { const sel = G && G.selected ? G.selected() : null; const so = (sel != null && G.get) ? G.get(sel) : null; if (so && so.type === 'video') prevO = so; } catch (e) {}
+  if (!prevO) prevO = list.find(x => x.type === 'video' && x.data && x.data.onPrev && !x.data.onPgm && x.visible !== false) || null;
+  if (prevO) prevCtl = overlayVidCtl(prevO, 'prev');
+  else { const e = previewId && sources.get(previewId); prevCtl = srcVidPick(e); }
+  // AO VIVO: camada de vídeo no ar, ou a fonte do programa
+  let airO = list.find(x => x.type === 'video' && x.data && x.data.onPgm && x.visible !== false) || null;
+  let airCtl = airO ? overlayVidCtl(airO, 'air') : srcVidPick(programId && sources.get(programId));
+  mediaPrev = prevCtl; mediaAir = airCtl;
+  const setCtl = (id, ctl) => { const el = $(id); if (el) el.classList.toggle('is-hidden', !ctl); };
+  setCtl('ctlPrev', prevCtl); setCtl('ctlAir', airCtl);
+  row.classList.toggle('is-hidden', !prevCtl && !airCtl);
 }
 // vídeo por URL direta (.mp4/.webm) -> fonte real
 function addVideoUrl(url) {
