@@ -40,13 +40,14 @@ function makeTile(id, kind, label, removable) {
   f.addEventListener('dragstart', e => { try { e.dataTransfer.setData('text/plain', id); e.dataTransfer.effectAllowed = 'copy'; } catch (err) {} f.classList.add('dragging-src'); });
   f.addEventListener('dragend', () => f.classList.remove('dragging-src'));
   f.innerHTML =
-    '<div class="thumb"><span class="num" title="Número de classificação — recall pelo pad/tecla"></span><video autoplay playsinline muted></video>' +
+    '<div class="thumb"><button class="num" title="Número (pad/tecla) — clique pra marcar">#</button><video autoplay playsinline muted></video>' +
     `<span class="kind-tag">${KIND[kind]}</span><span class="bat-badge" hidden></span></div>` +
     `<div class="head"><span class="nm" title="${label}">${label}</span>` +
     (removable ? '<button class="fcard-x" title="Remover">&times;</button>' : '') + '</div>' +
     '<div class="foot"><span class="ty">conectando&hellip;</span><span class="st"></span></div>';
   f.addEventListener('click', e => {
     if (e.target.closest('.fcard-x')) { removeSource(id); return; }
+    if (e.target.closest('.num')) { e.stopPropagation(); cycleSourceHotkey(id); return; }   // # = marcar número da fonte
     dropSourceAsLayer(id);   // clicar no card = adiciona como CAMADA no preview (tudo é camada)
     selectSource(id);        // acende o canal do mixer na cor da fonte
   });
@@ -82,11 +83,16 @@ function wirePreviewDrop() {
 // (garante a cena de preview, vídeo entra tela cheia, imagem vira logo, seleciona).
 function dropSourceAsLayer(id) {
   const s = sources.get(id); if (!s) return;
-  const B = window.Biblioteca;
+  const B = window.Biblioteca, Gd = window.Graphics;
   const isImg = s.kind === 'image' || (s.url && /^data:image|\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(s.url));
+  // vídeo de ARQUIVO (tem url) → a camada toca o arquivo DIRETO (confiável). Câmera ao vivo (webcam/celular) → usa o stream.
+  const isVidFile = !isImg && !!s.url && (s.kind === 'video' || s.kind === 'playlist' || s.kind === 'replay' || /\.(mp4|webm|ogg|ogv|mov|m4v|mkv)(\?|#|$)/i.test(s.url));
+  // DEDUP: se essa fonte/mídia já é camada, só seleciona (não duplica). Duplicar = botão no painel Camadas.
+  if (Gd && Gd.list) { const ex = Gd.list().find(o => o.data && (o.data.sourceId === id || ((isImg || isVidFile) && s.url && o.data.src === s.url))); if (ex) { if (Gd.select) Gd.select(ex.id); try { window.SoundFX && window.SoundFX.click(); } catch (e) {} return; } }
   if (B && B.addLayer) {
     if (isImg && s.url) B.addLayer({ kind: 'image', src: s.url, name: s.label }, 50, 50);
-    else B.addLayer({ kind: 'source', id, label: s.label }, 50, 50);
+    else if (isVidFile) B.addLayer({ kind: 'video', src: s.url, name: s.label }, 50, 50);   // toca o arquivo direto
+    else B.addLayer({ kind: 'source', id, label: s.label }, 50, 50);                          // câmera ao vivo (stream)
     try { window.SoundFX && window.SoundFX.click(); } catch (e) {}
     return;
   }
@@ -241,6 +247,67 @@ function toast(msg) {
   const t = elc('div', 'toast'); t.textContent = msg; document.body.appendChild(t);
   setTimeout(() => t.classList.add('show'), 10);
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3200);
+}
+
+// ------------------------- Kivo Composer bridge ---------------------------
+const COMPOSER_URL = '/composer/';
+const COMPOSER_OVERLAY_URL = '/composer/overlay.html';
+function composerOverlay() {
+  const g = window.Graphics;
+  return g && g.list ? g.list().find(o => o.type === 'composer') : null;
+}
+function updateComposerState() {
+  const state = $('composerState');
+  const btn = $('composerAirBtn');
+  if (!state) return;
+  const ov = composerOverlay();
+  const live = !!(ov && ov.visible !== false);
+  state.classList.toggle('is-live', live);
+  state.textContent = live ? 'Overlay Composer no PROGRAM' : 'Overlay pronto em /composer/overlay.html';
+  if (btn) btn.textContent = live ? 'Atualizar overlay na Live' : 'Enviar overlay para Live';
+}
+function openComposer() {
+  window.open(COMPOSER_URL, 'kivo_composer');
+}
+function ensureComposerOverlay() {
+  const g = window.Graphics;
+  if (!g || !g.add) { toast('Motor de gráficos ainda carregando.'); return null; }
+  let ov = composerOverlay();
+  if (!ov) ov = g.add('composer');
+  if (!ov) return null;
+  if (g.setOverlayScene) g.setOverlayScene(ov.id, null);
+  if (g.update) g.update(ov.id, { src: COMPOSER_OVERLAY_URL, label: 'Kivo Composer' });
+  if (g.setPos) g.setPos(ov.id, 0, 0);
+  if (g.setWidth) g.setWidth(ov.id, 100);
+  if (g.setHeight) g.setHeight(ov.id, 100);
+  if (g.setVisible) g.setVisible(ov.id, true);
+  if (g.raise) g.raise(ov.id);
+  updateComposerState();
+  toast('Overlay do Kivo Composer enviado para Live.');
+  return ov;
+}
+function hideComposerOverlay() {
+  const g = window.Graphics;
+  const ov = composerOverlay();
+  if (!g || !ov) { updateComposerState(); return toast('Composer ainda não está no ar.'); }
+  g.setVisible(ov.id, false);
+  updateComposerState();
+  toast('Overlay do Composer ocultado.');
+}
+function bindComposerBridge() {
+  $('btnComposer')?.addEventListener('click', openComposer);
+  $('composerOpenBtn')?.addEventListener('click', openComposer);
+  $('composerAirBtn')?.addEventListener('click', ensureComposerOverlay);
+  $('composerHideBtn')?.addEventListener('click', hideComposerOverlay);
+  const waitGraphics = () => {
+    if (window.Graphics && window.Graphics.onChange) {
+      window.Graphics.onChange(updateComposerState);
+      updateComposerState();
+    } else {
+      setTimeout(waitGraphics, 250);
+    }
+  };
+  waitGraphics();
 }
 
 async function addWebcam(deviceId, label) {
@@ -650,8 +717,9 @@ function attachProgram(id) {
   applyCrop(programVideo, (e && e.crop) || {});
   positionYouTube();
 }
-function take() {   // TAKE = TROCA preview↔programa (corte). Novo programa toca; o que sai do ar vai pro PREVIEW pausado.
-  if (!previewId) return;
+function take() {   // TAKE = publica o PREVIEW no PROGRAMA (camadas onPrev→onPgm) + troca o vídeo-base (legado)
+  if (window.Graphics && window.Graphics.commitPreviewToProgram) window.Graphics.commitPreviewToProgram(localStorage.getItem('sl-take-clear') === '1');
+  if (!previewId) { refreshButtons(); return; }
   const newProg = previewId, oldProg = programId;
   setProgram(newProg);                                           // muteVideoChannel já pausa o ex-programa
   const ne = sources.get(newProg);
@@ -661,7 +729,8 @@ function take() {   // TAKE = TROCA preview↔programa (corte). Novo programa to
 }
 // TAKE + Play: manda pro ar JÁ TOCANDO, com áudio (desmuta) e vídeo (play)
 function takeAutoPlay() {
-  const id = previewId; if (!id || !sources.has(id)) return;
+  if (window.Graphics && window.Graphics.commitPreviewToProgram) window.Graphics.commitPreviewToProgram(localStorage.getItem('sl-take-clear') === '1');
+  const id = previewId; if (!id || !sources.has(id)) { refreshButtons(); return; }
   const e = sources.get(id); const oldProg = programId;
   setProgram(id);
   if (e.mediaEl && e.mediaEl.paused) e.mediaEl.play().catch(() => {});
@@ -678,7 +747,7 @@ function crossfade(id) {
   requestAnimationFrame(() => requestAnimationFrame(() => { programVideoB.style.opacity = '1'; }));
   setTimeout(() => { setProgram(id); programVideoB.style.opacity = '0'; programVideoB.srcObject = null; }, 600);
 }
-function fadeTake() { if (previewId) crossfade(previewId); }
+function fadeTake() { if (window.Graphics && window.Graphics.commitPreviewToProgram) window.Graphics.commitPreviewToProgram(localStorage.getItem('sl-take-clear') === '1'); if (previewId) crossfade(previewId); }
 // pôr uma fonte no ar COM transição suave (fundido) + já tocando e com áudio (pro player flutuante)
 function crossfadeAir(id) {
   if (!sources.has(id)) return;
@@ -740,7 +809,7 @@ function refreshBorders() {
     e.mv.classList.toggle('program', id === programId);
   }
 }
-function refreshButtons() { const on = !!previewId; $('takeBtn').disabled = !on; $('cutBtn').disabled = !on; $('cutBtn2').disabled = !on; const f = $('fadeBtn'), a = $('autoBtn'), ta = $('takeAutoBtn'); if (f) f.disabled = !on; if (a) a.disabled = !on; if (ta) ta.disabled = !on; }
+function refreshButtons() { const on = !!previewId || (window.Graphics && window.Graphics.previewCount && window.Graphics.previewCount() > 0); $('takeBtn').disabled = !on; $('cutBtn').disabled = !on; const c2 = $('cutBtn2'); if (c2) c2.disabled = !on; const f = $('fadeBtn'), a = $('autoBtn'), ta = $('takeAutoBtn'); if (f) f.disabled = !on; if (a) a.disabled = !on; if (ta) ta.disabled = !on; }
 
 // ----------------------- dispositivos móveis (só celulares) ---------------
 function renderDevices() {
@@ -814,17 +883,31 @@ function applyHealth(h) {
 // --------------------------------- init -----------------------------------
 $('takeBtn').onclick = take;
 $('cutBtn').onclick = take;
-$('cutBtn2').onclick = take;
+$('cutBtn2') && ($('cutBtn2').onclick = take);
 $('takeAutoBtn')?.addEventListener('click', takeAutoPlay);
 $('fadeBtn').onclick = fadeTake;
 $('autoBtn').onclick = fadeTake;
 $('ftbBtn').onclick = ftb;
+// botões TAKE/CUT ligam/desligam conforme há conteúdo no PREVIEW (camadas onPrev).
+// studio.js carrega ANTES do graphics.js → espera o motor existir pra inscrever.
+(function hookButtons() { if (window.Graphics && window.Graphics.onChange) { window.Graphics.onChange(refreshButtons); refreshButtons(); } else setTimeout(hookButtons, 150); })();
+// T-BAR: arrasta a barrinha de ponta a ponta = TAKE (fade); soltar antes do fim cancela
+(function wireTBar() {
+  const bar = document.querySelector('.switch .tbar'); if (!bar) return; const knob = bar.querySelector('i'); if (!knob) return;
+  let dragging = false, did = false;
+  bar.addEventListener('pointerdown', e => { dragging = true; did = false; try { bar.setPointerCapture(e.pointerId); } catch (er) {} move(e); });
+  function move(e) { if (!dragging) return; const r = bar.getBoundingClientRect(); let p = (e.clientX - r.left) / r.width; p = Math.max(0, Math.min(1, p)); knob.style.left = (p * 100) + '%'; if (!did && p > 0.85) { did = true; take(); } }
+  bar.addEventListener('pointermove', move);
+  function up() { if (!dragging) return; dragging = false; knob.style.left = ''; }   // volta pro lugar
+  bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
+})();
 
 (function init() {
   const add = elc('div', 'fcard addcard'); add.id = 'addCard';
   add.innerHTML = '<div class="addcard-inner"><span class="plus">+</span><span>Adicionar fonte</span></div>';
   add.addEventListener('click', openAddMenu);
   fontesGrid.appendChild(add);
+  bindComposerBridge();
   bindMediaBar();
   bindCropUI();
   document.addEventListener('keydown', (e) => { if (e.key === 'Alt' && previewId) document.body.classList.add('alt-crop'); });
@@ -917,16 +1000,24 @@ function liveStream() {
 window.Studio = {
   addWebcam, addScreen, addVideoFile, addVideoPlaylist, addImageFile, addVideoUrl, addLink, addYouTube, addColorSource, addChromaSource, addReplay, pickFile, openAddMenu, liveStream,
   setProgram, setPreview, clearProgram, clearPreview, take, fadeTake, crossfadeAir, ftb, selectSourceByNode,
+  openComposer, sendComposerToLive: ensureComposerOverlay, hideComposerOverlay,
   mediaElFor: (id) => { const e = sources.get(id); return e ? e.mediaEl : null; },
   sourceKind: (id) => { const e = sources.get(id); return e ? e.kind : null; },
   state: () => ({ program: programId, preview: previewId }),
-  sourcesInfo: () => ({ preview: previewId, program: programId, list: [...sources.values()].map(e => ({ id: e.id, label: e.label, kind: e.kind, stream: e.stream })) }),
+  sourcesInfo: () => ({ preview: previewId, program: programId, list: [...sources.values()].map(e => ({ id: e.id, label: e.label, kind: e.kind, stream: e.stream, url: e.url || '', hotkey: e.hotkey || 0 })) }),
 };
 
 // renumera os cards (1,2,3...) = numero da tecla de atalho
 function renumber() {
   let i = 0;
-  for (const [, e] of sources) { i++; const num = e.tile.querySelector('.num'); num.textContent = i; num.className = 'num c' + (((i - 1) % 6) + 1); }
+  for (const [, e] of sources) { i++; const num = e.tile.querySelector('.num'); if (!num) continue; num.textContent = e.hotkey ? e.hotkey : '#'; num.className = 'num c' + (((i - 1) % 6) + 1) + (e.hotkey ? ' set' : ''); }
+}
+// marcar o NÚMERO da fonte (#) — clique cicla 1-9, único entre tudo (pads/cenas/logos). Recall pelo pad/tecla.
+function cycleSourceHotkey(id) {
+  const e = sources.get(id); if (!e) return;
+  e.hotkey = (window.Pads && window.Pads.nextFreeNumber) ? window.Pads.nextFreeNumber(e.hotkey, 'source', id) : (((+e.hotkey || 0) + 1) % 10);
+  const num = e.tile && e.tile.querySelector('.num'); if (num) { num.textContent = e.hotkey ? e.hotkey : '#'; num.classList.toggle('set', !!e.hotkey); }
+  if (window.Pads && window.Pads.refresh) window.Pads.refresh();
 }
 
 // bateria recebida do celular -> badge no card + lista

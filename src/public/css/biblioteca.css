@@ -57,6 +57,11 @@ body.lib-dragging .mon.preview{outline:1.5px dashed rgba(54,209,255,.45);outline
 #prevOverlay .ovv{cursor:move}
 #prevOverlay .ovv.libsel{outline:1.6px solid var(--accent2);outline-offset:1px;
   box-shadow:0 0 0 1px rgba(2,6,16,.6),0 0 16px rgba(54,209,255,.35)}
+/* linhas-guia de alinhamento (aparecem ao grudar no centro) */
+#prevOverlay .pv-guide{position:absolute;z-index:40;pointer-events:none;background:var(--accent2,#36d1ff);box-shadow:0 0 6px rgba(54,209,255,.85)}
+#prevOverlay .pv-guide-v{left:50%;top:0;bottom:0;width:1px;margin-left:-.5px}
+#prevOverlay .pv-guide-h{top:50%;left:0;right:0;height:1px;margin-top:-.5px}
+
 /* alças de edição no PREVIEW (cantos = redimensionar · bolinha de cima = girar) */
 #prevOverlay .ovh-pv{position:absolute;z-index:30;pointer-events:auto;touch-action:none}
 #prevOverlay .ovh-pv-c{width:12px;height:12px;background:#fff;border:2px solid var(--accent);border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.6)}

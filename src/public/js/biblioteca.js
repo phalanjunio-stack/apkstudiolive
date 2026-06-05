@@ -53,7 +53,14 @@
       });
       c.addEventListener('dragend', () => document.body.classList.remove('lib-dragging'));
       // CLIQUE já adiciona como camada (jeito confiável, sem depender de arrastar)
-      c.addEventListener('click', e => { if (e.target.closest('.lib-x, .lib-hk')) return; addLayer({ kind: 'image', src: a.src, name: a.name }, 50, 50); });
+      c.addEventListener('click', e => {
+        if (e.target.closest('.lib-x, .lib-hk')) return;
+        const g = G();
+        // DEDUP: se essa logo já é camada, só seleciona (não duplica). Duplicar = painel Camadas.
+        if (g && g.list) { const ex = g.list().find(o => o.data && (o.data.libId === a.id || o.data.src === a.src)); if (ex) { g.select && g.select(ex.id); return; } }
+        const made = addLayer({ kind: 'image', src: a.src, name: a.name }, 50, 50);
+        if (made && g) g.update(made.id, { libId: a.id });
+      });
       host.appendChild(c);
     });
   }
@@ -115,9 +122,14 @@
       toast('Logo na cena — arraste/roda do mouse redimensiona no PREVIEW.');
     } else {                                         // vídeo (arquivo) ou fonte ao vivo
       const o = g.add('video'); if (!o) return null; made = o;
-      g.update(o.id, payload.kind === 'source'
-        ? { sourceId: payload.id, label: payload.label || 'Câmera', fit: 'cover' }
-        : { src: payload.src, label: payload.name || 'Vídeo', fit: 'cover' });
+      if (payload.kind === 'source') {
+        // se a FONTE for vídeo de arquivo (tem url), a camada TOCA o arquivo direto (confiável); câmera ao vivo usa o stream
+        let fileUrl = null;
+        try { const s = window.Studio.sourcesInfo().list.find(x => x.id === payload.id); if (s && s.url && (s.kind === 'video' || s.kind === 'playlist' || s.kind === 'replay' || /\.(mp4|webm|ogg|ogv|mov|m4v|mkv)(\?|#|$)/i.test(s.url))) fileUrl = s.url; } catch (e) {}
+        g.update(o.id, fileUrl ? { src: fileUrl, label: payload.label || 'Vídeo', fit: 'cover' } : { sourceId: payload.id, label: payload.label || 'Câmera', fit: 'cover' });
+      } else {
+        g.update(o.id, { src: payload.src, label: payload.name || 'Vídeo', fit: 'cover' });
+      }
       g.setPos(o.id, 0, 0); g.setWidth(o.id, 100); g.setHeight(o.id, 100);
       if (g.select) g.select(o.id);
       toast('Fonte na cena (tela cheia) — redimensione pra PiP se quiser.');
@@ -171,7 +183,7 @@
   function bindResizePV(h, o, corner, boxed) {
     h.addEventListener('pointerdown', e => {
       e.stopPropagation(); e.preventDefault(); const g = G(); const host = $('prevOverlay'); const hr = host.getBoundingClientRect();
-      const r = o.elv.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy)), s0 = o.scale || 1;
+      const r = o.elv.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, d0 = Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy)), s0 = ((o.data && o.data.pv) ? o.data.pv.scale : o.scale) || 1;
       const CN = { nw: { x: 'l', y: 't' }, ne: { x: 'r', y: 't' }, se: { x: 'r', y: 'b' }, sw: { x: 'l', y: 'b' } }[corner];
       try { h.setPointerCapture(e.pointerId); } catch (er) {}
       const clmp = v => Math.max(0, Math.min(90, v));
@@ -187,8 +199,8 @@
           if (CN.x === 'l') left = ev.clientX; else right = ev.clientX;
           if (CN.y === 't') top = ev.clientY; else bottom = ev.clientY;
           const nw = Math.max(5, Math.abs(right - left) / hr.width * 100), nh = Math.max(5, Math.abs(bottom - top) / hr.height * 100);
-          g.setWidth(o.id, nw); g.setHeight(o.id, nh); g.setPos(o.id, (Math.min(left, right) - hr.left) / hr.width * 100, (Math.min(top, bottom) - hr.top) / hr.height * 100);
-        } else { g.setScale(o.id, Math.max(.15, Math.min(8, s0 * Math.hypot(ev.clientX - cx, ev.clientY - cy) / d0))); }
+          g.setPrevWidth(o.id, nw); g.setPrevHeight(o.id, nh); g.setPrevPos(o.id, (Math.min(left, right) - hr.left) / hr.width * 100, (Math.min(top, bottom) - hr.top) / hr.height * 100);
+        } else { g.setPrevScale(o.id, Math.max(.15, Math.min(8, s0 * Math.hypot(ev.clientX - cx, ev.clientY - cy) / d0))); }
       };
       const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
       window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
@@ -197,12 +209,30 @@
   function bindRotatePV(h, o) {
     h.addEventListener('pointerdown', e => {
       e.stopPropagation(); e.preventDefault(); const g = G(); const r = o.elv.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const a0 = Math.atan2(e.clientY - cy, e.clientX - cx), r0 = o.rotation || 0;
+      const a0 = Math.atan2(e.clientY - cy, e.clientX - cx), r0 = ((o.data && o.data.pv) ? o.data.pv.rotation : o.rotation) || 0;
       try { h.setPointerCapture(e.pointerId); } catch (er) {}
-      const mv = ev => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); g.setRotation(o.id, r0 + (a - a0) * 180 / Math.PI); };
+      const mv = ev => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); g.setPrevRotation(o.id, r0 + (a - a0) * 180 / Math.PI); };
       const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
       window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
+  }
+  // ímã de alinhamento: gruda no centro (50%) e nas bordas; T = tolerância em %
+  function snapXY(o, nx, ny) {
+    const T = 2.2, pv = o.data && o.data.pv;
+    const w = (pv && pv.w != null) ? pv.w : o.w, h = (pv && pv.h != null) ? pv.h : o.h;
+    let gv = false, gh = false;
+    if (w != null) { const cx = nx + w / 2; if (Math.abs(cx - 50) < T) { nx = 50 - w / 2; gv = true; } else if (Math.abs(nx) < T) nx = 0; else if (Math.abs(nx + w - 100) < T) nx = 100 - w; }
+    else if (Math.abs(nx - 50) < T) { nx = 50; gv = true; }
+    if (h != null) { const cy = ny + h / 2; if (Math.abs(cy - 50) < T) { ny = 50 - h / 2; gh = true; } else if (Math.abs(ny) < T) ny = 0; else if (Math.abs(ny + h - 100) < T) ny = 100 - h; }
+    else if (Math.abs(ny - 50) < T) { ny = 50; gh = true; }
+    return { x: nx, y: ny, gv, gh };
+  }
+  function showGuides(v, h) {
+    const host = $('prevOverlay'); if (!host) return;
+    let gv = host.querySelector('.pv-guide-v'), gh = host.querySelector('.pv-guide-h');
+    if (!gv) { gv = el('div', 'pv-guide pv-guide-v'); gv.style.display = 'none'; host.appendChild(gv); }
+    if (!gh) { gh = el('div', 'pv-guide pv-guide-h'); gh.style.display = 'none'; host.appendChild(gh); }
+    gv.style.display = v ? 'block' : 'none'; gh.style.display = h ? 'block' : 'none';
   }
   function bindPreviewEdit() {
     const host = $('prevOverlay'); if (!host || host.__libEdit) return; host.__libEdit = true;
@@ -211,24 +241,28 @@
       const g = G(); const id = +node.dataset.id; const o = g && g.get && g.get(id); if (!o) return;
       if (g.select) g.select(id); syncSel();
       if (o.locked) return;
-      const r = host.getBoundingClientRect(), x0 = o.x, y0 = o.y, px = e.clientX, py = e.clientY; let moved = false;
+      const r = host.getBoundingClientRect(), x0 = ((o.data && o.data.pv) ? o.data.pv.x : o.x), y0 = ((o.data && o.data.pv) ? o.data.pv.y : o.y), px = e.clientX, py = e.clientY; let moved = false;
       e.preventDefault();
       const mv = ev => {
         if (!moved && Math.abs(ev.clientX - px) + Math.abs(ev.clientY - py) < 3) return; moved = true;
-        g.setPos(id, x0 + (ev.clientX - px) / r.width * 100, y0 + (ev.clientY - py) / r.height * 100);
+        let nx = x0 + (ev.clientX - px) / r.width * 100, ny = y0 + (ev.clientY - py) / r.height * 100;
+        const snapped = snapXY(o, nx, ny); nx = snapped.x; ny = snapped.y; showGuides(snapped.gv, snapped.gh);
+        g.setPrevPos(id, nx, ny);
       };
-      const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+      const up = () => { showGuides(false, false); window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
       window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
     host.addEventListener('wheel', e => {
+      if (!e.ctrlKey) return;            // roda sozinha NÃO mexe (evita zoom sem querer) — só com Ctrl
       const node = e.target.closest('.ovv'); if (!node) return;
       const g = G(); const id = +node.dataset.id; const o = g && g.get && g.get(id); if (!o) return;
       e.preventDefault(); if (g.select) g.select(id); syncSel();
       const f = e.deltaY < 0 ? 1.07 : 0.93;
+      const g0 = (o.data && o.data.pv) ? o.data.pv : o;   // mexe no staging (preview), não no ar
       if (o.h != null && (o.type === 'video' || o.type === 'image')) {   // caixa: cresce a partir do centro
-        const cx = o.x + o.w / 2, cy = o.y + o.h / 2, nw = Math.max(5, o.w * f), nh = Math.max(5, o.h * f);
-        g.setWidth(id, nw); g.setHeight(id, nh); g.setPos(id, cx - nw / 2, cy - nh / 2);
-      } else { g.setScale(id, (o.scale || 1) * f); }
+        const cw = (g0.w != null ? g0.w : o.w), ch = (g0.h != null ? g0.h : o.h), cx = (g0.x || 0) + cw / 2, cy = (g0.y || 0) + ch / 2, nw = Math.max(5, cw * f), nh = Math.max(5, ch * f);
+        g.setPrevWidth(id, nw); g.setPrevHeight(id, nh); g.setPrevPos(id, cx - nw / 2, cy - nh / 2);
+      } else { g.setPrevScale(id, ((g0.scale || o.scale || 1)) * f); }
     }, { passive: false });
   }
 

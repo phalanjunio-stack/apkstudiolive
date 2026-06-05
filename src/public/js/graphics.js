@@ -15,6 +15,7 @@ const Graphics = (function () {
     template: () => ({ x: 6, y: 6, w: 40, scale: 1, data: { art: '', fields: [], name: 'Modelo' } }),
     text: () => ({ x: 22, y: 70, w: 0, scale: 1, data: { text: 'Escreva aqui', size: 36, color: '#ffffff', weight: 800, align: 'center', bg: '' } }),
     video: () => ({ x: 0, y: 0, w: 100, h: 100, scale: 1, data: { src: '', sourceId: null, label: 'Vídeo', loop: true, fit: 'cover' } }),
+    composer: () => ({ x: 0, y: 0, w: 100, h: 100, scale: 1, data: { src: '/composer/overlay.html', label: 'Kivo Composer', transparent: true } }),
   };
   function tplValue(f, m) {
     if (!f) return '';
@@ -80,7 +81,8 @@ const Graphics = (function () {
 
   // ===== CENAS: cada camada tem um "dono" (scene). null = global (todas as cenas) =====
   // Trocar de cena NÃO destrói nada — só mostra as camadas da cena ativa + globais.
-  function ownedShow(o) { return (o.scene == null || o.scene === activeScene) && o.visible !== false; }
+  // camada "padManaged" (chamada por número) tem visibilidade INDEPENDENTE: onPgm (programa) e onPrev (preview)
+  function ownedShow(o) { if (o.data && o.data.padManaged) return !!o.data.onPgm && o.visible !== false; return (o.scene == null || o.scene === activeScene) && o.visible !== false; }
   function applyVisibility() { overlays.forEach(o => { if (o.el) o.el.style.display = ownedShow(o) ? '' : 'none'; }); }
   function setActiveScene(id) { activeScene = (id == null ? null : id); if (selectedId != null) select(null); applyVisibility(); notify(); }
   function getActiveScene() { return activeScene; }
@@ -183,14 +185,40 @@ const Graphics = (function () {
     }
     emit();
   }
-  function setWidth(id, w) { const o = get(id); if (!o) return; o.w = w; if (o.el) o.el.style.width = w + '%'; if (o.elv) o.elv.style.width = w + '%'; saveLocal(); }
-  function setHeight(id, h) { const o = get(id); if (!o) return; o.h = h; if (o.el) o.el.style.height = h + '%'; if (o.elv) o.elv.style.height = h + '%'; saveLocal(); }
-  function setPos(id, x, y) { const o = get(id); if (!o) return; o.x = Math.max(-20, Math.min(110, x)); o.y = Math.max(-20, Math.min(110, y)); if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } if (o.elv) { o.elv.style.left = o.x + '%'; o.elv.style.top = o.y + '%'; } saveLocal(); }
-  function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); if (o.elv) applyTransformV(o); }
-  // ===== PREVIEW: render paralelo no monitor PREVIEW (cena diferente do PROGRAM, só leitura) =====
-  function applyTransformV(o) { if (!o.elv) return; o.elv.style.transformOrigin = 'center center'; o.elv.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.elv.style.opacity = (o.opacity == null ? 1 : o.opacity); o.elv.style.left = o.x + '%'; o.elv.style.top = o.y + '%'; }
-  function setVideoBox(o) { [o.el, o.elv].forEach(e => { if (!e) return; e.style.left = o.x + '%'; e.style.top = o.y + '%'; e.style.width = o.w + '%'; if (o.h != null) e.style.height = o.h + '%'; }); }
-  function previewShow(o) { return ((o.scene === previewScene) || (o.scene == null && !(o.data && o.data.airOnly))) && o.visible !== false; }   // camada "só do ar" (chamada pelo nº do PROGRAM) NÃO espelha no PREVIEW
+  // ===== geometria: PROGRAM usa o.x/y/w/h (live); PREVIEW usa o.data.pv (staging) se existir =====
+  function liveGeom(o) { return { x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity) }; }
+  function geomV(o) { return (o.data && o.data.pv) ? o.data.pv : o; }
+  function paintPrevGeom(o) { if (!o.elv) return; const g = geomV(o); o.elv.style.left = (g.x || 0) + '%'; o.elv.style.top = (g.y || 0) + '%'; if (g.w != null) o.elv.style.width = g.w + '%'; const hh = (g.h != null ? g.h : o.h); if (hh != null) o.elv.style.height = hh + '%'; o.elv.style.transformOrigin = 'center center'; o.elv.style.transform = 'rotate(' + (g.rotation || 0) + 'deg) scale(' + (g.scale || 1) + ')'; o.elv.style.opacity = (g.opacity == null ? 1 : g.opacity); }
+  function setWidth(id, w) { const o = get(id); if (!o) return; o.w = w; if (o.el) o.el.style.width = w + '%'; paintPrevGeom(o); saveLocal(); }
+  function setHeight(id, h) { const o = get(id); if (!o) return; o.h = h; if (o.el) o.el.style.height = h + '%'; paintPrevGeom(o); saveLocal(); }
+  function setPos(id, x, y) { const o = get(id); if (!o) return; o.x = Math.max(-20, Math.min(110, x)); o.y = Math.max(-20, Math.min(110, y)); if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } paintPrevGeom(o); saveLocal(); }
+  function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); paintPrevGeom(o); }
+  function applyTransformV(o) { paintPrevGeom(o); }
+  function setVideoBox(o) { if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; o.el.style.width = o.w + '%'; if (o.h != null) o.el.style.height = o.h + '%'; } paintPrevGeom(o); }
+  // EDIÇÃO no PREVIEW (staging) — mexe SÓ no preview; o PROGRAMA só muda no TAKE
+  function setPrev(id, patch) { const o = get(id); if (!o) return; if (!o.data.pv) o.data.pv = liveGeom(o); Object.assign(o.data.pv, patch); paintPrevGeom(o); saveLocal(); notify(); }
+  function setPrevPos(id, x, y) { setPrev(id, { x: Math.max(-20, Math.min(110, x)), y: Math.max(-20, Math.min(110, y)) }); }
+  function setPrevWidth(id, w) { setPrev(id, { w: w }); }
+  function setPrevHeight(id, h) { setPrev(id, { h: h }); }
+  function setPrevScale(id, s) { setPrev(id, { scale: s }); }
+  function setPrevRotation(id, r) { setPrev(id, { rotation: r }); }
+  function previewShow(o) { if (o.data && o.data.padManaged) return !!o.data.onPrev && o.visible !== false; return ((o.scene === previewScene) || (o.scene == null && !(o.data && o.data.airOnly))) && o.visible !== false; }   // padManaged: só no preview se onPrev
+  function setBus(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); applyVisibility(); applyPreview(); saveLocal(); notify(); }   // liga/desliga camada no PROGRAMA (onPgm) e/ou PREVIEW (onPrev), independentes
+  // TAKE: publica o que está no PREVIEW (onPrev) no PROGRAMA (onPgm). clear = limpa o preview depois.
+  function commitPreviewToProgram(clear) {
+    let n = 0;
+    overlays.forEach(o => {
+      if (!(o.data && o.data.padManaged)) return;
+      if (o.data.pv) {   // aplica a geometria editada no preview → vira a do ar
+        const p = o.data.pv;
+        o.x = p.x; o.y = p.y; if (p.w != null) o.w = p.w; if (p.h != null) o.h = p.h; o.scale = p.scale; o.rotation = p.rotation; o.opacity = p.opacity;
+        o.data.pv = null; applyTransform(o); setVideoBox(o); applyCrop(o);
+      }
+      o.data.onPgm = !!o.data.onPrev; if (clear) o.data.onPrev = false; n++;
+    });
+    applyVisibility(); applyPreview(); saveLocal(); notify(); return n;
+  }
+  function previewCount() { return overlays.filter(o => o.data && o.data.padManaged && o.data.onPrev && o.visible !== false).length; }
   function applyPreviewOne(o) { if (!o.elv) return; o.elv.style.display = previewShow(o) ? '' : 'none'; applyTransformV(o); }
   function applyPreview() { overlays.forEach(applyPreviewOne); }
   function setPreviewScene(id) { previewScene = (id == null ? null : id); applyPreview(); }
@@ -248,7 +276,7 @@ const Graphics = (function () {
     overlays.forEach(o => { if (host && o.el) host.appendChild(o.el); if (hostV && o.elv) hostV.appendChild(o.elv); });
     emit();
   }
-  function update(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); paint(o); if (o.type === 'scoreboard') overlays.forEach(t => { if (t.type === 'template') paintTemplate(t); }); saveLocal(); }
+  function update(id, patch) { const o = get(id); if (!o) return; Object.assign(o.data, patch); paint(o); if (o.type === 'video') paintVideo(o); if (o.type === 'scoreboard') overlays.forEach(t => { if (t.type === 'template') paintTemplate(t); }); saveLocal(); }
   function score(id, side, d) { const o = get(id); if (!o) return; const k = side === 'h' ? 'hs' : 'as'; o.data[k] = Math.max(0, o.data[k] + d); paint(o); saveLocal(); }
   function clockCtl(id, action) { const o = get(id); if (!o) return; if (action === 'toggle') o.data.running = !o.data.running; if (action === 'reset') { o.data.clock = 0; o.data.running = false; } paint(o); saveLocal(); }
 
@@ -261,6 +289,7 @@ const Graphics = (function () {
       case 'template': return '<div class="tpl"><img class="tpl-art" alt=""><div class="tpl-fields"></div></div>';
       case 'text': return '<div class="ovt"></div>';
       case 'video': return '<video class="ov-vid" playsinline muted preload="auto"></video><span class="ov-vid-ph">Escolha a fonte ▸</span>';
+      case 'composer': return '<iframe class="ov-composer-frame" title="Kivo Composer Overlay" allowtransparency="true"></iframe>';
     }
     return '';
   }
@@ -287,6 +316,7 @@ const Graphics = (function () {
     applyBlend(ov);
     if (ov.id === selectedId) select(ov.id);
     paint(ov);
+    if (ov.type === 'video') paintVideo(ov);   // anexa o stream/arquivo do vídeo (senão fica no "Escolha a fonte")
     applyPreviewOne(ov);
   }
 
@@ -338,6 +368,11 @@ const Graphics = (function () {
       t.textContent = d.text || ''; t.style.fontSize = (d.size || 32) + 'px'; t.style.color = d.color || '#fff';
       t.style.fontWeight = d.weight || 800; t.style.textAlign = d.align || 'center';
       t.style.background = d.bg || 'transparent'; t.style.padding = (d.bg ? '8px 14px' : '0');
+    } else if (ov.type === 'composer') {
+      const frame = root.querySelector('.ov-composer-frame'); if (!frame) return;
+      const src = ov.data.src || '/composer/overlay.html';
+      if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+      frame.style.background = 'transparent';
     } else if (ov.type === 'video') { paintVideoRoot(ov, root); }
   }
   function fmtClock(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ':' + String(ss).padStart(2, '0'); }
@@ -514,7 +549,7 @@ const Graphics = (function () {
 
   load();
   return {
-    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setBlend, setFit, setCrop, setHeight, raise, lower, reorderLayers, update, score, clockCtl,
+    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setBlend, setFit, setBus, commitPreviewToProgram, previewCount, setPrevPos, setPrevWidth, setPrevHeight, setPrevScale, setPrevRotation, setCrop, setHeight, raise, lower, reorderLayers, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene, takeOverlays,

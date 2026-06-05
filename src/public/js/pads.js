@@ -15,7 +15,7 @@
     const s = S(); if (s && s.list) { const sc = s.list().find(x => +x.hotkey === n); if (sc) return { kind: 'scene', id: sc.id, name: sc.name, obj: sc }; }
     const g = G(); if (g && g.list) { const ov = g.list().find(o => o.data && +o.data.hotkey === n); if (ov) return { kind: 'overlay', id: ov.id, name: (ov.data && (ov.data.name || ov.data.label)) || 'Camada', obj: ov }; }
     const B = window.Biblioteca; if (B && B.assets) { const a = B.assets().find(x => +x.hotkey === n); if (a) return { kind: 'asset', id: a.id, name: a.name, obj: a }; }
-    const st = ST(); if (st && st.sourcesInfo) { const list = st.sourcesInfo().list || []; const src = list[n - 1]; if (src) return { kind: 'source', id: src.id, name: src.label, obj: src }; }
+    const st = ST(); if (st && st.sourcesInfo) { const list = st.sourcesInfo().list || []; const src = list.find(s => +s.hotkey === n); if (src) return { kind: 'source', id: src.id, name: src.label, obj: src }; }
     return null;
   }
   // próximo número LIVRE ao ciclar (pula os já usados por qualquer coisa — números são únicos). 0 = nenhum.
@@ -25,7 +25,41 @@
     return 0;
   }
   function assetOverlay(a) { const g = G(); return (g && g.list) ? g.list().find(o => o.data && o.data.libId === a.id) : null; }
+  // garante a camada da logo (global, "padManaged" = visibilidade independente programa/preview). Não força nenhum lugar.
+  function ensureAssetOverlay(g, a) {
+    let ov = assetOverlay(a);
+    if (ov && !ov.data.padManaged) g.update(ov.id, { padManaged: true, onPgm: !!ov.data.onPgm, onPrev: ov.data.onPrev === undefined ? true : ov.data.onPrev });
+    if (!ov) {
+      const ps = g.getPreviewScene ? g.getPreviewScene() : null;
+      const made = window.Biblioteca.addLayer({ kind: 'image', src: a.src, name: a.name }, 50, 50);
+      if (made) { g.update(made.id, { libId: a.id, padManaged: true, onPgm: false, onPrev: false }); if (g.setOverlayScene) g.setOverlayScene(made.id, null); ov = g.get && g.get(made.id); }
+      if (g.setPreviewScene) g.setPreviewScene(ps);
+      if (g.select) g.select(null);
+    }
+    return ov;
+  }
   function sourceOverlay(id) { const g = G(); return (g && g.list) ? g.list().find(o => o.data && o.data.sourceId === id) : null; }
+  function findSourceOv(src) { const g = G(); if (!g || !g.list || !src) return null; return g.list().find(o => o.data && (o.data.sourceId === src.id || (src.url && o.data.src === src.url))); }
+  function isVidFile(src) { return !!src && !!src.url && (src.kind === 'video' || src.kind === 'playlist' || src.kind === 'replay' || /\.(mp4|webm|ogg|ogv|mov|m4v|mkv)(\?|#|$)/i.test(src.url)); }
+  // garante a camada da FONTE (vídeo toca o arquivo direto; câmera usa stream) como padManaged (programa/preview independentes), em TELA CHEIA no FUNDO (não cobre logos)
+  function ensureSourceOverlay(g, src) {
+    let ov = findSourceOv(src);
+    if (ov) { if (!ov.data.padManaged) g.update(ov.id, { padManaged: true, onPgm: !!ov.data.onPgm, onPrev: ov.data.onPrev === undefined ? true : ov.data.onPrev }); return ov; }
+    const ps = g.getPreviewScene ? g.getPreviewScene() : null;
+    const vid = isVidFile(src);
+    const made = window.Biblioteca.addLayer(vid ? { kind: 'video', src: src.url, name: src.label } : { kind: 'source', id: src.id, label: src.label }, 50, 50);
+    if (made) {
+      const patch = { padManaged: true, onPgm: false, onPrev: false }; if (!vid) patch.sourceId = src.id;
+      g.update(made.id, patch);
+      if (g.setOverlayScene) g.setOverlayScene(made.id, null);
+      if (g.setPos) g.setPos(made.id, 0, 0); if (g.setWidth) g.setWidth(made.id, 100); if (g.setHeight) g.setHeight(made.id, 100);
+      for (let k = 0; k < 60; k++) g.lower && g.lower(made.id);   // manda pro FUNDO (logos por cima)
+      ov = g.get && g.get(made.id);
+    }
+    if (g.setPreviewScene) g.setPreviewScene(ps);
+    if (g.select) g.select(null);
+    return ov;
+  }
   // cria uma camada SÓ NO AR (global + airOnly) sem mexer no PREVIEW (não troca a cena de preview, não seleciona)
   function airCreate(g, payload, extra) {
     const ps = g.getPreviewScene ? g.getPreviewScene() : null;
@@ -39,13 +73,11 @@
     const r = resolve(n); if (!r) return false;
     if (r.kind === 'scene') S().air(r.id);                                // cena → liga/desliga no ar (2º clique tira do ar)
     else if (r.kind === 'overlay') G().setVisible(r.id, r.obj.visible === false);   // camada → liga/desliga no ar
-    else if (r.kind === 'asset') {                                        // logo → cria SÓ NO AR (global airOnly) na 1ª vez, depois liga/desliga
-      const g = G(), a = r.obj, ov = assetOverlay(a);
-      if (ov) g.setVisible(ov.id, ov.visible === false);
-      else airCreate(g, { kind: 'image', src: a.src, name: a.name }, { libId: a.id });
+    else if (r.kind === 'asset') {                                        // logo → liga/desliga no PROGRAMA (independente do preview)
+      const g = G(), ov = ensureAssetOverlay(g, r.obj); if (ov) g.setBus(ov.id, { onPgm: !ov.data.onPgm });
     }
-    else if (r.kind === 'source') {                                       // vídeo/câmera → vai pro PROGRAM (imagem base; os logos ficam POR CIMA, não some nada); 2º clique tira do ar
-      try { const st = ST().state(); if (st.program === r.id) ST().clearProgram(); else ST().setProgram(r.id); } catch (e) {}
+    else if (r.kind === 'source') {                                       // vídeo/câmera → camada no FUNDO; liga/desliga no PROGRAMA (logos por cima)
+      const g = G(), ov = ensureSourceOverlay(g, r.obj); if (ov) g.setBus(ov.id, { onPgm: !ov.data.onPgm });
     }
     refresh(); return true;
   }
@@ -53,13 +85,11 @@
     const r = resolve(n); if (!r) return false;
     if (r.kind === 'scene') S().preview(r.id);                           // cena → carrega no PREVIEW (testar)
     else if (r.kind === 'overlay') { if (G().select) G().select(r.id); } // camada → seleciona pra ajustar no preview
-    else if (r.kind === 'asset') {                                        // logo → coloca/edita no PREVIEW
-      const g = G(), a = r.obj, ov = assetOverlay(a);
-      if (ov) { if (g.select) g.select(ov.id); }
-      else { const made = window.Biblioteca.addLayer({ kind: 'image', src: a.src, name: a.name }, 50, 50); if (made) g.update(made.id, { libId: a.id, hotkey: a.hotkey }); }
+    else if (r.kind === 'asset') {                                        // logo → liga/desliga no PREVIEW (independente do programa)
+      const g = G(), ov = ensureAssetOverlay(g, r.obj); if (ov) { g.setBus(ov.id, { onPrev: !ov.data.onPrev }); if (ov.data.onPrev && g.select) g.select(ov.id); }
     }
-    else if (r.kind === 'source') {                                       // vídeo/câmera → joga no PREVIEW (testar antes do ar); 2º clique limpa
-      try { const st = ST().state(); if (st.preview === r.id && ST().clearPreview) ST().clearPreview(); else ST().setPreview(r.id); } catch (e) {}
+    else if (r.kind === 'source') {                                       // vídeo/câmera → camada no FUNDO; liga/desliga no PREVIEW
+      const g = G(), ov = ensureSourceOverlay(g, r.obj); if (ov) { g.setBus(ov.id, { onPrev: !ov.data.onPrev }); if (ov.data.onPrev && g.select) g.select(ov.id); }
     }
     refresh(); return true;
   }
@@ -67,16 +97,16 @@
     if (!r) return false;
     if (r.kind === 'scene') return S().active && S().active() === r.id;
     if (r.kind === 'overlay') return r.obj.visible !== false;
-    if (r.kind === 'asset') { const ov = assetOverlay(r.obj); return !!(ov && ov.visible !== false); }
-    if (r.kind === 'source') { const ov = sourceOverlay(r.id); return !!(ov && ov.visible !== false); }
+    if (r.kind === 'asset') { const ov = assetOverlay(r.obj); return !!(ov && ov.data.onPgm && ov.visible !== false); }
+    if (r.kind === 'source') { const ov = findSourceOv(r.obj); return !!(ov && ov.data.onPgm && ov.visible !== false); }
     return false;
   }
   function isPrevOn(r) {
     if (!r) return false;
     if (r.kind === 'scene') return S().previewId && S().previewId() === r.id;
     if (r.kind === 'overlay') return G().selected && G().selected() === r.id;
-    if (r.kind === 'asset') { const g = G(), ov = assetOverlay(r.obj); return !!(ov && g.selected && g.selected() === ov.id); }
-    if (r.kind === 'source') { const g = G(), ov = sourceOverlay(r.id); return !!(ov && g.selected && g.selected() === ov.id); }
+    if (r.kind === 'asset') { const ov = assetOverlay(r.obj); return !!(ov && ov.data.onPrev && ov.visible !== false); }
+    if (r.kind === 'source') { const ov = findSourceOv(r.obj); return !!(ov && ov.data.onPrev && ov.visible !== false); }
     return false;
   }
   function prevLabel() {

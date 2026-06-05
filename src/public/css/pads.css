@@ -32,6 +32,12 @@
 .pad-btn.empty-flash{animation:padEmpty .3s}
 @keyframes padEmpty{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 
+/* # de número na FONTE/vídeo (canto do card) — clicável pra marcar o atalho */
+.fcard .num{border:0;-webkit-appearance:none;appearance:none;cursor:pointer;z-index:3;line-height:1;padding:0;
+  transition:transform .1s,filter .12s,box-shadow .12s}
+.fcard .num:hover{filter:brightness(1.18);transform:scale(1.1)}
+.fcard .num.set{box-shadow:0 0 0 2px rgba(255,255,255,.3),0 0 10px rgba(0,0,0,.5)}
+
 /* botão "Editar no ar" (traz o programa pro preview pra editar escondido) */
 .edit-air{width:100%;margin-top:7px;font-size:11.5px;font-weight:700;border-radius:8px;padding:8px 6px;cursor:pointer;
   border:1px solid var(--line2);background:var(--inset);color:var(--txt);
@@ -53,35 +59,14 @@
 .sc-numbtn.onair{background:#e5484d;border-color:#e5484d;color:#fff;box-shadow:0 0 12px -3px rgba(229,72,77,.85)}
 .sc-numbtn.onair.set{color:#fff}
 
-/* ===== CENAS com cara de miniatura (cards, estilo podcast) ===== */
-.sc-grid{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;padding:8px 2px 22px}
-.sc-wrap{min-width:0}
-.sc-chip.sc-card{display:flex!important;flex-direction:column;gap:5px;background:none!important;border:0!important;
-  box-shadow:none!important;padding:0!important;cursor:pointer;overflow:visible}
-.sc-chip.sc-card::after,.sc-chip.sc-card::before{display:none!important}
-.sc-thumb{position:relative;aspect-ratio:16/9;border-radius:9px;overflow:hidden;border:2px solid var(--line2,#243049);
-  background:linear-gradient(135deg,#0f1726,#080d16);transition:border-color .14s,box-shadow .14s}
-.sc-card:hover .sc-thumb{border-color:var(--accent)}
-.sc-card.preview .sc-thumb{border-color:var(--accent2,#36d1ff);box-shadow:0 0 14px -3px rgba(54,209,255,.5)}
-.sc-card.active .sc-thumb{border-color:#ef4444;box-shadow:0 0 0 1px #ef4444,0 0 16px -2px rgba(239,68,68,.5)}
-.sc-thumb-ph{position:absolute;inset:0;display:grid;place-items:center;color:rgba(148,163,184,.35)}
-.sc-thumb-ph svg{width:26px;height:26px}
-.sc-noair{position:absolute;top:5px;left:5px;background:#ef4444;color:#fff;font-size:8px;font-weight:800;letter-spacing:.06em;
-  padding:2px 6px;border-radius:4px;box-shadow:0 0 10px rgba(239,68,68,.5);z-index:2}
-.sc-card .sc-numbtn{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
-  background:rgba(2,6,16,.72);border:1px solid var(--line);color:var(--muted);font-size:11px;font-weight:800;cursor:pointer;z-index:3;backdrop-filter:blur(4px)}
-.sc-card .sc-numbtn svg{width:12px;height:12px}
-.sc-card .sc-numbtn.set{background:linear-gradient(180deg,#8a5cff,#5b32d6);border-color:transparent;color:#fff}
-.sc-card .sc-numbtn.onair{background:#ef4444;border-color:#ef4444;color:#fff}
-.sc-card-tools{position:absolute;bottom:5px;right:5px;display:flex;gap:4px;opacity:0;transition:opacity .14s;z-index:3}
-.sc-card:hover .sc-card-tools{opacity:1}
-.sc-card-tools .sc-mini,.sc-card-tools .sc-x{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
-  background:rgba(2,6,16,.78);border:1px solid var(--line);color:var(--muted);cursor:pointer;backdrop-filter:blur(4px);font-size:13px;line-height:1}
-.sc-card-tools .sc-mini:hover{border-color:var(--accent);color:#fff}
-.sc-card-tools .sc-x:hover{border-color:#ef4444;color:#ff8589}
-.sc-card-tools svg{width:12px;height:12px}
-.sc-name{font-size:11px;font-weight:600;color:var(--txt);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
-.sc-card.active .sc-name{color:#fff}
+/* ===== CENAS — chip com NÚMERO clicável (marcar pros pads) + pôr no ar ===== */
+.sc-hk{flex:none;width:22px;height:22px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);
+  color:var(--muted);font-size:11px;font-weight:800;cursor:pointer;display:grid;place-items:center;line-height:1;
+  transition:border-color .12s,color .12s,background .12s}
+.sc-hk:hover{border-color:var(--accent);color:var(--txt)}
+.sc-hk.set{background:linear-gradient(180deg,#8a5cff,#5b32d6);border-color:transparent;color:#fff;box-shadow:0 0 8px rgba(138,92,255,.45)}
+/* botão pôr-no-ar do chip: vermelho quando no ar (sem o smoke-glow antigo) */
+.sc-air.on{background:#ef4444!important;border-color:#ef4444!important;color:#fff!important;box-shadow:0 0 10px -2px rgba(239,68,68,.6)}
 
 /* fone (🎧) no rodapé dos monitores — liga/desliga */
 .mon-fone{pointer-events:auto;margin-left:6px;flex:none;width:25px;height:20px;border-radius:6px;border:1px solid var(--line);

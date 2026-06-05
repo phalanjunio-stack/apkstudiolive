@@ -74,7 +74,7 @@ html[data-theme="light"]{
 /* ---------- 3. CANTOS + bordas finas ---------- */
 .rpanel,.panelbox,.fontes,.page-card,.gfx-dock,.card,.add-menu,.modal-card,
 .theme-switcher-menu{border-radius:var(--r)}
-.mon{border-radius:var(--r-lg)}
+.mon{border-radius:0}
 .fcard,.mvcell,.ctrl,.bigbtn,.icon-btn,.fmt-seg,.badge,.kind-tag,
 .switch .take,.switch .cut,.tbar,.nav a{border-radius:var(--r-sm)}
 
