@@ -1063,8 +1063,9 @@ function addYouTube(url) {
   e.mv.style.backgroundImage = thumb; e.mv.style.backgroundSize = 'cover'; e.mv.style.backgroundPosition = 'center';
   e.tv.style.display = 'none'; e.mvv.style.display = 'none';
   e.yt = window.MediaPanel.createPlayer(vid, () => { positionYouTube(); updateMediaBar(); });
-  if (!programId) { setPreview(id); take(); } else setPreview(id);
+  setPreview(id);   // YouTube vai pro PREVIEW (NÃO entra no ar sozinho — você dá o TAKE)
   positionYouTube();
+  toast('YouTube no PREVIEW. Dica: pra ter controle total e entrar na gravação, use "Captura de tela" da aba do YouTube.');
 }
 function positionYouTube() {
   for (const [id, e] of sources) {
