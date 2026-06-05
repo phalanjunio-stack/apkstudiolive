@@ -80,7 +80,7 @@
   function scanSources() { const g = $('fontesGrid'); if (!g) return; g.querySelectorAll('.fcard').forEach(makeSourceDraggable); }
 
   // ---------------------------- soltar no PREVIEW → cria camada ----------------------------
-  function previewLayers() { try { const g = G(); const ps = g.getPreviewScene ? g.getPreviewScene() : null; return g.listForScene ? g.listForScene(ps) : []; } catch { return []; } }
+  function previewLayers() { try { const g = G(); if (!g.list) return []; const ps = g.getPreviewScene ? g.getPreviewScene() : null; return g.list().filter(o => (o.data && o.data.padManaged) ? (o.data.onPrev && o.visible !== false) : (o.scene === ps && o.visible !== false)); } catch { return []; } }
   function refreshPreviewEmpty() {
     const empt = $('previewEmpty'); if (!empt) return;
     let hasSrc = false; try { hasSrc = !!$('previewVideo').srcObject; } catch {}
@@ -117,15 +117,17 @@
     }
     if (payload.kind === 'image') {
       const o = g.add('image'); if (!o) return null; made = o;
+      g.update(o.id, { padManaged: true, onPrev: true, onPgm: false });   // modelo unificado: nasce no PREVIEW (staging) e o TAKE leva pro PROGRAMA com os ajustes (pv→ao vivo)
       placeLogo(o, payload.src, xPct, yPct, payload.name);
       if (g.select) g.select(o.id);
       toast('Logo na cena — arraste/roda do mouse redimensiona no PREVIEW.');
     } else {                                         // vídeo (arquivo) ou fonte ao vivo
       const o = g.add('video'); if (!o) return null; made = o;
+      g.update(o.id, { padManaged: true, onPrev: true, onPgm: false });   // modelo unificado (staging no PREVIEW)
       if (payload.kind === 'source') {
         // se a FONTE for vídeo de arquivo (tem url), a camada TOCA o arquivo direto (confiável); câmera ao vivo usa o stream
         let fileUrl = null;
-        try { const s = window.Studio.sourcesInfo().list.find(x => x.id === payload.id); if (s && s.url && (s.kind === 'video' || s.kind === 'playlist' || s.kind === 'replay' || /\.(mp4|webm|ogg|ogv|mov|m4v|mkv)(\?|#|$)/i.test(s.url))) fileUrl = s.url; } catch (e) {}
+        try { const s = window.Studio.sourcesInfo().list.find(x => x.id === payload.id); if (s && s.url && s.kind !== 'youtube' && !/^data:image|\.(png|jpe?g|gif|webp|svg|avif)(\?|#|$)/i.test(s.url)) fileUrl = s.url; } catch (e) {}
         g.update(o.id, fileUrl ? { src: fileUrl, label: payload.label || 'Vídeo', fit: 'cover' } : { sourceId: payload.id, label: payload.label || 'Câmera', fit: 'cover' });
       } else {
         g.update(o.id, { src: payload.src, label: payload.name || 'Vídeo', fit: 'cover' });
@@ -155,6 +157,8 @@
     mon.addEventListener('drop', e => {
       mon.classList.remove('lib-dropping');
       const payload = payloadFromDrop(e); if (!payload) return; e.preventDefault();
+      // se soltou em cima de um QUADRO da grade, preenche o quadro em vez de criar camada nova
+      if (payload.kind === 'source' && payload.id && window.Grid && window.Grid.fillSlotAt && window.Grid.fillSlotAt(e.clientX, e.clientY, payload.id)) return;
       const host = $('prevOverlay') || mon; const r = host.getBoundingClientRect();
       const xPct = clamp((e.clientX - r.left) / r.width * 100), yPct = clamp((e.clientY - r.top) / r.height * 100);
       if (payload._file) { const rd = new FileReader(); rd.onload = () => { const a = addImageAsset(payload.name, rd.result); addLayer({ kind: 'image', src: a.src, name: a.name }, xPct, yPct); }; rd.readAsDataURL(payload._file); return; }
@@ -211,7 +215,7 @@
       e.stopPropagation(); e.preventDefault(); const g = G(); const r = o.elv.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
       const a0 = Math.atan2(e.clientY - cy, e.clientX - cx), r0 = ((o.data && o.data.pv) ? o.data.pv.rotation : o.rotation) || 0;
       try { h.setPointerCapture(e.pointerId); } catch (er) {}
-      const mv = ev => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); g.setPrevRotation(o.id, r0 + (a - a0) * 180 / Math.PI); };
+      const mv = ev => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); let deg = r0 + (a - a0) * 180 / Math.PI; if (!ev.shiftKey) { const sn = Math.round(deg / 45) * 45; if (Math.abs(deg - sn) < 4) deg = sn; } g.setPrevRotation(o.id, deg); };   // encaixa em 0/45/90 (Shift solta)
       const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
       window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
@@ -234,6 +238,118 @@
     if (!gh) { gh = el('div', 'pv-guide pv-guide-h'); gh.style.display = 'none'; host.appendChild(gh); }
     gv.style.display = v ? 'block' : 'none'; gh.style.display = h ? 'block' : 'none';
   }
+  // ============== CORTE (Crop) estilo Photoshop ==============
+  let cropId = null, cropOrig = null, cropRect = null;
+  const cClamp = (v, max) => Math.max(0, Math.min(max == null ? 95 : max, v));
+  function startCrop(id) {
+    const g = G(); id = (id != null) ? id : (g && g.selected ? g.selected() : null);
+    const o = g && g.get && g.get(id); if (!o || (o.type !== 'image' && o.type !== 'video')) { toast('Selecione uma imagem ou vídeo pra cortar (tecla C).'); return; }
+    if (cropId != null) endCrop(true);
+    cropId = id; cropOrig = Object.assign({ t: 0, r: 0, b: 0, l: 0 }, o.data.crop); cropRect = Object.assign({}, cropOrig);
+    const cv = o.elv && o.elv.firstElementChild; if (cv) cv.style.clipPath = '';   // mostra a imagem CHEIA só no PREVIEW; o PROGRAMA mantém o recorte atual no ar até concluir
+    if (g.select) g.select(id);
+    clearPreviewHandles(); buildCropUI();
+    document.addEventListener('keydown', cropKeys, true);
+  }
+  function endCrop(apply) {
+    const g = G(); if (cropId == null) return;
+    if (g.setCrop) g.setCrop(cropId, apply ? cropRect : cropOrig);
+    cropId = null; cropOrig = null; cropRect = null;
+    document.removeEventListener('keydown', cropKeys, true);
+    clearCropUI(); drawPreviewHandles();
+  }
+  function cropKeys(e) { if (cropId == null) return; if (e.key === 'Escape') { e.preventDefault(); endCrop(false); } else if (e.key === 'Enter') { e.preventDefault(); endCrop(true); } }
+  function clearCropUI() { document.querySelectorAll('#prevOverlay .pv-crop, #previewMon .pv-croptools').forEach(n => n.remove()); }
+  function cropBox() { const g = G(); const o = g.get(cropId); const host = $('prevOverlay'); if (!o || !o.elv || !host) return null; const hr = host.getBoundingClientRect(), br = o.elv.getBoundingClientRect(); return { bx: br.left - hr.left, by: br.top - hr.top, bw: br.width, bh: br.height }; }
+  function paintCropRect() {
+    const b = cropBox(); if (!b) return; const wrap = document.querySelector('#prevOverlay .pv-crop'); if (!wrap) return;
+    const r = wrap.querySelector('.pc-rect');
+    r.style.left = (b.bx + b.bw * cropRect.l / 100) + 'px'; r.style.top = (b.by + b.bh * cropRect.t / 100) + 'px';
+    r.style.width = (b.bw * (1 - (cropRect.l + cropRect.r) / 100)) + 'px'; r.style.height = (b.bh * (1 - (cropRect.t + cropRect.b) / 100)) + 'px';
+  }
+  function setAspect(ar) {   // ar = w/h (0 = livre, só centraliza nada)
+    if (!ar) return; const b = cropBox(); if (!b) return; const boxR = b.bw / b.bh;
+    if (boxR > ar) { const f = ar / boxR; cropRect = { t: 0, b: 0, l: (1 - f) / 2 * 100, r: (1 - f) / 2 * 100 }; }
+    else { const f = boxR / ar; cropRect = { l: 0, r: 0, t: (1 - f) / 2 * 100, b: (1 - f) / 2 * 100 }; }
+    paintCropRect();
+  }
+  function bindCropHandle(h, edge) {
+    h.addEventListener('pointerdown', e => {
+      e.stopPropagation(); e.preventDefault(); try { h.setPointerCapture(e.pointerId); } catch (er) {}
+      const mv = ev => {
+        const b = cropBox(); if (!b) return; const px = (ev.clientX - ($('prevOverlay').getBoundingClientRect().left) - b.bx) / b.bw * 100, py = (ev.clientY - ($('prevOverlay').getBoundingClientRect().top) - b.by) / b.bh * 100;
+        if (edge.indexOf('w') >= 0) cropRect.l = cClamp(px, 100 - cropRect.r - 5);
+        if (edge.indexOf('e') >= 0) cropRect.r = cClamp(100 - px, 100 - cropRect.l - 5);
+        if (edge.indexOf('n') >= 0) cropRect.t = cClamp(py, 100 - cropRect.b - 5);
+        if (edge.indexOf('s') >= 0) cropRect.b = cClamp(100 - py, 100 - cropRect.t - 5);
+        paintCropRect();
+      };
+      const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+      window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+    });
+  }
+  function buildCropUI() {
+    const host = $('prevOverlay'); const mon = document.getElementById('previewMon'); if (!host) return;
+    const wrap = el('div', 'pv-crop'); const rect = el('div', 'pc-rect'); wrap.appendChild(rect);
+    ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach(edge => { const h = el('span', 'pc-h pc-' + edge); bindCropHandle(h, edge); rect.appendChild(h); });
+    host.appendChild(wrap); paintCropRect();
+    // barra: proporção + cancelar/concluído
+    const tb = el('div', 'pv-croptools');
+    const sel = document.createElement('select'); sel.className = 'pc-ar';
+    [['Livre', 0], ['1:1', 1], ['16:9', 16 / 9], ['9:16', 9 / 16], ['4:3', 4 / 3], ['3:4', 3 / 4]].forEach(([t, v]) => { const op = document.createElement('option'); op.value = v; op.textContent = t; sel.appendChild(op); });
+    sel.onchange = () => setAspect(parseFloat(sel.value));
+    const cancel = el('button', 'pc-btn', '✕ Cancelar'); cancel.onclick = () => endCrop(false);
+    const done = el('button', 'pc-btn pc-done', '✓ Concluído'); done.onclick = () => endCrop(true);
+    tb.append(el('span', 'pc-lab', 'Cortar'), sel, cancel, done); (mon || host).appendChild(tb);
+  }
+
+  // ============== APARAR (trim) vídeo: in/out + play ==============
+  let trimId = null, trimOrig = null;
+  const tFmt = t => { t = Math.max(0, t || 0); const m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + (s < 10 ? '0' : '') + s; };
+  function startTrim(id) {
+    const g = G(); id = (id != null) ? id : (g && g.selected ? g.selected() : null);
+    const o = g && g.get && g.get(id); if (!o || o.type !== 'video') { toast('Selecione um vídeo pra aparar.'); return; }
+    const v = o.elv && o.elv.querySelector('.ov-vid'); if (!v) { toast('Vídeo ainda carregando…'); return; }
+    if (trimId != null) endTrim(true);
+    trimId = id; trimOrig = { in: o.data.trimIn || 0, out: o.data.trimOut };
+    if (g.select) g.select(id);
+    buildTrimUI(o, v);
+    document.addEventListener('keydown', trimKeys, true);
+  }
+  function endTrim(apply) {
+    const g = G(); if (trimId == null) return;
+    if (!apply && g.setTrim) g.setTrim(trimId, { in: trimOrig.in, out: trimOrig.out == null ? 0 : trimOrig.out });
+    trimId = null; trimOrig = null;
+    document.removeEventListener('keydown', trimKeys, true);
+    document.querySelectorAll('#previewMon .pv-trimtools').forEach(n => n.remove());
+  }
+  function trimKeys(e) { if (trimId == null) return; if (e.key === 'Escape') { e.preventDefault(); endTrim(false); } else if (e.key === 'Enter') { e.preventDefault(); endTrim(true); } }
+  function buildTrimUI(o, v) {
+    const g = G(); const mon = document.getElementById('previewMon'); if (!mon) return;
+    const tb = el('div', 'pv-trimtools');
+    tb.innerHTML = '<button class="tt-play pc-btn">▶</button><div class="tt-track"><div class="tt-keep"></div><i class="tt-ph"></i><span class="tt-h tt-in"></span><span class="tt-h tt-out"></span></div><span class="tt-time pc-lab"></span><button class="pc-btn tt-cancel">✕</button><button class="pc-btn pc-done tt-done">✓ Aparar</button>';
+    mon.appendChild(tb);
+    const track = tb.querySelector('.tt-track'), keep = tb.querySelector('.tt-keep'), hIn = tb.querySelector('.tt-in'), hOut = tb.querySelector('.tt-out'), ph = tb.querySelector('.tt-ph'), timeEl = tb.querySelector('.tt-time'), playB = tb.querySelector('.tt-play');
+    const D = () => (isFinite(v.duration) && v.duration > 0) ? v.duration : 1;
+    function paint() { const d = D(), ti = o.data.trimIn || 0, to = (o.data.trimOut != null ? o.data.trimOut : d); hIn.style.left = (ti / d * 100) + '%'; hOut.style.left = (to / d * 100) + '%'; keep.style.left = (ti / d * 100) + '%'; keep.style.right = (100 - to / d * 100) + '%'; ph.style.left = (v.currentTime / d * 100) + '%'; timeEl.textContent = tFmt(ti) + ' – ' + tFmt(to); }
+    if (o.data.trimOut == null) { if (isFinite(v.duration) && v.duration > 0) o.data.trimOut = v.duration; else v.addEventListener('loadedmetadata', () => { o.data.trimOut = v.duration; paint(); }, { once: true }); }
+    function bindH(h, which) {
+      h.addEventListener('pointerdown', e => {
+        e.stopPropagation(); e.preventDefault(); try { h.setPointerCapture(e.pointerId); } catch (er) {}
+        const r = track.getBoundingClientRect();
+        const mv = ev => { const d = D(); let t = Math.max(0, Math.min(d, (ev.clientX - r.left) / r.width * d)); if (which === 'in') g.setTrim(o.id, { in: Math.min(t, (o.data.trimOut || d) - 0.2) }); else g.setTrim(o.id, { out: Math.max(t, (o.data.trimIn || 0) + 0.2) }); try { v.pause(); v.currentTime = (which === 'in') ? (o.data.trimIn || 0) : (o.data.trimOut || d); } catch (e2) {} playB.textContent = '▶'; paint(); };
+        const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+        window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+      });
+    }
+    bindH(hIn, 'in'); bindH(hOut, 'out');
+    playB.onclick = () => { if (v.paused) { try { v.currentTime = o.data.trimIn || 0; } catch (e) {} v.play().catch(() => {}); playB.textContent = '⏸'; } else { v.pause(); playB.textContent = '▶'; } };
+    v.addEventListener('timeupdate', paint);
+    tb.querySelector('.tt-cancel').onclick = () => endTrim(false);
+    tb.querySelector('.tt-done').onclick = () => endTrim(true);
+    paint();
+  }
+
   function bindPreviewEdit() {
     const host = $('prevOverlay'); if (!host || host.__libEdit) return; host.__libEdit = true;
     host.addEventListener('pointerdown', e => {
@@ -278,5 +394,5 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
-  window.Biblioteca = { importImages, addImageAsset, addLayer, refresh: renderAssets, assets: () => assets.slice() };
+  window.Biblioteca = { importImages, addImageAsset, addLayer, refresh: renderAssets, assets: () => assets.slice(), crop: startCrop, trim: startTrim };
 })();

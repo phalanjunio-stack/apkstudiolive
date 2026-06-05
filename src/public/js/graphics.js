@@ -52,13 +52,29 @@ const Graphics = (function () {
   function emit() { saveLocal(); notify(); applyPreview(); }
   function load() {
     try { const s = JSON.parse(localStorage.getItem(KEY) || '[]'); if (Array.isArray(s)) overlays = s; } catch {}
-    overlays.forEach(o => { if (o.id >= seq) seq = o.id + 1; if (o.type === 'video') { if (o.h == null) o.h = 100; if (o.data && o.data.fit == null) o.data.fit = 'cover'; } });
+    overlays.forEach(o => {
+      const oldScene = o.scene;
+      if (oldScene && /^__/.test(oldScene)) o.scene = null;   // cenas mágicas (__prog__/__prev*) viram globais: não deixam camadas órfãs no reload
+      // MIGRAÇÃO p/ o modelo unificado: camadas antigas da Biblioteca (image/vídeo do dashboard, sem padManaged)
+      // viram padManaged — assim TAKE/editar/cortar passam a funcionar SEM precisar apagar e remontar.
+      // (camadas de CENAS nomeadas têm scene='sc...' e ficam de fora; só as globais/staging migram.)
+      if (o.scene == null && !(o.data && o.data.padManaged) && (o.type === 'image' || o.type === 'video')) {
+        if (!o.data) o.data = {};
+        o.data.padManaged = true;
+        if (o.data.onPgm == null) o.data.onPgm = /^__prog/.test(oldScene || '') || (oldScene == null && o.visible !== false);   // estava no ar? mantém no ar
+        if (o.data.onPrev == null) o.data.onPrev = true;                                                                        // aparece no preview pra editar
+      }
+      if (o.id >= seq) seq = o.id + 1;
+      if (o.type === 'video') { if (o.h == null) o.h = 100; if (o.data && o.data.fit == null) o.data.fit = 'cover'; }
+    });
   }
 
   function mount(el) {
     host = el; renderAll(); ensureClock();
-    // clicar fora dos overlays (e fora dos editores) deseleciona
-    document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.ov') && !e.target.closest('.gfx-dock') && !e.target.closest('.fb-prevstage')) deselect(); }, true);
+    // clicar FORA da camada E fora de qualquer painel/ferramenta de edição → deseleciona.
+    // (antes, clicar nas PROPRIEDADES deselecionava → o card "sumia" ao tentar editar)
+    const KEEP = '.ov,.gfx-dock,.fb-prevstage,#propsPanel,#layersPanel,.rpanel,.ovh-pv,.pv-crop,.pv-croptools,.pv-trimtools,.slot-picker,.lp-row,.lp-props';
+    document.addEventListener('pointerdown', (e) => { if (!e.target.closest(KEEP)) deselect(); }, true);
   }
   function onChange(fn) { subs.push(fn); }
   function hideAll() { overlays.forEach(o => { o.visible = false; if (o.el) o.el.style.display = 'none'; }); if (selectedId != null) select(null); emit(); }
@@ -188,11 +204,14 @@ const Graphics = (function () {
   // ===== geometria: PROGRAM usa o.x/y/w/h (live); PREVIEW usa o.data.pv (staging) se existir =====
   function liveGeom(o) { return { x: o.x, y: o.y, w: o.w, h: o.h, scale: o.scale, rotation: o.rotation || 0, opacity: (o.opacity == null ? 1 : o.opacity) }; }
   function geomV(o) { return (o.data && o.data.pv) ? o.data.pv : o; }
-  function paintPrevGeom(o) { if (!o.elv) return; const g = geomV(o); o.elv.style.left = (g.x || 0) + '%'; o.elv.style.top = (g.y || 0) + '%'; if (g.w != null) o.elv.style.width = g.w + '%'; const hh = (g.h != null ? g.h : o.h); if (hh != null) o.elv.style.height = hh + '%'; o.elv.style.transformOrigin = 'center center'; o.elv.style.transform = 'rotate(' + (g.rotation || 0) + 'deg) scale(' + (g.scale || 1) + ')'; o.elv.style.opacity = (g.opacity == null ? 1 : g.opacity); }
+  // ESPELHAR (flip H/V) + CORREÇÃO de cor/brilho — entram nos 2 gêmeos via applyTransform/paintPrevGeom
+  function flipXY(o, s) { s = (s == null ? 1 : s); return { x: s * ((o.data && o.data.flipH) ? -1 : 1), y: s * ((o.data && o.data.flipV) ? -1 : 1) }; }
+  function filterCss(f) { if (!f) return ''; const p = []; if (f.brightness != null && +f.brightness !== 100) p.push('brightness(' + f.brightness + '%)'); if (f.contrast != null && +f.contrast !== 100) p.push('contrast(' + f.contrast + '%)'); if (f.saturate != null && +f.saturate !== 100) p.push('saturate(' + f.saturate + '%)'); if (f.hue) p.push('hue-rotate(' + f.hue + 'deg)'); if (f.blur) p.push('blur(' + f.blur + 'px)'); return p.join(' '); }
+  function paintPrevGeom(o) { if (!o.elv) return; const g = geomV(o); o.elv.style.left = (g.x || 0) + '%'; o.elv.style.top = (g.y || 0) + '%'; if (g.w != null) o.elv.style.width = g.w + '%'; const hh = (g.h != null ? g.h : o.h); if (hh != null) o.elv.style.height = hh + '%'; o.elv.style.transformOrigin = 'center center'; const fs = flipXY(o, g.scale || 1); o.elv.style.transform = 'rotate(' + (g.rotation || 0) + 'deg) scale(' + fs.x + ',' + fs.y + ')'; o.elv.style.opacity = (g.opacity == null ? 1 : g.opacity); o.elv.style.filter = filterCss(o.data && o.data.filter); }
   function setWidth(id, w) { const o = get(id); if (!o) return; o.w = w; if (o.el) o.el.style.width = w + '%'; paintPrevGeom(o); saveLocal(); }
   function setHeight(id, h) { const o = get(id); if (!o) return; o.h = h; if (o.el) o.el.style.height = h + '%'; paintPrevGeom(o); saveLocal(); }
   function setPos(id, x, y) { const o = get(id); if (!o) return; o.x = Math.max(-20, Math.min(110, x)); o.y = Math.max(-20, Math.min(110, y)); if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; } paintPrevGeom(o); saveLocal(); }
-  function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + (o.scale || 1) + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); paintPrevGeom(o); }
+  function applyTransform(o) { if (!o || !o.el) return; o.el.style.transformOrigin = 'center center'; const fs = flipXY(o, o.scale || 1); o.el.style.transform = 'rotate(' + (o.rotation || 0) + 'deg) scale(' + fs.x + ',' + fs.y + ')'; o.el.style.opacity = (o.opacity == null ? 1 : o.opacity); o.el.style.filter = filterCss(o.data && o.data.filter); paintPrevGeom(o); }
   function applyTransformV(o) { paintPrevGeom(o); }
   function setVideoBox(o) { if (o.el) { o.el.style.left = o.x + '%'; o.el.style.top = o.y + '%'; o.el.style.width = o.w + '%'; if (o.h != null) o.el.style.height = o.h + '%'; } paintPrevGeom(o); }
   // EDIÇÃO no PREVIEW (staging) — mexe SÓ no preview; o PROGRAMA só muda no TAKE
@@ -219,9 +238,11 @@ const Graphics = (function () {
     applyVisibility(); applyPreview(); saveLocal(); notify(); return n;
   }
   function previewCount() { return overlays.filter(o => o.data && o.data.padManaged && o.data.onPrev && o.visible !== false).length; }
+  // descarta o staging (pv) — usado pra CANCELAR uma edição no preview sem aplicar no ar. id null = todas.
+  function revertPreview(id) { (id == null ? overlays : [get(id)].filter(Boolean)).forEach(o => { if (o && o.data && o.data.pv) { o.data.pv = null; paintPrevGeom(o); } }); saveLocal(); notify(); }
   function applyPreviewOne(o) { if (!o.elv) return; o.elv.style.display = previewShow(o) ? '' : 'none'; applyTransformV(o); }
   function applyPreview() { overlays.forEach(applyPreviewOne); }
-  function setPreviewScene(id) { previewScene = (id == null ? null : id); applyPreview(); }
+  function setPreviewScene(id) { previewScene = (id == null ? null : id); applyPreview(); notify(); }   // notify → painéis (camadas/banner da cena) reagem à troca de cena ativa
   // PÔR NO AR (camadas do PREVIEW → PROGRAM). clearPrev=true: move (limpa o preview); false: snapshot (continua editando o preview)
   function takeOverlays(clearPrev) {
     if (previewScene == null) return;
@@ -252,7 +273,7 @@ const Graphics = (function () {
     S('.ovh-e-w', { left: 'calc(' + c.l + '% - 5px)', top: cy + '%' });
     S('.ovh-rot', { top: 'calc(' + c.t + '% - 30px)', left: cx + '%' });
   }
-  function applyCrop(o) { if (!o || !o.el) return; const c = o.el.firstElementChild; if (c) c.style.clipPath = cropCss(o.data && o.data.crop); positionHandles(o); }
+  function applyCrop(o) { if (!o) return; const cc = cropCss(o.data && o.data.crop); if (o.el) { const c = o.el.firstElementChild; if (c) c.style.clipPath = cc; } if (o.elv) { const cv = o.elv.firstElementChild; if (cv) cv.style.clipPath = cc; } positionHandles(o); }   // recorte aparece NOS DOIS monitores (programa + preview)
   function setLocked(id, b) { const o = get(id); if (!o) return; o.locked = !!b; if (o.id === selectedId) { removeHandles(o); if (!b) ensureHandles(o); } saveLocal(); notify(); }
   function setCropMode(b) { cropMode = !!b; const o = get(selectedId); if (o && o.el) { o.el.classList.toggle('ov-cropping', cropMode); const cb = o.el.querySelector('.ov-tools-bar .crop-btn'); if (cb) cb.classList.toggle('on', cropMode); } notify(); }
   function getCropMode() { return cropMode; }
@@ -260,12 +281,21 @@ const Graphics = (function () {
   function setScale(id, s) { const o = get(id); if (!o) return; o.scale = Math.max(0.15, Math.min(8, s)); applyTransform(o); saveLocal(); }
   function setRotation(id, deg) { const o = get(id); if (!o) return; o.rotation = ((deg % 360) + 360) % 360; applyTransform(o); saveLocal(); }
   function setOpacity(id, v) { const o = get(id); if (!o) return; o.opacity = Math.max(0, Math.min(1, v)); applyTransform(o); saveLocal(); }
+  // ESPELHAR: axis 'h' (↔) ou 'v' (↕) — toggle. Câmera frontal chega espelhada → vira num clique.
+  function setFlip(id, axis) { const o = get(id); if (!o) return; if (axis === 'v') o.data.flipV = !o.data.flipV; else o.data.flipH = !o.data.flipH; applyTransform(o); saveLocal(); notify(); }
+  function getFlip(id) { const o = get(id); return o ? { h: !!(o.data && o.data.flipH), v: !!(o.data && o.data.flipV) } : { h: false, v: false }; }
+  // CORREÇÃO de cor: { brightness, contrast, saturate, hue, blur } (CSS filter). Corrige sem Photoshop.
+  function setFilter(id, patch) { const o = get(id); if (!o) return; o.data.filter = Object.assign({ brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0 }, o.data.filter, patch); applyTransform(o); saveLocal(); notify(); }
+  function getFilter(id) { const o = get(id); return (o && o.data && o.data.filter) ? o.data.filter : { brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0 }; }
+  function clearFilter(id) { const o = get(id); if (!o) return; o.data.filter = null; applyTransform(o); saveLocal(); notify(); }
   // MESCLAGEM (blend mode estilo Photoshop): normal/multiply/screen/overlay/lighten/darken/soft-light/difference...
   function applyBlend(o) { const b = (o.data && o.data.blend) || 'normal'; if (o.el) o.el.style.mixBlendMode = b; if (o.elv) o.elv.style.mixBlendMode = b; }
   function setBlend(id, m) { const o = get(id); if (!o) return; o.data.blend = (!m || m === 'normal') ? '' : m; applyBlend(o); saveLocal(); }
-  function setFit(id, fit) { const o = get(id); if (!o) return; o.data.fit = fit || 'contain'; if (o.type === 'image') paint(o); else paintVideo(o); saveLocal(); notify(); }   // contain(caber) · cover(preencher) · fill(esticar)
+  function setFit(id, fit) { const o = get(id); if (!o) return; o.data.fit = fit || 'contain'; if (o.type === 'image') paint(o); else paintVideo(o); saveLocal(); notify(); }
+  function setTrim(id, patch) { const o = get(id); if (!o || !patch) return; if (patch.in != null) o.data.trimIn = Math.max(0, patch.in); if (patch.out != null) o.data.trimOut = patch.out; paintVideo(o); saveLocal(); notify(); }   // aparar vídeo (in/out em segundos)   // contain(caber) · cover(preencher) · fill(esticar)
   function raise(id) { const i = overlays.findIndex(o => o.id === id); if (i < 0 || i === overlays.length - 1) return; const [o] = overlays.splice(i, 1); overlays.push(o); if (host && o.el) host.appendChild(o.el); if (hostV && o.elv) hostV.appendChild(o.elv); emit(); }
   function lower(id) { const i = overlays.findIndex(o => o.id === id); if (i <= 0) return; const [o] = overlays.splice(i, 1); overlays.unshift(o); if (host && o.el) host.insertBefore(o.el, host.firstChild); if (hostV && o.elv) hostV.insertBefore(o.elv, hostV.firstChild); emit(); }
+  function sendToBack(id) { const i = overlays.findIndex(o => o.id === id); if (i <= 0) return; const [o] = overlays.splice(i, 1); overlays.unshift(o); if (host && o.el) host.insertBefore(o.el, host.firstChild); if (hostV && o.elv) hostV.insertBefore(o.elv, hostV.firstChild); emit(); }   // manda pro FUNDO numa tacada (1 emit) — evita o for-60 de lower()
   // reordena z (drag estilo Photoshop): frontToBack = ids do topo (frente) p/ baixo (trás); preserva a posição das demais camadas
   function reorderLayers(frontToBack) {
     if (!Array.isArray(frontToBack) || !frontToBack.length) return;
@@ -314,6 +344,7 @@ const Graphics = (function () {
       elv.innerHTML = ovHTML(ov.type); ov.elv = elv; hostV.appendChild(elv);
     }
     applyBlend(ov);
+    applyCrop(ov);   // reaplica o recorte tambem no gemeo do PREVIEW (o.elv ja existe aqui)
     if (ov.id === selectedId) select(ov.id);
     paint(ov);
     if (ov.type === 'video') paintVideo(ov);   // anexa o stream/arquivo do vídeo (senão fica no "Escolha a fonte")
@@ -391,8 +422,33 @@ const Graphics = (function () {
     const d = ov.data;
     if (d.src) {   // VÍDEO PRÓPRIO da cena (arquivo escolhido) — não vem das FONTES
       if (v.srcObject) { try { v.srcObject = null; } catch (e) {} }
-      if (v.getAttribute('src') !== d.src) { v.src = d.src; }
-      v.loop = (d.loop !== false); v.muted = true;
+      const srcChanged = v.getAttribute('src') !== d.src;
+      if (srcChanged) { v.src = d.src; }   // src novo: (re)carrega e limpa qualquer erro anterior
+      // REDE DE SEGURANÇA: se o src morreu (ex.: blob URL revogada porque a FONTE foi removida,
+      // ou reload com blob de sessão antiga), mostra o placeholder em vez de TELA PRETA. No caso
+      // normal o ref-count em Studio.addVideoFile mantém a URL viva e nem chega aqui.
+      if (!srcChanged && v.error) {
+        v.style.display = 'none';
+        if (ph) { ph.textContent = 'Vídeo indisponível'; ph.style.display = 'flex'; }
+        return;
+      }
+      v.loop = (d.loop !== false); v.muted = true; v.playsInline = true; v.autoplay = true; v.preload = 'auto';
+      try { v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); } catch (e) {}
+      // APARAR (trim): toca só entre trimIn e trimOut (loop dentro do trecho)
+      if (!v.__trimWired) {
+        v.__trimWired = true;
+        v.addEventListener('timeupdate', () => { const ti = ov.data.trimIn || 0, to = ov.data.trimOut; if (to && to > ti && v.currentTime >= to) { try { v.currentTime = ti; } catch (e) {} } });
+        v.addEventListener('loadedmetadata', () => { const ti = ov.data.trimIn || 0; if (ti && Math.abs(v.currentTime - ti) > 0.3) { try { v.currentTime = ti; } catch (e) {} } });
+      }
+      // PLAY À PROVA DE FALHA: o navegador rejeita play() quando o src acabou de mudar (load interrompido).
+      // Sem isso o vídeo ficava PARADO ("não aparece"). Tenta tocar de novo quando os dados chegam.
+      if (!v.__playWired) {
+        v.__playWired = true;
+        const tryPlay = () => { if (!editing) { try { v.play && v.play().catch(() => {}); } catch (e) {} } };
+        v.addEventListener('loadeddata', tryPlay);
+        v.addEventListener('canplay', tryPlay);
+        v.addEventListener('stalled', tryPlay);
+      }
       if (editing) { try { v.pause(); } catch (e) {} } else { v.play && v.play().catch(() => {}); }   // editor = parado no 1o frame; no ar = toca
       v.style.display = ''; if (ph) ph.style.display = 'none'; return;
     }
@@ -470,19 +526,20 @@ const Graphics = (function () {
     ['nw', 'ne', 'se', 'sw'].forEach(c => { const h = document.createElement('span'); h.className = 'ovh ovh-c ovh-c-' + c; bindResize(h, ov, c); el.appendChild(h); });
     const rot = document.createElement('span'); rot.className = 'ovh ovh-rot'; bindRotate(rot, ov); el.appendChild(rot);
     const tb = document.createElement('div'); tb.className = 'ovh ov-tools-bar'; tb.dataset.ov = ov.id;
-    const mk = (txt, title, fn) => { const b = document.createElement('button'); b.textContent = txt; b.title = title; b.onpointerdown = (e) => e.stopPropagation(); b.onclick = (e) => { e.stopPropagation(); fn(); }; tb.appendChild(b); };
-    mk('↺', 'Girar -15°', () => { ov.rotation = (ov.rotation || 0) - 15; applyTransform(ov); saveLocal(); });
-    mk('↻', 'Girar +15°', () => { ov.rotation = (ov.rotation || 0) + 15; applyTransform(ov); saveLocal(); });
-    mk('0°', 'Endireitar', () => { ov.rotation = 0; applyTransform(ov); saveLocal(); });
-    mk('▫', 'Limpar recorte', () => { ov.data.crop = { t: 0, r: 0, b: 0, l: 0 }; applyCrop(ov); saveLocal(); });
-    mk('↑', 'Trazer p/ frente', () => raise(ov.id));
-    mk('↓', 'Mandar p/ trás', () => lower(ov.id));
-    mk('✕', 'Remover', () => { remove(ov.id); selectedId = null; });
+    const ic = (n, fallback) => (window.kicon ? kicon(n) : fallback);
+    const mk = (txt, title, fn) => { const b = document.createElement('button'); b.innerHTML = txt; b.title = title; b.onpointerdown = (e) => e.stopPropagation(); b.onclick = (e) => { e.stopPropagation(); fn(); }; tb.appendChild(b); };
+    mk(ic('rotate-ccw', '↺'), 'Girar -15°', () => { ov.rotation = (ov.rotation || 0) - 15; applyTransform(ov); saveLocal(); });
+    mk(ic('rotate-cw', '↻'), 'Girar +15°', () => { ov.rotation = (ov.rotation || 0) + 15; applyTransform(ov); saveLocal(); });
+    mk(ic('reset', '0°'), 'Resetar rotação (0°)', () => { ov.rotation = 0; applyTransform(ov); saveLocal(); });
+    mk(ic('crop-clear', '▫'), 'Limpar recorte', () => { ov.data.crop = { t: 0, r: 0, b: 0, l: 0 }; applyCrop(ov); saveLocal(); });
+    mk(ic('front', '↑'), 'Trazer p/ frente', () => raise(ov.id));
+    mk(ic('back', '↓'), 'Mandar p/ trás', () => lower(ov.id));
+    mk(ic('trash', '✕'), 'Remover', () => { remove(ov.id); selectedId = null; });
     if (ov.type === 'video' || ov.type === 'image') {
-      mk('⤢', 'Tela cheia (preencher o quadro)', () => { ov.x = 0; ov.y = 0; ov.w = 100; ov.h = 100; setVideoBox(ov); saveLocal(); });
-      mk('▣', 'Preencher ↔ Caber', () => { ov.data.fit = (ov.data.fit === 'contain' ? 'cover' : 'contain'); paint(ov); saveLocal(); });
+      mk(ic('fullscreen', '⤢'), 'Tela cheia (preencher o quadro)', () => { ov.x = 0; ov.y = 0; ov.w = 100; ov.h = 100; setVideoBox(ov); saveLocal(); });
+      mk(ic('fit', '▣'), 'Preencher ↔ Caber', () => { ov.data.fit = (ov.data.fit === 'contain' ? 'cover' : 'contain'); paint(ov); saveLocal(); });
     }
-    const cropB = document.createElement('button'); cropB.className = 'crop-btn'; cropB.textContent = '✂'; cropB.title = 'Recortar bordas — clique e arraste as alças (Alt também corta)'; cropB.classList.toggle('on', cropMode);
+    const cropB = document.createElement('button'); cropB.className = 'crop-btn'; cropB.innerHTML = ic('crop', '✂'); cropB.title = 'Recortar bordas — clique e arraste as alças (Alt também corta)'; cropB.classList.toggle('on', cropMode);
     cropB.onpointerdown = e => e.stopPropagation(); cropB.onclick = e => { e.stopPropagation(); setCropMode(!cropMode); }; tb.appendChild(cropB);
     (el.parentElement || el).appendChild(tb); positionHandles(ov);   // barra ancorada no PALCO (não segue a caixa ao redimensionar)
   }
@@ -541,7 +598,7 @@ const Graphics = (function () {
       const r = ov.el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
       const a0 = Math.atan2(e.clientY - cy, e.clientX - cx), r0 = ov.rotation || 0;
       try { h.setPointerCapture(e.pointerId); } catch {}
-      const mv = (ev) => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); ov.rotation = r0 + (a - a0) * 180 / Math.PI; applyTransform(ov); };
+      const mv = (ev) => { const a = Math.atan2(ev.clientY - cy, ev.clientX - cx); let deg = r0 + (a - a0) * 180 / Math.PI; if (!ev.shiftKey) { const sn = Math.round(deg / 45) * 45; if (Math.abs(deg - sn) < 4) deg = sn; } ov.rotation = deg; applyTransform(ov); };   // encaixa em 0/45/90 (Shift solta)
       const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); saveLocal(); };
       window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
@@ -549,7 +606,7 @@ const Graphics = (function () {
 
   load();
   return {
-    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setBlend, setFit, setBus, commitPreviewToProgram, previewCount, setPrevPos, setPrevWidth, setPrevHeight, setPrevScale, setPrevRotation, setCrop, setHeight, raise, lower, reorderLayers, update, score, clockCtl,
+    mount, onChange, list, get, add, remove, setVisible, setWidth, setPos, setScale, setRotation, setOpacity, setBlend, setFit, setTrim, setBus, commitPreviewToProgram, previewCount, revertPreview, setFlip, getFlip, setFilter, getFilter, clearFilter, setPrevPos, setPrevWidth, setPrevHeight, setPrevScale, setPrevRotation, setCrop, setHeight, raise, lower, sendToBack, reorderLayers, update, score, clockCtl,
     select, selected, hideAll, showAll, clearAll, flash, exportOverlays, importOverlays, setLocked, setEditing, setCropMode, getCropMode,
     setActiveScene, getActiveScene, listForScene, listForActive, globals, setOverlayScene, duplicate, setHost,
     setPreviewScene, getPreviewScene, takeOverlays,

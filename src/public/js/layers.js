@@ -9,10 +9,19 @@
   const TYPE = { scoreboard: 'Placar', image: 'Imagem / PNG', slideshow: 'Slideshow', ticker: 'Rodapé', template: 'Modelo', text: 'Escrita', video: 'Vídeo (PiP)', composer: 'Kivo Composer' };
   const EYE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const EYEOFF = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.9 17.9A10 10 0 0 1 12 19C5 19 1 12 1 12a18 18 0 0 1 5-5.9M9.9 4.2A9 9 0 0 1 12 4c7 0 11 7 11 7a18 18 0 0 1-2.2 3.2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-  const BLENDS = [['normal', 'Normal'], ['multiply', 'Multiplicar'], ['screen', 'Tela'], ['overlay', 'Sobrepor'], ['lighten', 'Clarear'], ['darken', 'Escurecer'], ['soft-light', 'Luz suave'], ['hard-light', 'Luz forte'], ['color-dodge', 'Subexpor'], ['difference', 'Diferença'], ['exclusion', 'Exclusão'], ['luminosity', 'Luminosidade']];
+  // modos de mesclagem (os que o navegador suporta), agrupados/nomeados como no Photoshop
+  const BLENDS = [
+    ['normal', 'Normal'],
+    ['darken', 'Escurecer'], ['multiply', 'Multiplicação'], ['color-burn', 'Superexposição de cores'], ['plus-darker', 'Superexposição linear'],
+    ['lighten', 'Clarear'], ['screen', 'Tela'], ['color-dodge', 'Subexposição de cores'], ['plus-lighter', 'Subexp. linear (Adicionar)'],
+    ['overlay', 'Sobrepor'], ['soft-light', 'Luz indireta'], ['hard-light', 'Luz direta'],
+    ['difference', 'Diferença'], ['exclusion', 'Exclusão'],
+    ['hue', 'Matiz'], ['saturation', 'Saturação'], ['color', 'Cor'], ['luminosity', 'Luminosidade']
+  ];
   let host, propsHost;
   function el(t, c, h) { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
   const G = () => window.Graphics;
+  const ic = (n, f) => (window.kicon ? kicon(n) : f);   // ícone SVG de traço (padrão), com fallback p/ glifo
   const layerName = o => (o.type === 'template' && o.data && o.data.name) ? o.data.name : (o.data && o.data.label) || (TYPE[o.type] || 'Camada');
   function sceneName(id) {
     if (!id || /^__prev/.test(id)) return null;          // staging '__prev0__' = sem nome
@@ -30,18 +39,25 @@
   function propsBlock(o) {
     const g = G(); const box = el('div', 'lp-props');
     box.appendChild(el('div', 'lp-ptitle', layerName(o)));
-    const boxed = (o.h != null) && (o.type === 'image' || o.type === 'video');
+    // camada de número (padManaged) → edita o PREVIEW (staging); não mexe no ar até o TAKE
+    const pm = !!(o.data && o.data.padManaged), gd = (pm && o.data.pv) ? o.data.pv : o;
+    const sPos = pm ? (x, y) => g.setPrevPos(o.id, x, y) : (x, y) => g.setPos(o.id, x, y);
+    const sW = pm ? v => g.setPrevWidth(o.id, v) : v => g.setWidth(o.id, v);
+    const sH = pm ? v => g.setPrevHeight(o.id, v) : v => g.setHeight(o.id, v);
+    const sScale = pm ? v => g.setPrevScale(o.id, v) : v => g.setScale(o.id, v);
+    const sRot = pm ? v => g.setPrevRotation(o.id, v) : v => g.setRotation(o.id, v);
+    const boxed = (gd.h != null) && (o.type === 'image' || o.type === 'video');
     const grid = el('div', 'lp-pgrid');
-    grid.appendChild(numField('X %', o.x, 0.5, v => g.setPos(o.id, v, o.y)));
-    grid.appendChild(numField('Y %', o.y, 0.5, v => g.setPos(o.id, o.x, v)));
+    grid.appendChild(numField('X %', gd.x, 0.5, v => sPos(v, gd.y)));
+    grid.appendChild(numField('Y %', gd.y, 0.5, v => sPos(gd.x, v)));
     if (boxed) {
-      grid.appendChild(numField('Larg %', o.w, 0.5, v => g.setWidth(o.id, Math.max(2, v))));
-      grid.appendChild(numField('Alt %', o.h, 0.5, v => g.setHeight(o.id, Math.max(2, v))));
+      grid.appendChild(numField('Larg %', gd.w, 0.5, v => sW(Math.max(2, v))));
+      grid.appendChild(numField('Alt %', gd.h, 0.5, v => sH(Math.max(2, v))));
       box.appendChild(grid);
-      const r2 = el('div', 'lp-pgrid'); r2.appendChild(numField('Rotação°', o.rotation || 0, 1, v => g.setRotation(o.id, v))); box.appendChild(r2);
+      const r2 = el('div', 'lp-pgrid'); r2.appendChild(numField('Rotação°', gd.rotation || 0, 1, v => sRot(v))); box.appendChild(r2);
     } else {
-      grid.appendChild(numField('Escala', o.scale || 1, 0.05, v => g.setScale(o.id, v)));
-      grid.appendChild(numField('Rotação°', o.rotation || 0, 1, v => g.setRotation(o.id, v)));
+      grid.appendChild(numField('Escala', gd.scale || 1, 0.05, v => sScale(v)));
+      grid.appendChild(numField('Rotação°', gd.rotation || 0, 1, v => sRot(v)));
       box.appendChild(grid);
     }
     const op = el('div', 'lp-prow'); op.appendChild(el('span', 'lp-plab', 'Opacidade'));
@@ -62,6 +78,29 @@
       fs.onchange = () => g.setFit(o.id, fs.value);
       ft.appendChild(fs); box.appendChild(ft);
     }
+    if ((o.type === 'image' || o.type === 'video')) {
+      // ENDIREITAR (giro fino): pra imagem/vídeo que vem torto — sem abrir editor externo
+      const str = el('div', 'lp-prow'); str.appendChild(el('span', 'lp-plab', 'Endireitar'));
+      const ss = document.createElement('input'); ss.type = 'range'; ss.min = -45; ss.max = 45; ss.step = 0.2; ss.value = Math.max(-45, Math.min(45, gd.rotation || 0));
+      const sv = el('span', 'lp-pval', (Math.round((gd.rotation || 0) * 10) / 10) + '°');
+      ss.oninput = () => { sv.textContent = (Math.round(ss.value * 10) / 10) + '°'; sRot(parseFloat(ss.value)); };
+      str.append(ss, sv); box.appendChild(str);
+      // CORREÇÃO de cor/brilho (CSS filter) — corrige sem Photoshop/Premiere
+      if (g.setFilter) {
+        const f = g.getFilter ? g.getFilter(o.id) : { brightness: 100, contrast: 100, saturate: 100 };
+        const frow = (label, key, val) => {
+          const r = el('div', 'lp-prow'); r.appendChild(el('span', 'lp-plab', label));
+          const i = document.createElement('input'); i.type = 'range'; i.min = 0; i.max = 200; i.value = (val == null ? 100 : val);
+          const vv = el('span', 'lp-pval', i.value + '%');
+          i.oninput = () => { vv.textContent = i.value + '%'; const p = {}; p[key] = +i.value; g.setFilter(o.id, p); };
+          r.append(i, vv); box.appendChild(r);
+        };
+        frow('Brilho', 'brightness', f.brightness);
+        frow('Contraste', 'contrast', f.contrast);
+        frow('Saturação', 'saturate', f.saturate);
+        const rb = el('div', 'lp-prow'); const rbtn = el('button', 'lp-pbtn', 'Resetar cor'); rbtn.onclick = () => { g.clearFilter(o.id); render(); }; rb.appendChild(rbtn); box.appendChild(rb);
+      }
+    }
     // atalho número (estilo vMix): a tecla 1-9 liga/desliga essa camada no ar, no lugar definido
     const hk = el('div', 'lp-prow'); hk.appendChild(el('span', 'lp-plab', 'Atalho nº'));
     const hs = document.createElement('select');
@@ -71,11 +110,18 @@
     hk.appendChild(hs); box.appendChild(hk);
     const acts = el('div', 'lp-pacts');
     const mk = (t, title, fn, cls) => { const b = el('button', 'lp-pbtn' + (cls ? ' ' + cls : ''), t); b.title = title; b.onclick = fn; acts.appendChild(b); };
-    mk('▲', 'Trazer p/ frente', () => g.raise(o.id));
-    mk('▼', 'Mandar p/ trás', () => g.lower(o.id));
-    mk('⧉', 'Duplicar', () => { const c = g.duplicate && g.duplicate(o.id, o.scene); if (c && g.select) g.select(c.id); });
-    mk(o.locked ? '🔒' : '🔓', o.locked ? 'Destravar' : 'Travar', () => g.setLocked(o.id, !o.locked));
-    mk('×', 'Remover', () => g.remove(o.id), 'danger');
+    mk(ic('front', '▲'), 'Trazer p/ frente', () => g.raise(o.id));
+    mk(ic('back', '▼'), 'Mandar p/ trás', () => g.lower(o.id));
+    mk(ic('duplicate', '⧉'), 'Duplicar', () => { const c = g.duplicate && g.duplicate(o.id, o.scene); if (c && g.select) g.select(c.id); });
+    if ((o.type === 'image' || o.type === 'video') && g.setFlip) {   // ESPELHAR (câmera frontal chega espelhada → 1 clique)
+      const fl = g.getFlip ? g.getFlip(o.id) : { h: false, v: false };
+      mk(ic('flip-h', '↔'), 'Espelhar horizontal', () => { g.setFlip(o.id, 'h'); render(); }, fl.h ? 'on' : '');
+      mk(ic('flip-v', '↕'), 'Espelhar vertical', () => { g.setFlip(o.id, 'v'); render(); }, fl.v ? 'on' : '');
+    }
+    if ((o.type === 'image' || o.type === 'video') && window.Biblioteca && window.Biblioteca.crop) mk(ic('crop', '✂'), 'Cortar (tecla C)', () => window.Biblioteca.crop(o.id));
+    if (o.type === 'video' && window.Biblioteca && window.Biblioteca.trim) mk(ic('trim', '⏱'), 'Aparar vídeo (in/out)', () => window.Biblioteca.trim(o.id));
+    mk(ic(o.locked ? 'lock' : 'unlock', o.locked ? '🔒' : '🔓'), o.locked ? 'Destravar' : 'Travar', () => g.setLocked(o.id, !o.locked));
+    mk(ic('trash', '×'), 'Remover', () => g.remove(o.id), 'danger');
     box.appendChild(acts);
     return box;
   }
@@ -87,6 +133,8 @@
     const list = scopeList();
     const sel = g.selected ? g.selected() : null;
     const mon = document.getElementById('previewMon'); if (mon) mon.classList.toggle('scene-on', !!nm);   // cena carregada → preview acende
+    const banner = document.getElementById('prevSceneBanner');   // banner "CENA ATIVADA" no topo do PREVIEW
+    if (banner) { if (nm) { banner.hidden = false; banner.innerHTML = '<span class="psb-dot"></span> CENA ATIVADA · <b>' + nm + '</b> — tudo que montar entra aqui'; } else { banner.hidden = true; } }
     host.innerHTML = '';
     host.appendChild(el('div', 'lp-scenetitle', nm ? ('<span class="lp-dot"></span> ' + nm) : '<span style="color:var(--muted)">Preview (montagem)</span>'));
     const tg = el('label', 'lp-airtg'); const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = localStorage.getItem('sl-take-clear') === '1';
@@ -98,9 +146,9 @@
       const eye = el('button', 'lp-eye'); eye.innerHTML = o.visible === false ? EYEOFF : EYE; eye.title = 'Mostrar / ocultar (no ar também)';
       eye.onclick = e => { e.stopPropagation(); g.setVisible(o.id, o.visible === false); };
       const nms = el('span', 'lp-nm', layerName(o));
-      const up = el('button', 'lp-mini', '▲'); up.title = 'Frente'; up.onclick = e => { e.stopPropagation(); g.raise(o.id); };
-      const dn = el('button', 'lp-mini', '▼'); dn.title = 'Trás'; dn.onclick = e => { e.stopPropagation(); g.lower(o.id); };
-      const x = el('button', 'lp-x', '×'); x.title = 'Remover'; x.onclick = e => { e.stopPropagation(); g.remove(o.id); };
+      const up = el('button', 'lp-mini', ic('up', '▲')); up.title = 'Frente'; up.onclick = e => { e.stopPropagation(); g.raise(o.id); };
+      const dn = el('button', 'lp-mini', ic('down', '▼')); dn.title = 'Trás'; dn.onclick = e => { e.stopPropagation(); g.lower(o.id); };
+      const x = el('button', 'lp-x', ic('close', '×')); x.title = 'Remover'; x.onclick = e => { e.stopPropagation(); g.remove(o.id); };
       row.append(eye, nms, up, dn, x);
       if (o.data && o.data.hotkey) { const b = el('span', 'lp-hk', o.data.hotkey); b.title = 'Atalho ' + o.data.hotkey + ' — liga/desliga no ar'; row.insertBefore(b, eye); }
       row.onclick = () => g.select(o.id);

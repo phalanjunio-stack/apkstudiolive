@@ -85,15 +85,6 @@
         <button class="kmode" data-mode="fut" title="Modo Futebol — liga/desliga a central" aria-label="Modo Futebol">
           <i class="ico-fut"></i></button>
       </div>
-      <div class="tstats">
-        <div class="tstat"><div><span class="k">CPU</span><span class="v" id="cpu">&mdash;</span></div><canvas id="cpuSpark" width="46" height="22"></canvas></div>
-        <div class="tstat"><div><span class="k">GPU</span><span class="v" id="gpu">&mdash;</span></div></div>
-        <div class="tsep"></div>
-        <div class="tstat"><div><span class="k">FPS</span><span class="v" id="fps">&mdash;</span></div><canvas id="fpsSpark" width="46" height="22"></canvas></div>
-        <div class="tsep"></div>
-        <div class="tstat"><span class="dot rec" id="recDot"></span><div><span class="k">RECORD</span><span class="v" id="recTime">OFFLINE</span></div></div>
-        <div class="tstat"><span class="dot stream" id="streamDot"></span><div><span class="k">STREAM</span><span class="v" id="streamTime">OFFLINE</span></div></div>
-      </div>
       <div class="dtop-right">
         <div class="net">
           <div class="label"><b id="netLabel">&mdash;</b><span>NETWORK</span></div>
@@ -141,6 +132,7 @@
       <div class="monitors">
         <section class="mon preview" id="previewMon">
           <div class="mon-top"><span class="mon-tag">PREVIEW <span id="previewName">&mdash;</span></span><button class="crop-btn" id="cropBtn" title="Cortar bordas do vídeo">&#9986;</button></div>
+          <div class="prev-scenebanner" id="prevSceneBanner" hidden></div>
           <video id="previewVideo" autoplay playsinline muted></video>
           <div class="pgm-overlay" id="prevOverlay"></div>
           <div class="mon-bottom"><span class="badge" id="previewRes">&mdash;</span><span class="badge">16:9</span><span class="badge">WebRTC</span><span class="meter"></span><button class="mon-fone" id="monePrev" title="Fone: ouvir só o que está no PREVIEW">&#127911;</button></div>
@@ -179,23 +171,29 @@
       </div>
 
       <div class="media-bar is-hidden" id="mediaBar">
-        <button id="mPlay" class="mb-btn">&#9654;</button>
+        <span class="mb-where" id="mWhere">PREVIEW</span>
+        <button id="mStart" class="mb-btn" title="Voltar ao começo">&#9198;</button>
+        <button id="mBack" class="mb-btn" title="Voltar 10s">&#9194;</button>
+        <button id="mPlay" class="mb-btn mb-play" title="Tocar / pausar (espera)">&#9654;</button>
+        <button id="mFwd" class="mb-btn" title="Avançar 10s">&#9193;</button>
         <input type="range" id="mSeek" min="0" max="1000" value="0" class="mb-seek">
         <span id="mTime" class="mb-time">0:00 / 0:00</span>
+        <button id="mHold" class="mb-btn mb-hold" title="Deixar em espera: volta ao começo e pausa, pronto pro TAKE">&#9209; Espera</button>
         <button id="mMute" class="mb-btn">&#128266;</button>
         <button id="mLoop" class="mb-btn">Loop</button>
         <span id="mName" class="mb-name"></span>
       </div>
 
       <div class="fontes biblioteca">
-        <div class="sec-head">BIBLIOTECA <span class="kbd-hint">arraste pro PREVIEW &rarr; vira camada &middot; clique = preview &middot; 1&ndash;9 cortam</span></div>
-        <button class="lib-invite" id="copyKivoLink" type="button" title="Copia o link pro convidado entrar com câmera/microfone (mesma rede). Cola no WhatsApp/Telegram.">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          Copiar Link Kivo (Convite)
-        </button>
+        <div class="sec-head"><span>BIBLIOTECA <span class="kbd-hint">arraste pro PREVIEW &rarr; vira camada &middot; clique = preview &middot; 1&ndash;9 cortam</span></span>
+          <button class="lib-invite" id="copyKivoLink" type="button" title="Copia o link pro convidado entrar com câmera/microfone (mesma rede). Cola no WhatsApp/Telegram.">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Convidar (link)
+          </button>
+        </div>
         <div class="lib-sub">Logos &amp; imagens <button class="lib-importbtn" id="libImport" type="button">+ importar</button></div>
         <div class="lib-assets" id="libAssets"></div>
-        <div class="lib-sub">Locais (est&uacute;dio)</div>
+        <div class="lib-sub">Locais (est&uacute;dio) <button class="lib-importbtn" id="addFonteBtn" type="button">+ adicionar</button></div>
         <div class="fontes-grid" id="fontesGrid"></div>
         <div class="lib-sub lib-remote-head" id="remotosHead" hidden>
           <span class="lib-remote-dot"></span> Kivo Link (remotos)
@@ -308,6 +306,14 @@
 
     <!-- ===================== PERFORMANCE ===================== -->
     <footer class="perfbar">
+      <div class="tstats">
+        <div class="tstat"><span class="k">CPU</span><span class="v" id="cpu">&mdash;</span><canvas id="cpuSpark" width="34" height="14"></canvas></div>
+        <div class="tstat"><span class="k">GPU</span><span class="v" id="gpu">&mdash;</span></div>
+        <div class="tstat"><span class="k">FPS</span><span class="v" id="fps">&mdash;</span><canvas id="fpsSpark" width="34" height="14"></canvas></div>
+        <div class="tstat"><span class="dot rec" id="recDot"></span><span class="k">RECORD</span><span class="v" id="recTime">OFFLINE</span></div>
+        <div class="tstat"><span class="dot stream" id="streamDot"></span><span class="k">STREAM</span><span class="v" id="streamTime">OFFLINE</span></div>
+      </div>
+      <div class="tsep"></div>
       <div class="perf"><span class="k">PERFORMANCE</span><span class="v ok" id="pPerf">&mdash;</span></div>
       <div class="perf"><span class="k">REDE</span><span class="v ok" id="pNet">&mdash;</span></div>
       <div class="perf"><span class="k">QUADROS PERDIDOS</span><span class="v" id="pFrames">0</span></div>
@@ -332,6 +338,7 @@
   </div>
 
   <script src="/js/license.js"></script>
+  <script src="/js/icons.js"></script>
   <script src="/js/studio.js"></script>
   <script src="/js/sfx.js"></script>
   <script src="/js/winctrls.js"></script>

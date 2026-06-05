@@ -40,7 +40,7 @@
   }
   function sourceOverlay(id) { const g = G(); return (g && g.list) ? g.list().find(o => o.data && o.data.sourceId === id) : null; }
   function findSourceOv(src) { const g = G(); if (!g || !g.list || !src) return null; return g.list().find(o => o.data && (o.data.sourceId === src.id || (src.url && o.data.src === src.url))); }
-  function isVidFile(src) { return !!src && !!src.url && (src.kind === 'video' || src.kind === 'playlist' || src.kind === 'replay' || /\.(mp4|webm|ogg|ogv|mov|m4v|mkv)(\?|#|$)/i.test(src.url)); }
+  function isVidFile(src) { return !!src && !!src.url && src.kind !== 'youtube' && !/^data:image|\.(png|jpe?g|gif|webp|svg|avif)(\?|#|$)/i.test(src.url); }
   // garante a camada da FONTE (vídeo toca o arquivo direto; câmera usa stream) como padManaged (programa/preview independentes), em TELA CHEIA no FUNDO (não cobre logos)
   function ensureSourceOverlay(g, src) {
     let ov = findSourceOv(src);
@@ -53,7 +53,7 @@
       g.update(made.id, patch);
       if (g.setOverlayScene) g.setOverlayScene(made.id, null);
       if (g.setPos) g.setPos(made.id, 0, 0); if (g.setWidth) g.setWidth(made.id, 100); if (g.setHeight) g.setHeight(made.id, 100);
-      for (let k = 0; k < 60; k++) g.lower && g.lower(made.id);   // manda pro FUNDO (logos por cima)
+      if (g.sendToBack) g.sendToBack(made.id); else for (let k = 0; k < 60; k++) g.lower && g.lower(made.id);   // manda pro FUNDO numa tacada (logos por cima)
       ov = g.get && g.get(made.id);
     }
     if (g.setPreviewScene) g.setPreviewScene(ps);
@@ -145,20 +145,37 @@
   let editing = null;   // { orig } enquanto edita no ar
   function clearEditCopies(g) { (g.listForScene ? g.listForScene(EDIT_SCENE) : []).forEach(o => g.remove(o.id)); }
   function startEditAir(btn) {
-    const g = G(), s = S(); if (!g || !s) return;
-    const orig = s.active ? s.active() : null;
-    if (orig == null) return toast('Põe uma cena no ar primeiro pra editar');
+    const g = G(), s = S(); if (!g || !g.list) return;
+    // CASO COMUM (modelo unificado): camadas padManaged que estão NO AR → traz pro PREVIEW pra editar (o ar continua igual)
+    const air = g.list().filter(o => o.data && o.data.padManaged && o.data.onPgm && o.visible !== false);
+    if (air.length) {
+      const turnedOn = [];
+      air.forEach(o => { if (!o.data.onPrev) { turnedOn.push(o.id); g.setBus && g.setBus(o.id, { onPrev: true }); } });   // aparece no preview (edita o staging pv; ar intacto)
+      if (g.select) g.select(air[0].id);
+      editing = { padManaged: true, turnedOn: turnedOn };
+      btn.classList.add('editing'); btn.innerHTML = '✓ Aplicar no ar';
+      toast('Editando no PREVIEW — o ar continua igual. Ajuste e clique “Aplicar”.'); refresh();
+      return;
+    }
+    // FALLBACK (cena nomeada — legado)
+    const orig = s && s.active ? s.active() : null;
+    if (orig == null) return toast('Põe algo no ar primeiro pra editar');
     const src = g.listForScene ? g.listForScene(orig) : [];
-    if (!src.length) return toast('A cena no ar não tem camadas pra editar');
+    if (!src.length) return toast('Nada no ar pra editar');
     clearEditCopies(g);                                   // limpa restos de uma edição anterior
     src.forEach(o => g.duplicate && g.duplicate(o.id, EDIT_SCENE));
     if (g.setPreviewScene) g.setPreviewScene(EDIT_SCENE);
-    editing = { orig };
+    editing = { orig: orig };
     btn.classList.add('editing'); btn.innerHTML = '✓ Aplicar no ar';
     toast('Editando no PREVIEW — o ar continua igual. Clique “Aplicar” pra publicar.'); refresh();
   }
   function applyEditAir(btn) {
-    const g = G(); if (!g || !editing) return; const orig = editing.orig;
+    const g = G(); if (!g || !editing) return;
+    if (editing.padManaged) {                                                        // republica a correção no ar (pv→ao vivo)
+      if (g.commitPreviewToProgram) g.commitPreviewToProgram(false);
+      endEditAir(btn); toast('Aplicado no ar ✓'); return;
+    }
+    const orig = editing.orig;
     const copies = g.listForScene ? g.listForScene(EDIT_SCENE) : [];
     (g.listForScene ? g.listForScene(orig) : []).forEach(o => g.remove(o.id));      // tira as antigas do ar
     copies.forEach(o => g.setOverlayScene && g.setOverlayScene(o.id, orig));        // as cópias editadas viram as do ar
@@ -167,6 +184,11 @@
   }
   function cancelEditAir(btn) {
     const g = G(); if (!g || !editing) return;
+    if (editing.padManaged) {
+      if (g.revertPreview) g.revertPreview();                                        // descarta os ajustes do preview (pv)
+      (editing.turnedOn || []).forEach(id => g.setBus && g.setBus(id, { onPrev: false }));   // tira do preview as que entraram só pra editar
+      endEditAir(btn); toast('Edição no ar cancelada'); return;
+    }
     clearEditCopies(g); if (g.setPreviewScene) g.setPreviewScene(null);
     endEditAir(btn); toast('Edição no ar cancelada');
   }

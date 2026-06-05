@@ -919,9 +919,9 @@ h1,h2,h3,.brand,.fb-bigscore b{letter-spacing:-.01em}
 
 /* Estados neon: brilho e traco animado sem alterar o abre/fecha dos paineis */
 @keyframes kivo-neon-flow{
-  0%{background-position:0% 50%;filter:hue-rotate(0deg)}
-  50%{background-position:100% 50%;filter:hue-rotate(38deg)}
-  100%{background-position:0% 50%;filter:hue-rotate(360deg)}
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
 }
 
 @keyframes kivo-smoke-glow{
@@ -934,8 +934,8 @@ h1,h2,h3,.brand,.fb-bigscore b{letter-spacing:-.01em}
   isolation:isolate;
   overflow:visible;
   box-shadow:
-    0 0 0 1px rgba(76,178,255,.28),
-    0 0 18px rgba(47,140,255,.30),
+    0 0 0 1px rgba(var(--accent-rgb),.30),
+    0 0 18px rgba(var(--accent-rgb),.28),
     inset 0 1px 0 rgba(255,255,255,.14);
 }
 
@@ -947,7 +947,7 @@ h1,h2,h3,.brand,.fb-bigscore b{letter-spacing:-.01em}
   border-radius:inherit;
   padding:1px;
   pointer-events:none;
-  background:linear-gradient(120deg,#4db6ff,#35d49a,#39d4ff,#8fb7ff,#4db6ff);
+  background:linear-gradient(120deg,var(--accent),var(--accent2),#6366f1,var(--accent));
   background-size:320% 320%;
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;
@@ -962,7 +962,7 @@ h1,h2,h3,.brand,.fb-bigscore b{letter-spacing:-.01em}
   z-index:-1;
   border-radius:inherit;
   pointer-events:none;
-  background:radial-gradient(circle at 50% 50%,rgba(57,212,255,.34),transparent 68%);
+  background:radial-gradient(circle at 50% 50%,rgba(var(--accent-rgb),.30),transparent 68%);
   animation:kivo-smoke-glow 2.4s ease-in-out infinite;
 }
 
@@ -994,7 +994,7 @@ h1,h2,h3,.brand,.fb-bigscore b{letter-spacing:-.01em}
   border-radius:inherit;
   padding:1px;
   pointer-events:none;
-  background:linear-gradient(120deg,#42a3ff,#35d49a,#39d4ff,#7aa8ff,#42a3ff);
+  background:linear-gradient(120deg,var(--accent),var(--accent2),#6366f1,var(--accent));
   background-size:320% 320%;
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;
@@ -1010,7 +1010,7 @@ h1,h2,h3,.brand,.fb-bigscore b{letter-spacing:-.01em}
   z-index:-1;
   border-radius:inherit;
   pointer-events:none;
-  background:radial-gradient(circle at 50% 50%,rgba(57,212,255,.24),transparent 70%);
+  background:radial-gradient(circle at 50% 50%,rgba(var(--accent-rgb),.22),transparent 70%);
   opacity:.7;
   animation:kivo-smoke-glow 3s ease-in-out infinite;
 }

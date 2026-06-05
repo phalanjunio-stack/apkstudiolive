@@ -106,7 +106,7 @@
     // já é uma cena salva (não é staging '__prev*') → salvar = só CONFIRMA (as camadas já persistem no motor)
     if (prev && !/^__prev/.test(prev)) {
       const sc0 = load().find(function (x) { return x.id === prev; });
-      toast('Cena "' + (sc0 ? sc0.name : 'atual') + '" salva ✓');
+      toast('✓ CENA SALVA — "' + (sc0 ? sc0.name : 'atual') + '"');
       return;
     }
     const l = load(); const def = 'Cena ' + (l.length + 1);
@@ -118,17 +118,23 @@
       if (g.setOverlayScene) layers.forEach(function (o) { g.setOverlayScene(o.id, id); });   // as camadas viram donas dessa cena
       if (g.setPreviewScene) g.setPreviewScene(id);          // segue editável no PREVIEW
       previewId = id;
-      toast('Cena "' + (name || def) + '" salva — clique pra carregar, 2 cliques pra editar.');
+      toast('✓ CENA SALVA — "' + (name || def) + '" (clique = ativar · 2 cliques = editar)');
       render();
     });
   }
   function selectScene(id) { if (!load().some(x => x.id === id)) return; setActive(id, true); render(); }        // API: manda direto pro ar
-  function loadToPreview(id) {                                                                                    // clique simples → PREVIEW (fora do ar)
+  function loadToPreview(id) {                                                                                    // clique simples → ATIVA a cena pra montar no PREVIEW (fora do ar)
     const sc = load().find(x => x.id === id); if (!sc) return;
     previewId = id;
     if (sc.program != null && window.Studio && window.Studio.setPreview) window.Studio.setPreview(sc.program);
-    if (G() && G().setPreviewScene) G().setPreviewScene(id);
-    render(); toast('◐ "' + sc.name + '" no PREVIEW');
+    if (G() && G().setPreviewScene) G().setPreviewScene(id);                                                      // camadas novas entram NA CENA (graphics.js usa previewScene)
+    render(); toast('● CENA "' + sc.name + '" ATIVADA — monte no PREVIEW, depois Salvar');
+  }
+  // volta pro "preview simples" (sem cena ativa): montagem solta, staging
+  function freePreview() {
+    previewId = null;
+    if (G() && G().setPreviewScene) { const cur = G().getPreviewScene && G().getPreviewScene(); if (!cur || !/^__prev/.test(cur)) G().setPreviewScene('__prev0__'); }
+    render(); toast('Preview livre (sem cena) — montagem solta.');
   }
   function takeToAir() {                                                                                          // TAKE: preview → programa
     if (!previewId) return toast('Clique numa cena pra carregar no PREVIEW primeiro');
@@ -542,15 +548,17 @@
   }
 
   // ===== etapa 4: tocar a timeline NO AR (sincronizada com o tempo do vídeo do PROGRAM) =====
-  let airRaf = 0, airOn = false;
+  let airRaf = 0, airOn = false, _airLast = 0;
   function sceneHasAnim(id) {
     if (!G().listForScene) return false;
     const list = G().listForScene(id).concat(G().globals ? G().globals() : []);
     return list.some(o => { const a = o.data && o.data.anim; return a && ((a.keys && a.keys.length) || a.tout != null || a.fin || a.fout); });
   }
-  function airLoop() {
+  function airLoop(ts) {
     airRaf = requestAnimationFrame(airLoop);
     if (modalScene) return;                                   // editor aberto = ele controla o tempo
+    if (ts && _airLast && ts - _airLast < 40) return;         // ~25fps: a 60fps fazia JSON.parse do localStorage A CADA frame e travava
+    _airLast = ts || 0;
     if (!activeId || !sceneHasAnim(activeId)) { if (airOn) { if (G().clearTime) G().clearTime(); airOn = false; } return; }
     const sc = load().find(x => x.id === activeId);
     const v = (sc && window.Studio.mediaElFor) ? window.Studio.mediaElFor(sc.program) : null;
@@ -563,7 +571,7 @@
     const t = el('span', 'lp-thumb');
     if (o.type === 'image' && o.data && o.data.src) { const im = document.createElement('img'); im.src = o.data.src; t.appendChild(im); }
     else if (o.type === 'template' && o.data && o.data.art) { const im = document.createElement('img'); im.src = o.data.art; t.appendChild(im); }
-    else { t.classList.add('lp-th-ic'); t.textContent = (o.type === 'video') ? (o.data && o.data.device != null ? '📷' : '🎬') : o.type === 'text' ? 'Aa' : o.type === 'scoreboard' ? '🏆' : o.type === 'ticker' ? '▭' : o.type === 'slideshow' ? '🎞' : o.type === 'template' ? '🖼' : '▦'; if (o.type === 'text' && o.data && o.data.color) t.style.color = o.data.color; }
+    else { t.classList.add('lp-th-ic'); const tn = (o.type === 'video') ? (o.data && o.data.device != null ? 'camera' : 'video') : o.type === 'text' ? 'text' : o.type === 'scoreboard' ? 'trophy' : o.type === 'ticker' ? 'ticker' : o.type === 'slideshow' ? 'slideshow' : o.type === 'template' ? 'template' : 'image'; t.innerHTML = window.kicon ? kicon(tn) : '▦'; if (o.type === 'text' && o.data && o.data.color) t.style.color = o.data.color; }
     return t;
   }
   function bindRowDrag(row, o, sc, modal, listWrap) {
@@ -632,6 +640,7 @@
     if (!host) return; const list = load(); host.innerHTML = '';
     const add = el('button', 'btn-soft fb-prim sc-save', '+ Nova cena'); add.onclick = newScene; host.appendChild(add);
     const sv = el('button', 'btn-soft sc-savebtn', '＋ Salvar preview como cena'); sv.title = 'Salva as camadas montadas no PREVIEW como uma cena'; sv.onclick = saveAsScene; host.appendChild(sv);
+    if (previewId) { const fp = el('button', 'btn-soft sc-freebtn', '⟲ Preview livre (sem cena)'); fp.title = 'Sai do modo cena — montagem solta no preview'; fp.onclick = freePreview; host.appendChild(fp); }
     if (!list.length) { host.appendChild(el('div', 'lp-empty', 'Monte no PREVIEW (arraste da Biblioteca) e clique “Salvar preview como cena”. Ou “+ Nova cena” pra montar do zero. Clique no chip = preview · 2 cliques = editor · 📡 = no ar.')); return; }
     const grid = el('div', 'sc-grid');
     list.forEach(s => {
@@ -640,7 +649,7 @@
       const chip = el('div', 'sc-chip' + (onair ? ' active' : '') + (s.id === previewId ? ' preview' : ''));
       const go = el('button', 'sc-go', s.name); go.title = 'Clique: ver no PREVIEW · Duplo-clique: abrir o editor';
       let ct = null;
-      go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => loadToPreview(s.id), 230); };
+      go.onclick = () => { clearTimeout(ct); ct = setTimeout(() => { if (previewId === s.id) freePreview(); else loadToPreview(s.id); }, 230); };   // clicar na cena ativa = desativar
       go.ondblclick = () => { clearTimeout(ct); editScene(s.id); };
       // NÚMERO da cena — clique cicla 1-9 (marca pros pads/teclas), único entre cenas
       const hk = el('button', 'sc-hk' + (s.hotkey ? ' set' : ''), s.hotkey ? String(s.hotkey) : '#');
@@ -660,13 +669,14 @@
         if (activeId === s.id) setActive(null, false);
         render();
       };
-      chip.append(go, hk, air, ed, ren, x); wrap.appendChild(chip);
+      const acts = el('div', 'sc-acts'); acts.append(hk, air, ed, ren, x);
+      chip.append(go, acts); wrap.appendChild(chip);
       grid.appendChild(wrap);
     });
     host.appendChild(grid);
   }
 
-  window.Scenes = { list: () => load(), apply: id => selectScene(id), air: id => { if (activeId === id) airOff(); else setActive(id, true); render(); }, preview: id => loadToPreview(id), active: () => activeId, previewId: () => previewId, render: () => render() };
+  window.Scenes = { list: () => load(), apply: id => selectScene(id), air: id => { if (activeId === id) airOff(); else setActive(id, true); render(); }, preview: id => loadToPreview(id), free: () => freePreview(), active: () => activeId, previewId: () => previewId, render: () => render() };
 
   function autoSave() {
     if (!activeId) return;

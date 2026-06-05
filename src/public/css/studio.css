@@ -46,6 +46,7 @@ body.nav-collapsed .nav-sec{font-size:0;letter-spacing:0;padding:0;height:1px;ma
 .dtop{grid-area:top;display:flex;align-items:center;gap:24px;padding:0 18px;
   background:linear-gradient(180deg,var(--chrome2),var(--chrome));border-bottom:1px solid var(--line)}
 .dtop .brand{font-size:16px}
+.dtop-right{margin-left:auto}   /* cluster direito do topo fica à direita (as infos do PC saíram do topo p/ a barra de baixo) */
 .brand-sub{font-size:9px;letter-spacing:.22em;color:var(--muted);display:block;margin-top:1px}
 .tstats{display:flex;align-items:center;gap:16px;margin:0 auto}
 .tstat{display:flex;align-items:center;gap:8px}
@@ -222,6 +223,20 @@ body.nav-collapsed .nav-sec{font-size:0;letter-spacing:0;padding:0;height:1px;ma
 .perf .v{font-size:13px;font-weight:700}
 .perf .v.ok{color:var(--ok)}
 .ver{margin-left:auto;font-size:11px;color:var(--muted)}
+/* infos do PC (CPU/GPU/FPS/REC/STREAM) agora pequenas na barra de baixo */
+.perfbar .tstats{display:flex;align-items:center;gap:13px;margin:0}
+.perfbar .tstat{display:flex;align-items:center;gap:5px}
+.perfbar .tstat .k{font-size:9px;letter-spacing:.1em;color:var(--muted);display:inline}
+.perfbar .tstat .v{font-size:12px;font-weight:700}
+.perfbar .tstat canvas{display:block;width:34px;height:14px;opacity:.85}
+.perfbar .tstat .dot{width:7px;height:7px;border-radius:50%;background:#444}
+.perfbar .tstat .dot.rec{background:var(--bad)} .perfbar .tstat .dot.stream{background:var(--accent)}
+.perfbar .tsep{width:1px;height:18px;background:var(--line)}
+/* ícones SVG de traço (helper kicon) — herdam currentColor, padrão NOVODESIGN/sitelocal */
+.kic{display:inline-block;vertical-align:middle;width:15px;height:15px}
+.lp-mini .kic,.lp-x .kic{width:13px;height:13px}
+.ov-tools-bar button .kic,.crop-btn .kic{width:15px;height:15px}
+.lp-th-ic .kic{width:18px;height:18px}
 
 /* ---- animacoes de entrada (fade + slide) ---- */
 @keyframes fx-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}

@@ -59,7 +59,7 @@ function makeTile(id, kind, label, removable) {
   });
   // convidados remotos (celular/WebRTC) vão pro grid REMOTOS; o resto fica nos LOCAIS
   const rg = (kind === 'phone') ? document.getElementById('remotosGrid') : null;
-  if (rg) { f.classList.add('fcard-remote'); rg.appendChild(f); } else fontesGrid.insertBefore(f, $('addCard'));
+  if (rg) { f.classList.add('fcard-remote'); rg.appendChild(f); } else fontesGrid.appendChild(f);   // fontes entram DEPOIS do quadro "+ Adicionar fonte"
   if (window.Guests && window.Guests.refresh) window.Guests.refresh();
   const c = elc('div', 'mvcell fx-pop'); c.dataset.id = id;
   c.innerHTML = '<video autoplay playsinline muted></video>' + `<span class="n">${label}</span>`;
@@ -77,7 +77,7 @@ function wirePreviewDrop() {
   _previewDropWired = true;
   mon.addEventListener('dragover', e => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {} mon.classList.add('drop-hot'); });
   mon.addEventListener('dragleave', e => { if (!e.relatedTarget || !mon.contains(e.relatedTarget)) mon.classList.remove('drop-hot'); });
-  mon.addEventListener('drop', e => { e.preventDefault(); mon.classList.remove('drop-hot'); const id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || ''; if (id) dropSourceAsLayer(id); });
+  mon.addEventListener('drop', e => { e.preventDefault(); mon.classList.remove('drop-hot'); const id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || ''; if (id) { if (window.Grid && window.Grid.fillSlotAt && window.Grid.fillSlotAt(e.clientX, e.clientY, id)) return; dropSourceAsLayer(id); } });
 }
 // fonte da biblioteca → CAMADA. UM caminho só: delega pro Biblioteca.addLayer
 // (garante a cena de preview, vídeo entra tela cheia, imagem vira logo, seleciona).
@@ -86,7 +86,7 @@ function dropSourceAsLayer(id) {
   const B = window.Biblioteca, Gd = window.Graphics;
   const isImg = s.kind === 'image' || (s.url && /^data:image|\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(s.url));
   // vídeo de ARQUIVO (tem url) → a camada toca o arquivo DIRETO (confiável). Câmera ao vivo (webcam/celular) → usa o stream.
-  const isVidFile = !isImg && !!s.url && (s.kind === 'video' || s.kind === 'playlist' || s.kind === 'replay' || /\.(mp4|webm|ogg|ogv|mov|m4v|mkv)(\?|#|$)/i.test(s.url));
+  const isVidFile = !isImg && !!s.url && s.kind !== 'youtube';   // qualquer arquivo (não-imagem, não-youtube) toca direto
   // DEDUP: se essa fonte/mídia já é camada, só seleciona (não duplica). Duplicar = botão no painel Camadas.
   if (Gd && Gd.list) { const ex = Gd.list().find(o => o.data && (o.data.sourceId === id || ((isImg || isVidFile) && s.url && o.data.src === s.url))); if (ex) { if (Gd.select) Gd.select(ex.id); try { window.SoundFX && window.SoundFX.click(); } catch (e) {} return; } }
   if (B && B.addLayer) {
@@ -264,7 +264,8 @@ function updateComposerState() {
   const live = !!(ov && ov.visible !== false);
   state.classList.toggle('is-live', live);
   state.textContent = live ? 'Overlay Composer no PROGRAM' : 'Overlay pronto em /composer/overlay.html';
-  if (btn) btn.textContent = live ? 'Atualizar overlay na Live' : 'Enviar overlay para Live';
+  if (btn) btn.textContent = live ? 'Tirar overlay da Live' : 'Enviar overlay para Live';
+  if (btn) btn.classList.toggle('on', live);
 }
 function openComposer() {
   window.open(COMPOSER_URL, 'kivo_composer');
@@ -294,10 +295,15 @@ function hideComposerOverlay() {
   updateComposerState();
   toast('Overlay do Composer ocultado.');
 }
+// 1 botão = toggle: no ar → tira; fora → envia (regra "tudo que ativa, desativa")
+function toggleComposerOverlay() {
+  const ov = composerOverlay();
+  if (ov && ov.visible !== false) hideComposerOverlay(); else ensureComposerOverlay();
+}
 function bindComposerBridge() {
   $('btnComposer')?.addEventListener('click', openComposer);
   $('composerOpenBtn')?.addEventListener('click', openComposer);
-  $('composerAirBtn')?.addEventListener('click', ensureComposerOverlay);
+  $('composerAirBtn')?.addEventListener('click', toggleComposerOverlay);
   $('composerHideBtn')?.addEventListener('click', hideComposerOverlay);
   const waitGraphics = () => {
     if (window.Graphics && window.Graphics.onChange) {
@@ -367,9 +373,19 @@ function addVideoFile(file) {
   let mixNode = null;
   try { const ch = window.Mixer && window.Mixer.addMediaElement && window.Mixer.addMediaElement(v, file.name, e.color); mixNode = ch && ch.node; } catch {}
   e.mixNode = mixNode;
-  e.cleanup = () => { try { e.canvasStop && e.canvasStop(); } catch {} URL.revokeObjectURL(url); if (mixNode && window.Mixer && window.Mixer.removeChannelByNode) try { window.Mixer.removeChannelByNode(mixNode); } catch {} };
+  e.cleanup = () => {
+    try { e.canvasStop && e.canvasStop(); } catch {}
+    // REF-COUNT: a camada de vídeo de arquivo copia esta blob URL pra data.src. Se a fonte for
+    // removida e a gente revogar a URL, a camada que ainda a referencia vira TELA PRETA no próximo
+    // repaint. Então só revoga quando NENHUMA camada do Graphics depende mais dela.
+    let used = false;
+    try { used = !!(window.Graphics && window.Graphics.list && window.Graphics.list().some(o => o && o.data && o.data.src === url)); } catch {}
+    if (!used) { try { URL.revokeObjectURL(url); } catch {} }
+    if (mixNode && window.Mixer && window.Mixer.removeChannelByNode) try { window.Mixer.removeChannelByNode(mixNode); } catch {}
+  };
   const apply = () => { if (e.canvasStop) return; const cv = canvasStream(v); e.canvasStop = cv.stop; setStream(id, cv.stream); v.play && v.play().catch(() => {}); }; // só vídeo na fonte; áudio é do mixer
   if (v.readyState >= 2) apply(); else v.addEventListener('loadeddata', apply, { once: true });
+  return id;
 }
 
 // PLAYLIST DE VÍDEOS — DOIS DECKS:
@@ -525,10 +541,15 @@ async function addChromaSource() {
   const cv = elc('canvas'); cv.width = 1280; cv.height = 720; const ctx = cv.getContext('2d');
   const tmp = elc('canvas'); tmp.width = 1280; tmp.height = 720; const tctx = tmp.getContext('2d', { willReadFrequently: true });
   e.chroma = { bg: '#0b1220' }; // fundo (pode virar imagem depois)
-  let raf = 0, stopped = false;
-  function frame() {
+  let raf = 0, stopped = false, _clast = 0;
+  function frame(ts) {
     if (stopped) return;
-    if (v.videoWidth) {
+    raf = requestAnimationFrame(frame);
+    if (ts && _clast && ts - _clast < 33) return;   // ~30fps: a 60 (rAF puro) era desperdício e travava a UI
+    _clast = ts || 0;
+    if (!v.videoWidth) return;
+    const live = (programId === id || previewId === id);   // só recorta o verde quando a câmera está no ar/preview
+    if (live) {
       tctx.drawImage(v, 0, 0, cv.width, cv.height);
       let img; try { img = tctx.getImageData(0, 0, cv.width, cv.height); } catch { img = null; }
       if (img) {
@@ -537,8 +558,7 @@ async function addChromaSource() {
         ctx.fillStyle = e.chroma.bg; ctx.fillRect(0, 0, cv.width, cv.height);
         tctx.putImageData(img, 0, 0); ctx.drawImage(tmp, 0, 0);
       } else ctx.drawImage(v, 0, 0, cv.width, cv.height);
-    }
-    raf = requestAnimationFrame(frame);
+    } else ctx.drawImage(v, 0, 0, cv.width, cv.height);   // ocioso: só passa a imagem (sem o loop de 921k pixels)
   }
   v.addEventListener('loadeddata', () => { if (!raf) frame(); });
   e.mediaEl = cv;
@@ -718,14 +738,14 @@ function attachProgram(id) {
   positionYouTube();
 }
 function take() {   // TAKE = publica o PREVIEW no PROGRAMA (camadas onPrev→onPgm) + troca o vídeo-base (legado)
-  if (window.Graphics && window.Graphics.commitPreviewToProgram) window.Graphics.commitPreviewToProgram(localStorage.getItem('sl-take-clear') === '1');
+  const clear = localStorage.getItem('sl-take-clear') === '1';
+  if (window.Graphics && window.Graphics.commitPreviewToProgram) window.Graphics.commitPreviewToProgram(clear);   // modelo unificado: TODAS as camadas (Biblioteca/Grelha/Pads) são padManaged → commit aplica pv→ao vivo e onPrev→onPgm
   if (!previewId) { refreshButtons(); return; }
   const newProg = previewId, oldProg = programId;
   setProgram(newProg);                                           // muteVideoChannel já pausa o ex-programa
   const ne = sources.get(newProg);
   if (ne && ne.mediaEl && ne.mediaEl.paused) ne.mediaEl.play().catch(() => {});  // garante o novo no ar TOCANDO
   if (oldProg && oldProg !== newProg) setPreview(oldProg);       // SWAP: ex-programa → preview (fica pausado/congelado)
-  if (window.Graphics && window.Graphics.takeOverlays && window.Graphics.getPreviewScene && window.Graphics.getPreviewScene() != null) window.Graphics.takeOverlays(localStorage.getItem('sl-take-clear') === '1');
 }
 // TAKE + Play: manda pro ar JÁ TOCANDO, com áudio (desmuta) e vídeo (play)
 function takeAutoPlay() {
@@ -747,7 +767,13 @@ function crossfade(id) {
   requestAnimationFrame(() => requestAnimationFrame(() => { programVideoB.style.opacity = '1'; }));
   setTimeout(() => { setProgram(id); programVideoB.style.opacity = '0'; programVideoB.srcObject = null; }, 600);
 }
-function fadeTake() { if (window.Graphics && window.Graphics.commitPreviewToProgram) window.Graphics.commitPreviewToProgram(localStorage.getItem('sl-take-clear') === '1'); if (previewId) crossfade(previewId); }
+function fadeTake() {
+  if (window.Graphics && window.Graphics.commitPreviewToProgram) window.Graphics.commitPreviewToProgram(localStorage.getItem('sl-take-clear') === '1');
+  if (!previewId) { refreshButtons(); return; }
+  const oldProg = programId, newProg = previewId;
+  crossfade(newProg);
+  if (oldProg && oldProg !== newProg) setPreview(oldProg);   // SWAP: ex-programa → preview (igual ao TAKE)
+}
 // pôr uma fonte no ar COM transição suave (fundido) + já tocando e com áudio (pro player flutuante)
 function crossfadeAir(id) {
   if (!sources.has(id)) return;
@@ -777,6 +803,9 @@ function positionCropHandles(c) {
 function bindCropUI() {
   const ui = $('cropUI'), mon = $('previewMon'); if (!ui || !mon) return;
   $('cropBtn')?.addEventListener('click', () => {
+    // "tudo é camada": se há uma camada selecionada, corta ELA (corte Photoshop bom). Senão, corte de fonte (legado).
+    const g = window.Graphics; const sel = g && g.selected ? g.selected() : null;
+    if (sel != null && window.Biblioteca && window.Biblioteca.crop) { window.Biblioteca.crop(sel); return; }
     if (!previewId && !document.body.classList.contains('crop-mode')) return;
     const on = document.body.classList.toggle('crop-mode');
     $('cropBtn').classList.toggle('on', on);
@@ -890,7 +919,7 @@ $('autoBtn').onclick = fadeTake;
 $('ftbBtn').onclick = ftb;
 // botões TAKE/CUT ligam/desligam conforme há conteúdo no PREVIEW (camadas onPrev).
 // studio.js carrega ANTES do graphics.js → espera o motor existir pra inscrever.
-(function hookButtons() { if (window.Graphics && window.Graphics.onChange) { window.Graphics.onChange(refreshButtons); refreshButtons(); } else setTimeout(hookButtons, 150); })();
+(function hookButtons() { if (window.Graphics && window.Graphics.onChange) { window.Graphics.onChange(refreshButtons); window.Graphics.onChange(updateMediaBar); refreshButtons(); } else setTimeout(hookButtons, 150); })();
 // T-BAR: arrasta a barrinha de ponta a ponta = TAKE (fade); soltar antes do fim cancela
 (function wireTBar() {
   const bar = document.querySelector('.switch .tbar'); if (!bar) return; const knob = bar.querySelector('i'); if (!knob) return;
@@ -906,7 +935,8 @@ $('ftbBtn').onclick = ftb;
   const add = elc('div', 'fcard addcard'); add.id = 'addCard';
   add.innerHTML = '<div class="addcard-inner"><span class="plus">+</span><span>Adicionar fonte</span></div>';
   add.addEventListener('click', openAddMenu);
-  fontesGrid.appendChild(add);
+  fontesGrid.prepend(add);   // o quadro "+ Adicionar fonte" fica no TOPO da LOCAIS (sempre visível)
+  $('addFonteBtn') && $('addFonteBtn').addEventListener('click', openAddMenu);
   bindComposerBridge();
   bindMediaBar();
   bindCropUI();
@@ -925,24 +955,55 @@ const fmtT = (s) => { s = Math.floor(s) || 0; return Math.floor(s / 60) + ':' + 
 // controllers unificados pros dois tipos de mídia
 function videoCtl(v) { return { play: () => v.play().catch(() => {}), pause: () => v.pause(), paused: () => v.paused, time: () => v.currentTime || 0, dur: () => v.duration || 0, seek: (f) => { if (v.duration) v.currentTime = v.duration * f; }, muted: () => v.muted, toggleMute: () => { v.muted = !v.muted; }, loopable: true, loop: () => v.loop, toggleLoop: () => { v.loop = !v.loop; } }; }
 function ytCtl(h) { return { play: () => h.play(), pause: () => h.pause(), paused: () => h.paused(), time: () => h.time(), dur: () => h.duration(), seek: (f) => h.seek(f), muted: () => h.muted(), toggleMute: () => { h.muted() ? h.unmute() : h.mute(); }, loopable: false, loop: () => false, toggleLoop: () => {} }; }
+// controlador da CAMADA de vídeo selecionada (modelo "tudo é camada"): mexe nos DOIS gêmeos (preview + program) em sincronia
+function overlayVidCtl(o) {
+  const vp = o.elv && o.elv.querySelector('video');
+  const vl = o.el && o.el.querySelector('video');
+  const ref = vp || vl; if (!ref) return null;                 // tempo/estado lê do gêmeo do PREVIEW
+  const both = [vp, vl].filter(Boolean);
+  return {
+    play: () => both.forEach(v => v.play && v.play().catch(() => {})),
+    pause: () => both.forEach(v => { try { v.pause(); } catch (e) {} }),
+    paused: () => ref.paused,
+    time: () => ref.currentTime || 0,
+    dur: () => (isFinite(ref.duration) ? ref.duration : 0),
+    seek: (f) => { if (isFinite(ref.duration)) both.forEach(v => { try { v.currentTime = ref.duration * f; } catch (e) {} }); },
+    muted: () => ref.muted,
+    toggleMute: () => { const m = !ref.muted; both.forEach(v => v.muted = m); },
+    loopable: true, loop: () => ref.loop, toggleLoop: () => { const l = !ref.loop; both.forEach(v => v.loop = l); },
+    isOverlay: true
+  };
+}
 function bindMediaBar() {
   if (!$('mediaBar')) return;
+  const seekSec = (s) => { if (!mediaCur) return; const d = mediaCur.dur(); if (d > 0) mediaCur.seek(Math.max(0, Math.min(1, s / d))); };
   $('mPlay').onclick = () => { if (mediaCur) (mediaCur.paused() ? mediaCur.play() : mediaCur.pause()); };
+  $('mStart') && ($('mStart').onclick = () => { if (mediaCur) mediaCur.seek(0); });                                  // voltar ao começo
+  $('mBack') && ($('mBack').onclick = () => { if (mediaCur) seekSec(mediaCur.time() - 10); });                        // -10s
+  $('mFwd') && ($('mFwd').onclick = () => { if (mediaCur) seekSec(mediaCur.time() + 10); });                          // +10s
+  $('mHold') && ($('mHold').onclick = () => { if (mediaCur) { mediaCur.seek(0); mediaCur.pause(); toast('Vídeo em espera — pronto pro TAKE.'); } });   // voltar + pausar (standby)
   $('mMute').onclick = () => { if (mediaCur) { mediaCur.toggleMute(); $('mMute').innerHTML = mediaCur.muted() ? '&#128263;' : '&#128266;'; } };
   $('mLoop').onclick = () => { if (mediaCur) { mediaCur.toggleLoop(); $('mLoop').classList.toggle('on', mediaCur.loop()); } };
   let seeking = false;
   $('mSeek').oninput = () => { seeking = true; };
   $('mSeek').onchange = () => { if (mediaCur) mediaCur.seek($('mSeek').value / 1000); seeking = false; };
-  setInterval(() => { if (!mediaCur) return; const d = mediaCur.dur(), c = mediaCur.time(); if (!seeking && d) $('mSeek').value = Math.round(c / d * 1000); $('mTime').textContent = fmtT(c) + ' / ' + fmtT(d); $('mPlay').innerHTML = mediaCur.paused() ? '&#9654;' : '&#9208;'; }, 400);
+  setInterval(() => { if (!mediaCur) { return; } const d = mediaCur.dur(), c = mediaCur.time(); if (!seeking && d) $('mSeek').value = Math.round(c / d * 1000); $('mTime').textContent = fmtT(c) + ' / ' + fmtT(d); $('mPlay').innerHTML = mediaCur.paused() ? '&#9654;' : '&#9208;'; }, 300);
 }
 function updateMediaBar() {
-  const e = previewId && sources.get(previewId), bar = $('mediaBar');
-  if (!bar) return;
-  let ctl = null;
-  if (e && e.kind === 'youtube' && e.yt) ctl = ytCtl(e.yt);
-  else if (e && e.mediaEl) ctl = videoCtl(e.mediaEl); // vídeo (arquivo/URL) no PREVIEW também tem controle (play/seek antes do ar)
+  const bar = $('mediaBar'); if (!bar) return;
+  const e = previewId && sources.get(previewId);
+  let ctl = null, name = '', where = 'PREVIEW';
+  if (e && e.kind === 'youtube' && e.yt) { ctl = ytCtl(e.yt); name = e.label; }
+  else if (e && e.mediaEl) { ctl = videoCtl(e.mediaEl); name = e.label; } // vídeo (arquivo/URL) no PREVIEW também tem controle
+  else {                                                                   // senão: a CAMADA de vídeo selecionada
+    try {
+      const G = window.Graphics, sel = G && G.selected ? G.selected() : null;
+      const o = (sel != null && G.get) ? G.get(sel) : null;
+      if (o && o.type === 'video') { const c = overlayVidCtl(o); if (c) { ctl = c; name = (o.data && o.data.label) || 'Vídeo'; where = (o.data && o.data.onPgm) ? 'NO AR' : 'PREVIEW'; } }
+    } catch (err) {}
+  }
   mediaCur = ctl;
-  if (ctl) { bar.classList.remove('is-hidden'); $('mName').textContent = e.label; $('mLoop').style.display = ctl.loopable ? '' : 'none'; $('mMute').innerHTML = ctl.muted() ? '&#128263;' : '&#128266;'; }
+  if (ctl) { bar.classList.remove('is-hidden'); $('mName').textContent = name; const w = $('mWhere'); if (w) { w.textContent = where; w.classList.toggle('on-air', where === 'NO AR'); } $('mLoop').style.display = ctl.loopable ? '' : 'none'; $('mMute').innerHTML = ctl.muted() ? '&#128263;' : '&#128266;'; }
   else bar.classList.add('is-hidden');
 }
 // vídeo por URL direta (.mp4/.webm) -> fonte real
@@ -1041,6 +1102,9 @@ document.addEventListener('keydown', (e) => {
     // vMix: o número faz "recall" do slot n. Sem Shift = AO VIVO (PROGRAM) · com Shift = PREVIEW.
     if (window.Pads) { if (e.shiftKey ? window.Pads.firePrev(n) : window.Pads.fireAir(n)) return; }
     const i = n - 1; if (ids[i]) setProgram(ids[i]); // senão, corta direto pra fonte N (legado)
+  } else if (e.key === 'c' || e.key === 'C') {   // C = cortar a camada selecionada (estilo Photoshop)
+    const sel = window.Graphics && window.Graphics.selected && window.Graphics.selected();
+    if (sel != null && window.Biblioteca && window.Biblioteca.crop) { e.preventDefault(); window.Biblioteca.crop(sel); }
   } else if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault(); take();
   } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
