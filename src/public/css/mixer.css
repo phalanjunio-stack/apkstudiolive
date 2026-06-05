@@ -49,9 +49,10 @@
 
 /* S / M / fone */
 .ch-btns{display:flex;gap:4px}
-.cb{width:21px;height:21px;border-radius:5px;border:1px solid #1b2740;background:#0f1622;color:#7e8db0;
+.cb{width:21px;height:21px;border-radius:5px;border:1px solid #1b2740;background:#0f1622;color:#eef3ff;
   font-size:10px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .13s var(--ease-out)}
 .cb:hover{border-color:var(--accent)}
-.cb.s.on{background:#2ecc71;color:#04210f;border-color:#2ecc71}
-.cb.m.on{background:#ff4d4f;color:#2a0708;border-color:#ff4d4f}
+/* SOLO ligado = tudo VERDE, letra preta · MUDO ligado = tudo VERMELHO, M branco (!important p/ vencer o tema escuro) */
+.cb.s.on{background:#22c55e!important;color:#05210f!important;border-color:#22c55e!important}
+.cb.m.on{background:#ff3b3b!important;color:#fff!important;border-color:#ff3b3b!important}
 .cb.fone.on{background:#1a8cff;color:#fff;border-color:#1a8cff;box-shadow:0 0 10px rgba(26,140,255,.6)}
