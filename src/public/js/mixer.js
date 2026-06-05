@@ -16,8 +16,18 @@ const Mixer = (function () {
     monitorBus = ac.createGain(); monitorBus.connect(ac.destination);
     progMon = ac.createGain(); progMon.gain.value = 1; masterGain.connect(progMon); progMon.connect(monitorBus);
     masterAn = ac.createAnalyser(); masterAn.fftSize = 512; masterData = new Uint8Array(masterAn.fftSize); masterGain.connect(masterAn);
+    try { const sv = localStorage.getItem('sl-mon-out'); if (sv && ac.setSinkId) ac.setSinkId(sv).catch(() => {}); } catch (e) {}   // restaura a saída do fone escolhida
     loop();
   }
+  // ---- dispositivos de áudio (entrada/saída) p/ a tela de Configurações ----
+  async function listAudioDevices() {
+    try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); s.getTracks().forEach(t => t.stop()); } catch (e) {}
+    let all = []; try { all = await navigator.mediaDevices.enumerateDevices(); } catch (e) {}
+    return { inputs: all.filter(d => d.kind === 'audioinput'), outputs: all.filter(d => d.kind === 'audiooutput') };
+  }
+  async function setMonitorOutput(deviceId) { ensureAC(); try { localStorage.setItem('sl-mon-out', deviceId || ''); } catch (e) {} try { if (ac.setSinkId) { await ac.setSinkId(deviceId || ''); return true; } } catch (e) {} return false; }
+  function getMonitorOutput() { try { return localStorage.getItem('sl-mon-out') || ''; } catch (e) { return ''; } }
+  function monitorOutputSupported() { try { ensureAC(); return typeof ac.setSinkId === 'function'; } catch (e) { return false; } }
   function resume() { if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); }
 
   function addChannel(node, kind, label, color) {
@@ -223,7 +233,7 @@ const Mixer = (function () {
   function getMasterMon() { return masterMon; }
   function monitorByLabel(label, b) { const c = channels.find(c => c.label === label); if (!c) return null; c.monitor = (b == null) ? !c.monitor : !!b; applyMix(); render(); return c.monitor; }
   function getMonitorByLabel(label) { const c = channels.find(c => c.label === label); return c ? !!c.monitor : false; }
-  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, toggleMasterMon, getMasterMon, monitorByLabel, getMonitorByLabel, get programStream() { return programDest ? programDest.stream : null; } };
+  return { addMic, addDesktop, addMusic, ensureMusic, addStreamAudio, addMediaElement, removeChannel, removeChannelByNode, flashChannel, selectChannel, setChannelMuted, boot, toggleMasterMon, getMasterMon, monitorByLabel, getMonitorByLabel, listAudioDevices, setMonitorOutput, getMonitorOutput, monitorOutputSupported, get programStream() { return programDest ? programDest.stream : null; } };
 })();
 window.Mixer = Mixer;
 Mixer.boot();
