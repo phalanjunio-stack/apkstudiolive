@@ -129,23 +129,21 @@
       </div>
 
       <div class="media-bar is-hidden" id="mediaBar">
+        <div class="mb-mode">
+          <button id="mModePrev" class="mb-modebtn on" title="Controlar o PREVIEW">PREVIEW</button>
+          <button id="mModeAir" class="mb-modebtn" title="Controlar o AO VIVO">AO VIVO</button>
+        </div>
         <span class="mb-name" id="mName"></span>
-        <div class="mb-ctl mb-ctl-prev">
-          <span class="mb-tag">PREVIEW</span>
-          <button id="mpStart" class="mb-btn" title="Voltar ao começo">&#9198;</button>
-          <button id="mpPlay" class="mb-btn mb-play" title="Tocar / pausar no PREVIEW">&#9654;</button>
-          <input type="range" id="mpSeek" min="0" max="1000" value="0" class="mb-seek">
-          <span id="mpTime" class="mb-time">0:00 / 0:00</span>
+        <div class="mb-transport">
+          <button id="mStandby" class="mb-btn" title="Voltar ao início (deixa em espera)"></button>
+          <button id="mBack" class="mb-btn" title="Voltar 10s"></button>
+          <button id="mPlay" class="mb-btn mb-play" title="Tocar / pausar"></button>
+          <button id="mFwd" class="mb-btn" title="Avançar 10s"></button>
         </div>
-        <div class="mb-ctl mb-ctl-air">
-          <span class="mb-tag">AO VIVO</span>
-          <button id="maStart" class="mb-btn" title="Voltar ao começo">&#9198;</button>
-          <button id="maPlay" class="mb-btn mb-play" title="Tocar / pausar no AR">&#9654;</button>
-          <input type="range" id="maSeek" min="0" max="1000" value="0" class="mb-seek">
-          <span id="maTime" class="mb-time">0:00 / 0:00</span>
-        </div>
-        <button id="mMute" class="mb-btn" title="Mudo / som">&#128266;</button>
-        <button id="mLoop" class="mb-btn" title="Repetir (loop)">Loop</button>
+        <div class="mb-seek" id="mSeek" title="Arraste pra navegar"><div class="mb-fill" id="mFill"></div></div>
+        <span id="mTime" class="mb-time">0:00 / 0:00</span>
+        <button id="mMute" class="mb-btn mb-volbtn" title="Mudo / som"></button>
+        <input type="range" id="mVol" class="mb-vol" min="0" max="100" value="100" title="Volume">
       </div>
 
       <div class="fontes biblioteca">
