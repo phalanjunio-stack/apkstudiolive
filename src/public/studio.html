@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="/css/switcher.css" />
   <link rel="stylesheet" href="/css/grid.css" />
   <link rel="stylesheet" href="/css/macro.css" />
+  <link rel="stylesheet" href="/css/guests.css" />
   <link rel="stylesheet" href="/css/theme-modern.css" />
   <script src="/js/theme.js"></script>
   <style>
@@ -187,10 +188,19 @@
 
       <div class="fontes biblioteca">
         <div class="sec-head">BIBLIOTECA <span class="kbd-hint">arraste pro PREVIEW &rarr; vira camada &middot; clique = preview &middot; 1&ndash;9 cortam</span></div>
+        <button class="lib-invite" id="copyKivoLink" type="button" title="Copia o link pro convidado entrar com câmera/microfone (mesma rede). Cola no WhatsApp/Telegram.">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Copiar Link Kivo (Convite)
+        </button>
         <div class="lib-sub">Logos &amp; imagens <button class="lib-importbtn" id="libImport" type="button">+ importar</button></div>
         <div class="lib-assets" id="libAssets"></div>
-        <div class="lib-sub">C&acirc;meras &amp; m&iacute;dia</div>
+        <div class="lib-sub">Locais (est&uacute;dio)</div>
         <div class="fontes-grid" id="fontesGrid"></div>
+        <div class="lib-sub lib-remote-head" id="remotosHead" hidden>
+          <span class="lib-remote-dot"></span> Kivo Link (remotos)
+          <span class="lib-online" id="remotosCount">0 online</span>
+        </div>
+        <div class="fontes-grid" id="remotosGrid"></div>
       </div>
 
       <div class="lower">
@@ -336,6 +346,7 @@
   <script src="/js/grid.js"></script>
   <script src="/js/switcher.js"></script>
   <script src="/js/macro.js"></script>
+  <script src="/js/guests.js"></script>
   <script src="/js/profile.js"></script>
   <script src="/js/stream.js"></script>
   <script src="/js/livemode.js"></script>

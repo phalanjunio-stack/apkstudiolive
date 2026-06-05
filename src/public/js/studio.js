@@ -56,7 +56,10 @@ function makeTile(id, kind, label, removable) {
     if (s.kind === 'playlist') { if (window.VideoFloat && window.VideoFloat.open) window.VideoFloat.open(); else if (window.openPlaylistModal) window.openPlaylistModal('video'); }
     else if (s.url && window.openAudition) window.openAudition(s.url, s.label, true);
   });
-  fontesGrid.insertBefore(f, $('addCard'));
+  // convidados remotos (celular/WebRTC) vão pro grid REMOTOS; o resto fica nos LOCAIS
+  const rg = (kind === 'phone') ? document.getElementById('remotosGrid') : null;
+  if (rg) { f.classList.add('fcard-remote'); rg.appendChild(f); } else fontesGrid.insertBefore(f, $('addCard'));
+  if (window.Guests && window.Guests.refresh) window.Guests.refresh();
   const c = elc('div', 'mvcell fx-pop'); c.dataset.id = id;
   c.innerHTML = '<video autoplay playsinline muted></video>' + `<span class="n">${label}</span>`;
   c.addEventListener('click', () => setPreview(id));
