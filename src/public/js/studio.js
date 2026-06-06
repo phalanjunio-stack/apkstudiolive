@@ -364,6 +364,15 @@ function canvasStream(v) {
   };
 }
 
+// vídeo-fonte SÓ toca (e manda áudio pro mixer) quando está no PREVIEW ou no AR; senão fica pausado (sem áudio).
+function syncVideoAudio() {
+  for (const [id, e] of sources) {
+    if (!e.mediaEl || e.kind !== 'video' || e.mediaEl.tagName !== 'VIDEO') continue;
+    let inUse = (id === previewId || id === programId);
+    if (!inUse) { try { const G = window.Graphics; if (G && G.list) inUse = G.list().some(o => o.data && o.data.src === e.url && (o.data.onPrev || o.data.onPgm) && o.visible !== false); } catch (er) {} }
+    try { if (inUse) { if (e.mediaEl.paused) e.mediaEl.play().catch(() => {}); } else if (!e.mediaEl.paused) e.mediaEl.pause(); } catch (er) {}
+  }
+}
 function addVideoFile(file) {
   const url = URL.createObjectURL(file);
   const v = document.createElement('video');
@@ -385,7 +394,7 @@ function addVideoFile(file) {
     if (!used) { try { URL.revokeObjectURL(url); } catch {} }
     if (mixNode && window.Mixer && window.Mixer.removeChannelByNode) try { window.Mixer.removeChannelByNode(mixNode); } catch {}
   };
-  const apply = () => { if (e.canvasStop) return; const cv = canvasStream(v); e.canvasStop = cv.stop; setStream(id, cv.stream); v.play && v.play().catch(() => {}); }; // só vídeo na fonte; áudio é do mixer
+  const apply = () => { if (e.canvasStop) return; const cv = canvasStream(v); e.canvasStop = cv.stop; setStream(id, cv.stream); try { if (v.currentTime < 0.05) v.currentTime = 0.1; } catch (er) {} syncVideoAudio(); }; // mostra um frame; só TOCA (áudio) quando no preview/ar
   if (v.readyState >= 2) apply(); else v.addEventListener('loadeddata', apply, { once: true });
   return id;
 }
@@ -699,7 +708,7 @@ async function openAddMenu(ev) {
 }
 
 // --------------------------- preview / program ----------------------------
-function setPreview(id) { if (!sources.has(id)) return; previewId = id; attachPreview(id); refreshBorders(); refreshButtons(); updateMediaBar(); }
+function setPreview(id) { if (!sources.has(id)) return; previewId = id; attachPreview(id); refreshBorders(); refreshButtons(); updateMediaBar(); syncVideoAudio(); }
 function attachPreview(id) {
   const e = id && sources.get(id);
   const yt = e && e.kind === 'youtube';
@@ -720,11 +729,12 @@ function setProgram(id) {
   const old = (programId && programId !== id) ? sources.get(programId) : null;
   programId = id; attachProgram(id); refreshBorders();
   muteVideoChannel(old); // muta o vídeo que SAIU do ar (evita áudio de 2 vídeos)
+  syncVideoAudio();
   setTimeout(() => { try { ensureReplayBuffer(); } catch {} }, 400); // começa a gravar o buffer do replay
 }
 // tirar do ar / do preview (toggle dos botões)
-function clearProgram() { const old = programId ? sources.get(programId) : null; programId = null; attachProgram(null); refreshBorders(); muteVideoChannel(old); }
-function clearPreview() { previewId = null; attachPreview(null); refreshBorders(); refreshButtons(); updateMediaBar(); }
+function clearProgram() { const old = programId ? sources.get(programId) : null; programId = null; attachProgram(null); refreshBorders(); muteVideoChannel(old); syncVideoAudio(); }
+function clearPreview() { previewId = null; attachPreview(null); refreshBorders(); refreshButtons(); updateMediaBar(); syncVideoAudio(); }
 function attachProgram(id) {
   const e = id && sources.get(id);
   const yt = e && e.kind === 'youtube';
@@ -921,7 +931,7 @@ $('autoBtn').onclick = fadeTake;
 $('ftbBtn').onclick = ftb;
 // botões TAKE/CUT ligam/desligam conforme há conteúdo no PREVIEW (camadas onPrev).
 // studio.js carrega ANTES do graphics.js → espera o motor existir pra inscrever.
-(function hookButtons() { if (window.Graphics && window.Graphics.onChange) { window.Graphics.onChange(refreshButtons); window.Graphics.onChange(updateMediaBar); refreshButtons(); } else setTimeout(hookButtons, 150); })();
+(function hookButtons() { if (window.Graphics && window.Graphics.onChange) { window.Graphics.onChange(refreshButtons); window.Graphics.onChange(updateMediaBar); window.Graphics.onChange(syncVideoAudio); refreshButtons(); } else setTimeout(hookButtons, 150); })();
 // T-BAR: arrasta a barrinha de ponta a ponta = TAKE (fade); soltar antes do fim cancela
 (function wireTBar() {
   const bar = document.querySelector('.switch .tbar'); if (!bar) return; const knob = bar.querySelector('i'); if (!knob) return;
